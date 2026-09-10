@@ -75,3 +75,9 @@ Backup of *.doc*
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,microsoftoffice,visualstudiocode
+
+### Environment variables ###
+.env
+
+### PHP / Composer ###
+vendor/

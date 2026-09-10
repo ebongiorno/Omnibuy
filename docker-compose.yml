@@ -1,0 +1,71 @@
+services:
+
+  web:
+    build: .
+    container_name: omnibuy-web
+    ports:
+      - "8080:80"
+
+    volumes:
+      - ./:/var/www/html
+
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+  db:
+    image: mysql:8.0
+    container_name: omnibuy-db
+
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: omnibuy-phpmyadmin
+
+    ports:
+      - "8081:80"
+
+    environment:
+      PMA_HOST: db
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+volumes:
+  mysql_data:
