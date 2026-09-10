@@ -310,6 +310,117 @@ docker compose up -d
 
 ---
 
+# Docker / Local Development
+
+## Purpose
+
+Docker gives all five teammates the same PHP + MySQL environment regardless of host OS, so "it works on my machine" isn't a recurring problem. It does not replace application architecture decisions — it just runs PHP/Apache and MySQL consistently.
+
+## Prerequisites
+
+- Docker Desktop installed and running
+- Git
+
+Verify:
+
+```bash
+docker --version
+docker compose version
+```
+
+## 1. Create your local `.env`
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set real local values for `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_ROOT_PASSWORD`. Never commit `.env`.
+
+## 2. Start Docker
+
+```bash
+docker compose up -d
+```
+
+## 3. Check running containers
+
+```bash
+docker compose ps
+```
+
+You should see `omnibuy-web`, `omnibuy-db`, and `omnibuy-phpmyadmin` all `Up` (the db may briefly show `starting` while its healthcheck runs).
+
+## 4. Application URLs
+
+Application:
+```text
+http://localhost:8080
+```
+> If the actual entry point differs (e.g. the app lives in a subfolder once the repo structure is finalized), substitute the real path here.
+
+phpMyAdmin:
+```text
+http://localhost:8081
+```
+Log in with the `MYSQL_USER` / `MYSQL_PASSWORD` (or `root` / `MYSQL_ROOT_PASSWORD`) from your `.env`.
+
+## 5. Stop Docker
+
+```bash
+docker compose down
+```
+
+## 6. Useful Docker commands
+
+```bash
+docker compose logs -f web       # tail PHP/Apache logs
+docker compose logs -f db        # tail MySQL logs
+docker compose exec web bash     # shell into the PHP container
+docker compose exec db mysql -u root -p   # shell into MySQL
+docker compose build             # rebuild the web image after Dockerfile changes
+docker compose restart web       # restart just the PHP container
+```
+
+## 7. Database initialization
+
+Any `.sql` files placed in `./database/init` are automatically executed by MySQL **the first time** the `mysql_data` volume is created (empty database only — it will not re-run on existing data). Adjust the `./database/init` path in `docker-compose.yml` if the database team places init scripts somewhere else.
+
+## 8. Warning
+
+```bash
+docker compose down -v
+```
+
+The `-v` flag deletes the named volume (`mysql_data`), which **permanently deletes all local database data**. Only use it when you intentionally want a fresh database.
+
+## 9. Troubleshooting
+
+**Port already in use (8080 / 8081 / 3306)**
+Another process on your machine is using that port. Either stop it, or change the host-side port mapping in `docker-compose.yml` (e.g. `"8082:80"`).
+
+**`web` keeps restarting / never becomes healthy**
+Check logs: `docker compose logs web`. Common cause: PHP syntax error, or the app is trying to connect to MySQL before it's ready (should not happen here since `web` waits on `db`'s healthcheck).
+
+**PHP can't connect to MySQL / "Connection refused"**
+- Confirm the app connects to host `db`, not `localhost` or `127.0.0.1` — inside Docker, `localhost` refers to the PHP container itself, not the database container.
+- Confirm `.env` values match what the app's PDO connection expects (`DB_HOST=db`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`).
+
+**Changes to code aren't showing up**
+Confirm the repo root is bind-mounted into the container (`./:/var/www/html` in `docker-compose.yml`) and that you're editing files in the repo, not inside the container.
+
+**"no configuration file provided" or similar compose errors**
+Run `docker compose` commands from the repository root, where `docker-compose.yml` lives.
+
+## 10. How to verify your setup works
+
+1. `docker compose up -d` starts all three containers with no errors.
+2. `docker compose ps` shows all three as `Up`.
+3. `http://localhost:8080` loads without a connection error.
+4. `http://localhost:8081` loads phpMyAdmin and you can log in and see the `omnibuy` database.
+5. A PHP-to-MySQL connectivity test (e.g. a script running `SELECT NOW()` through PDO) returns a timestamp instead of an error.
+
+---
+
 # Suggested Project Structure
 
 ```text
