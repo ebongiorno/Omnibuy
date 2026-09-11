@@ -32,8 +32,8 @@ function navActive(string $key, string $activeNav): string
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle) ?></title>
 
-  <link rel="stylesheet" href="/public/css/omnibuy-design-tokens.css">
-  <link rel="stylesheet" href="/public/css/shared-navigation.css">
+  <link rel="stylesheet" href="../css/omnibuy-design-tokens.css">
+  <link rel="stylesheet" href="../css/shared-navigation.css">
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>

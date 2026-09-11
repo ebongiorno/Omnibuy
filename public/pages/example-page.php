@@ -5,12 +5,13 @@ $activeNav = 'home';
 $isLoggedIn = true;
 $currentUser = [
     'username' => 'MisterRoger68',
-    'avatar_url' => '/public/images/default-avatar.png',
+    'avatar_url' => '/public/assets/default-avatar.png',
     'is_seller' => true,
 ];
 $cartCount = 2;
 $unreadCount = 3;
-include __DIR__ . '/header.php';
+$header = '../components/header.php';
+include $header;
 ?>
 
 <section class="shell" style="padding-block: var(--space-8);">
@@ -18,4 +19,7 @@ include __DIR__ . '/header.php';
   <p>Page content goes here.</p>
 </section>
 
-<?php include __DIR__ . '/footer.php';
+<?php
+
+$footer = '../components/footer.php';
+include $footer;
