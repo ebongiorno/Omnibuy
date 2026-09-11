@@ -15,6 +15,18 @@ USE omnibuy;
 -- CATEGORIES
 -- =========================================
 -- categories
+CREATE TABLE categories (
+    category_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    parent_category_id BIGINT UNSIGNED NULL, 
+    category_name VARCHAR(100) NOT NULL,
+    description TEXT NULL DEFAULT NULL,
+    image_url VARCHAR(2000) NULL
+
+    CONSTRAINT fk_categories_parent
+        FOREIGN KEY (parent_category_ai)
+        REFERENCES categories(category_id)
+    
+)
 
 
 -- =========================================
