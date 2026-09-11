@@ -104,14 +104,23 @@ CREATE TABLE categories (
     category_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     parent_category_id BIGINT UNSIGNED NULL, 
     category_name VARCHAR(100) NOT NULL,
-    description TEXT NULL DEFAULT NULL,
-    image_url VARCHAR(2000) NULL
+    description TEXT NULL,
+    image_url VARCHAR(2000) NULL,
 
     CONSTRAINT fk_categories_parent
-        FOREIGN KEY (parent_category_ai)
-        REFERENCES categories(category_id)
+        FOREIGN KEY (parent_category_id)
+        REFERENCES categories(category_id),
     
-)
+    CONSTRAINT uq_categories_parent_name
+        UNIQUE (parent_category_id, category_name),
+
+    CONSTRAINT chk_categories_not_self_parent
+        CHECK (
+            parent_category_id IS NULL
+            OR parent_category_id <> category_id
+        )
+    
+);
 
 
 -- =========================================
@@ -127,7 +136,33 @@ CREATE TABLE categories (
 -- MARKETPLACE DISCOVERY
 -- =========================================
 -- search_history
+CREATE TABLE search_history (
+    search_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    search_query VARCHAR(255) NOT NULL, 
+    search_type ENUM('items', 'seller_profiles') NOT NULL DEFAULT 'items',
+    searched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_search_history_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+);
+
 -- listing_views
+CREATE TABLE listing_views (
+    listing_view_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_listing_views_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(user_id),
+
+    CONSTRAINT fk_listing_views_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+);
 
 
 -- =========================================
