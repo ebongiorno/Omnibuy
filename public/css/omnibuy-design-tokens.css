@@ -1,0 +1,53 @@
+/*
+ * OmniBuy UI Framework - Design Tokens
+ * Repository-ready CSS extracted from the UI framework reference.
+ */
+
+:root {
+  /* Brand */
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-light: #DBEAFE;
+  --color-navy: #183B6B;
+
+  /* Surfaces */
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F1F5F9;
+  --color-border: #D1D5DB;
+
+  /* Text */
+  --color-text: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #6B7280;
+
+  /* Status */
+  --color-success: #2E7D32;
+  --color-warning: #B26A00;
+  --color-danger: #C62828;
+
+  /* Typography */
+  --font-ui: "Inter", system-ui, -apple-system,
+             BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+
+  /* Shape */
+  --radius-input: 8px;
+  --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-modal: 16px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+}
+
+/* Keyboard focus treatment */
+:focus-visible {
+  outline: 3px solid #93C5FD;
+  outline-offset: 2px;
+}
