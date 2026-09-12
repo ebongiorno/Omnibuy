@@ -168,9 +168,44 @@ CREATE TABLE listing_views (
 -- =========================================
 -- CARTS AND CART ITEMS
 -- =========================================
--- carts
--- cart_items
+CREATE TABLE carts (
+    cart_id BIGINT. UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+    created_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_carts_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+);
 
+CREATE TABLE cart_items (
+    cart_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cart_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NOT NULL
+    quantity INT UNSIGNED
+        NOT NULL
+        DEFAULT 1
+        CHECK (quantity > 0),
+    added_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT uq_cart_listing
+        UNIQUE (cart_id, listing_id),
+
+    CONSTRAINT fk_cart_items_cart
+        FOREIGN KEY (cart_id)
+        REFERENCES carts(cart_id),
+    CONSTRAINT fk_cart_items_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+);
 
 -- =========================================
 -- ADDRESSES AND LOCATION
