@@ -164,8 +164,12 @@ INSERT INTO listings (
     fulfillment_type,
     shipping_cost,
     estimated_shipping_days,
+    location_zip_code,
+    latitude,
+    longitude,
     meetup_location_type,
-    meetup_radius,
+    seller_meetup_radius,
+    auction_end_at,
     price,
     `condition`,
     quantity,
@@ -174,7 +178,10 @@ INSERT INTO listings (
 )
 VALUES
 
-    -- Active / Shipping
+    -- =====================================
+    -- ACTIVE / SHIPPING
+    -- =====================================
+
     (
         1, 1, 5,
         'Wireless Mechanical Keyboard',
@@ -183,6 +190,10 @@ VALUES
         'shipping',
         7.99,
         4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         NULL,
         NULL,
         45.00,
@@ -202,6 +213,10 @@ VALUES
         3,
         NULL,
         NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         85.00,
         'like_new',
         1,
@@ -217,6 +232,10 @@ VALUES
         'shipping',
         8.00,
         5,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         NULL,
         NULL,
         38.00,
@@ -236,6 +255,10 @@ VALUES
         4,
         NULL,
         NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         24.99,
         'good',
         2,
@@ -253,6 +276,10 @@ VALUES
         3,
         NULL,
         NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         39.99,
         'like_new',
         1,
@@ -260,7 +287,10 @@ VALUES
         NULL
     ),
 
-    -- Active / Meetup
+    -- =====================================
+    -- ACTIVE / MEETUP
+    -- =====================================
+
     (
         6, 2, 7,
         'Wooden Study Desk',
@@ -269,8 +299,12 @@ VALUES
         'meetup',
         NULL,
         NULL,
+        '92507',
+        33.975100,
+        -117.325400,
         'parking_lot',
         15,
+        NULL,
         70.00,
         'good',
         1,
@@ -286,8 +320,12 @@ VALUES
         'meetup',
         NULL,
         NULL,
+        '92501',
+        33.980600,
+        -117.375500,
         'coffee_shop',
         10,
+        NULL,
         42.00,
         'fair',
         1,
@@ -303,8 +341,12 @@ VALUES
         'meetup',
         NULL,
         NULL,
+        '92503',
+        33.938300,
+        -117.460300,
         'library',
         10,
+        NULL,
         55.00,
         'like_new',
         1,
@@ -320,8 +362,12 @@ VALUES
         'meetup',
         NULL,
         NULL,
+        '92507',
+        33.971900,
+        -117.328100,
         'library',
         5,
+        NULL,
         30.00,
         'good',
         1,
@@ -337,8 +383,12 @@ VALUES
         'meetup',
         NULL,
         NULL,
+        '92504',
+        33.927500,
+        -117.411200,
         'other',
         10,
+        NULL,
         35.00,
         'excellent',
         1,
@@ -346,7 +396,10 @@ VALUES
         NULL
     ),
 
-    -- Hidden listing
+    -- =====================================
+    -- HIDDEN LISTING
+    -- =====================================
+
     (
         11, 1, 5,
         'Gaming Mouse',
@@ -357,6 +410,10 @@ VALUES
         3,
         NULL,
         NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         25.00,
         'good',
         1,
@@ -364,7 +421,10 @@ VALUES
         NULL
     ),
 
-    -- Sold listing
+    -- =====================================
+    -- SOLD LISTING
+    -- =====================================
+
     (
         12, 2, 7,
         'Floor Lamp',
@@ -373,16 +433,23 @@ VALUES
         'meetup',
         NULL,
         NULL,
+        '92501',
+        33.982000,
+        -117.373000,
         'parking_lot',
         10,
+        NULL,
         20.00,
         'good',
-        1,
+        0,
         'sold',
         NULL
     ),
 
-    -- Archived listing
+    -- =====================================
+    -- ARCHIVED LISTING
+    -- =====================================
+
     (
         13, 3, 10,
         'Canvas Backpack',
@@ -393,6 +460,10 @@ VALUES
         5,
         NULL,
         NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         28.00,
         'fair',
         1,
@@ -400,7 +471,10 @@ VALUES
         NULL
     ),
 
-    -- Draft listing
+    -- =====================================
+    -- DRAFT LISTING
+    -- =====================================
+
     (
         14, 1, 6,
         'Portable Bluetooth Speaker',
@@ -409,6 +483,10 @@ VALUES
         'shipping',
         5.50,
         4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         NULL,
         NULL,
         32.00,
