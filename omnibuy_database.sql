@@ -181,8 +181,110 @@ CREATE TABLE listing_views (
 -- =========================================
 -- ORDERS AND FULFILLMENT
 -- =========================================
--- orders
--- order_items
+CREATE TABLE orders (
+    order_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    buyer_user_id BIGINT UNSIGNED NOT NULL,
+    shipping_address_id BIGINT UNSIGNED NULL DEFAULT NULL,
+    billing_address_id BIGINT UNSIGNED NOT NULL
+
+    order_status ENUM(
+        'pending',
+        'in_progress',
+        'completed',
+        'cancelled'
+    ) NOT NULL DEFAULT 'pending',
+    payment_status ENUM(
+        'pending',
+        'paid',
+        'failed',
+        'refunded'
+    ) NOT NULL DEFAULT 'pending',
+    subtotal DECIMAL(10, 2)
+        NOT NULL
+        CHECK (subtotal > 0),
+    shipping_cost DECIMAL(10, 2)
+        NOT NULL
+        DEFAULT 0.00
+        CHECK (shipping_cost >= 0),
+    tax_amount DECIMAL(10, 2)
+        NOT NULL
+        DEFAULT 0.00
+        CHECK (tax_amount >= 0),
+    total_amount DECIMAL(10, 2)
+        NOT NULL
+        CHECK (total_amount >= 0),
+    created_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_orders_buyer
+        FOREIGN KEY (buyer_user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_orders_shipping_address
+        FOREIGN KEY (shipping_address_id)
+        REFERENCES addresses(address_id),
+    CONSTRAINT fk_orders_billing_address
+        FOREIGN KEY (billing_address_id)
+        REFERENCES addresses(address_id)
+);
+
+CREATE TABLE order_items (
+    order_items_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    quantity INT UNSIGNED
+        NOT NULL
+        CHECK  (quantity > 0),
+    unit_price DECIMAL(10, 2)
+        NOT NULL
+        CHECK (unit_price > 0),
+    fullfillment_type ENUM(
+        'shipping',
+        'meetup'
+    ) NOT NULL
+    item_status ENUM(
+        'pending',
+        'confirmed',
+        'processing',
+        'shipped',
+        'ready_for_meetup',
+        'completed',
+        'cancelled'
+    ) NOT NULL DEFAULT 'pending',
+    shipping_cost DECIMAL(10, 2)
+        NOT NULL
+        DEFAULT 0.00
+        CHECK (shipping_cost >= 0),
+    
+    CONSTRAINT chk_meetup_shipping_cost
+        CHECK (
+        fulfillment_type <> 'meetup'
+        OR shipping_cost = 0.00
+        ),
+    CONSTRAINT chk_fulfillment_item_status
+        CHECK (
+            NOT (
+                fulfillment_type = 'meetup'
+                AND item_status = 'shipped'
+            )
+            AND
+            NOT (
+                fulfillment_type = 'shipping'
+                AND item_status = 'ready_for_meetup'
+            )
+        ),
+    
+    CONSTRAINT fk_order_items_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(order_id),
+    CONSTRAINT fk_order_items_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+);
 
 
 -- =========================================
