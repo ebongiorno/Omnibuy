@@ -7,9 +7,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- CSS Stylesheets -->
     <link rel="stylesheet" href="css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="css/shared-navigation.css">
     <link rel="stylesheet" href="css/homepage.css">
+
+    <!-- Enables the use of Font Awesome's Icons -->
+    <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
+
     <title>OmniBuy</title>
 </head>
 <body>
@@ -30,7 +36,7 @@
 
             <!-- Logo -->
             <a class="brand" href="index.php" aria-label="OmniBuy home">
-                <span class="brand__mark" aria-hidden="true">◆</span>
+                <i class="fa-solid fa-box-open"></i>
                 OmniBuy
             </a>
 
@@ -86,7 +92,7 @@
                     href="wishlist.php"
                     aria-label="Wishlist"
                 >
-                    <span aria-hidden="true">♡</span>
+                    <i class="fa-solid fa-heart"></i>
                     <span class="icon-link__label">Wishlist</span>
                 </a>
 
@@ -96,7 +102,8 @@
                     href="cart.php"
                     aria-label="Shopping cart"
                 >
-                    <span aria-hidden="true">Cart</span>
+                    
+                    <i class="fa-solid fa-cart-shopping"></i>
 
                     <!-- Temporary/example cart count -->
                     <span class="count-badge">2</span>
