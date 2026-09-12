@@ -239,7 +239,7 @@
                         class="hero-card__media"
                         aria-hidden="true"
                     >
-                        Featured marketplace image
+                        <img src="assets/homepage-image.jpg">
                     </div>
 
                 </div>
@@ -285,7 +285,7 @@
                         href="category.php?id=1"
                     >
                         <div class="category-card__image">
-                            Electronics image
+                            <img src="assets/category-parent-electronics.jpg">
                         </div>
 
                         <h3>Electronics</h3>
@@ -297,7 +297,7 @@
                         href="category.php?id=2"
                     >
                         <div class="category-card__image">
-                            Home & Furniture image
+                            <img src="assets/category-parent-home-furniture.jpg">
                         </div>
 
                         <h3>Home & Furniture</h3>
@@ -309,7 +309,7 @@
                         href="category.php?id=3"
                     >
                         <div class="category-card__image">
-                            Clothing image
+                            <img src="assets/category-parent-clothing.jpg">
                         </div>
 
                         <h3>Clothing</h3>
@@ -321,7 +321,7 @@
                         href="category.php?id=4"
                     >
                         <div class="category-card__image">
-                            Books image
+                            <img src="assets/category-parent-books.jpg">
                         </div>
 
                         <h3>Books</h3>
@@ -403,7 +403,7 @@
                             href="listing.php?id=1"
                         >
                             <div class="listing-card__image">
-                                Listing image
+                                <img src="assets/listing-wireless-keyboard.jpg">
                             </div>
                         </a>
 
@@ -455,7 +455,7 @@
                             href="listing.php?id=6"
                         >
                             <div class="listing-card__image">
-                                Listing image
+                                <img src="assets/listing-desk.jpg">
                             </div>
                         </a>
 
