@@ -210,8 +210,27 @@ CREATE TABLE cart_items (
 -- =========================================
 -- ADDRESSES AND LOCATION
 -- =========================================
--- addresses
-
+CREATE TABLE addresses (
+    address_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    address_line_1 VARCHAR(100) NOT NULL,
+    address_line_2 VARCHAR(100) NULL DEFAULT NULL,
+    city VARCHAR(100) NOT NULL,
+    state_name VARCHAR(100) NOT NULL,
+    zip_code VARCHAR(20) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    address_type ENUM(
+        'shipping',
+        'billing'
+    ) NOT NULL,
+    is_default BOOLEAN
+        NOT NULL
+        DEFAULT FALSE,
+    
+    CONSTRAINT fk_addresses_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+);
 
 -- =========================================
 -- ORDERS AND FULFILLMENT
