@@ -216,7 +216,7 @@ CREATE TABLE addresses (
     address_line_1 VARCHAR(100) NOT NULL,
     address_line_2 VARCHAR(100) NULL DEFAULT NULL,
     city VARCHAR(100) NOT NULL,
-    states VARCHAR(100) NOT NULL,
+    state_name VARCHAR(100) NOT NULL,
     zip_code VARCHAR(20) NOT NULL,
     country VARCHAR(100) NOT NULL,
     address_type ENUM(
