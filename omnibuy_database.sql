@@ -102,7 +102,7 @@ COLLATE = utf8mb4_unicode_ci;
 -- categories
 CREATE TABLE categories (
     category_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    parent_category_id BIGINT UNSIGNED NULL, 
+    parent_category_id BIGINT UNSIGNED NULL,
     category_name VARCHAR(100) NOT NULL,
     description TEXT NULL DEFAULT NULL,
     image_url VARCHAR(2000) NULL
@@ -110,7 +110,7 @@ CREATE TABLE categories (
     CONSTRAINT fk_categories_parent
         FOREIGN KEY (parent_category_ai)
         REFERENCES categories(category_id)
-    
+
 )
 
 
@@ -229,18 +229,108 @@ COLLATE = utf8mb4_unicode_ci;
 -- =========================================
 -- FAVORITES
 -- =========================================
--- wishlist_items
+CREATE TABLE wishlist_items (
+    wishlist_item_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT uq_wishlist_user_listing
+        UNIQUE (user_id, listing_id),
+    CONSTRAINT fk_wishlist_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_wishlist_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+)
 
 -- =========================================
 -- MESSAGING
 -- =========================================
--- conversations
--- messages
+CREATE TABLE conversations (
+    conversation_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    buyer_id BIGINT UNSIGNED NOT NULL,
+    seller_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
+    CONSTRAINT uq_conversation_participants_listing
+        UNIQUE (buyer_id, seller_id, listing_id),
+    CONSTRAINT chk_conversation_different_users
+        CHECK (buyer_id <> seller_id),
+    CONSTRAINT fk_conversation_buyer
+        FOREIGN KEY (buyer_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_conversation_seller
+        FOREIGN KEY (seller_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_conversation_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+)
+
+CREATE TABLE messages (
+    message_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversation_id BIGINT UNSIGNED NOT NULL,
+    sender_id BIGINT UNSIGNED NOT NULL,
+    body TEXT NOT NULL,
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP NULL DEFAULT NULL,
+
+    CONSTRAINT chk_message_not_empty
+        CHECK (CHAR_LENGTH(TRIM(body)) > 0),
+    CONSTRAINT fk_message_conversation
+        FOREIGN KEY (conversation_id)
+        REFERENCES conversations(conversation_id),
+    CONSTRAINT fk_message_sender
+        FOREIGN KEY (sender_id)
+        REFERENCES users(user_id)
+)
 
 -- =========================================
 -- SAFETY AND MODERATION
 -- =========================================
--- user_blocks
--- user_reports
+CREATE TABLE user_blocks (
+    block_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    blocker_user_id BIGINT UNSIGNED NOT NULL,
+    blocked_user_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_user_block
+        UNIQUE (blocker_user_id, blocked_user_id),
+    CONSTRAINT chk_no_self_block
+        CHECK (blocker_user_id <> blocked_user_id),
+    CONSTRAINT fk_block_blocker
+        FOREIGN KEY (blocker_user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_block_blocked
+        FOREIGN KEY (blocked_user_id)
+        REFERENCES users(user_id)
+)
+
+CREATE TABLE user_reports (
+    report_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reporter_user_id BIGINT UNSIGNED NOT NULL,
+    reported_user_id BIGINT UNSIGNED NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    details TEXT NULL,
+    moderation_status ENUM(
+        'pending',
+        'reviewing',
+        'resolved',
+        'dismissed'
+    ) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_no_self_report
+        CHECK (reporter_user_id <> reported_user_id),
+    CONSTRAINT fk_report_reporter
+        FOREIGN KEY (reporter_user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_report_reported
+        FOREIGN KEY (reported_user_id)
+        REFERENCES users(user_id)
+)
