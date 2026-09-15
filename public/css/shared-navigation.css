@@ -66,6 +66,11 @@ button, input, select { font: inherit; }
   font-weight: 700;
   font-size: 24px;
   letter-spacing: -0.02em;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.brand:hover {
+  transform: translateY(-3px);
+  text-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 .brand__mark { color: var(--color-navy); font-size: 16px; }
 
