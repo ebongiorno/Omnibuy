@@ -233,7 +233,7 @@ CREATE TABLE wishlist_items (
     wishlist_item_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     listing_id BIGINT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_wishlist_user_listing
         UNIQUE (user_id, listing_id),
@@ -274,10 +274,10 @@ CREATE TABLE conversations (
 CREATE TABLE messages (
     message_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     conversation_id BIGINT UNSIGNED NOT NULL,
-    sender_id BIGINT UNSIGNED NOT NULL,
-    body TEXT NOT NULL,
+    sender_user_id BIGINT UNSIGNED NOT NULL,
+    message_text TEXT NOT NULL,
     sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    read_at TIMESTAMP NULL DEFAULT NULL,
+    seen_at TIMESTAMP NULL DEFAULT NULL,
 
     CONSTRAINT chk_message_not_empty
         CHECK (CHAR_LENGTH(TRIM(body)) > 0),
@@ -293,7 +293,7 @@ CREATE TABLE messages (
 -- SAFETY AND MODERATION
 -- =========================================
 CREATE TABLE user_blocks (
-    block_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_block_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     blocker_user_id BIGINT UNSIGNED NOT NULL,
     blocked_user_id BIGINT UNSIGNED NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -311,19 +311,19 @@ CREATE TABLE user_blocks (
 )
 
 CREATE TABLE user_reports (
-    report_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_report_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     reporter_user_id BIGINT UNSIGNED NOT NULL,
     reported_user_id BIGINT UNSIGNED NOT NULL,
     reason VARCHAR(100) NOT NULL,
-    details TEXT NULL,
-    moderation_status ENUM(
+    description TEXT NULL,
+    report_status ENUM(
         'pending',
         'reviewing',
         'resolved',
         'dismissed'
     ) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_no_self_report
         CHECK (reporter_user_id <> reported_user_id),
