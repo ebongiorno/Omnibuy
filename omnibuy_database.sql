@@ -110,7 +110,7 @@ CREATE TABLE categories (
     CONSTRAINT fk_categories_parent
         FOREIGN KEY (parent_category_id)
         REFERENCES categories(category_id),
-    
+
     CONSTRAINT uq_categories_parent_name
         UNIQUE (parent_category_id, category_name),
 
@@ -119,7 +119,7 @@ CREATE TABLE categories (
             parent_category_id IS NULL
             OR parent_category_id <> category_id
         )
-    
+
 );
 
 
@@ -139,7 +139,7 @@ CREATE TABLE categories (
 CREATE TABLE search_history (
     search_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
-    search_query VARCHAR(255) NOT NULL, 
+    search_query VARCHAR(255) NOT NULL,
     search_type ENUM('items', 'seller_profiles') NOT NULL DEFAULT 'items',
     searched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -178,7 +178,7 @@ CREATE TABLE carts (
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT fk_carts_user
         FOREIGN KEY (user_id)
         REFERENCES users(user_id)
@@ -195,7 +195,7 @@ CREATE TABLE cart_items (
     added_at TIMESTAMP
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT uq_cart_listing
         UNIQUE (cart_id, listing_id),
 
@@ -226,7 +226,7 @@ CREATE TABLE addresses (
     is_default BOOLEAN
         NOT NULL
         DEFAULT FALSE,
-    
+
     CONSTRAINT fk_addresses_user
         FOREIGN KEY (user_id)
         REFERENCES users(user_id)
@@ -274,7 +274,7 @@ CREATE TABLE orders (
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT fk_orders_buyer
         FOREIGN KEY (buyer_user_id)
         REFERENCES users(user_id),
@@ -313,7 +313,7 @@ CREATE TABLE order_items (
         NOT NULL
         DEFAULT 0.00
         CHECK (shipping_cost >= 0),
-    
+
     CONSTRAINT chk_meetup_shipping_cost
         CHECK (
         fulfillment_type <> 'meetup'
@@ -331,7 +331,7 @@ CREATE TABLE order_items (
                 AND item_status = 'ready_for_meetup'
             )
         ),
-    
+
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id)
         REFERENCES orders(order_id),
@@ -443,7 +443,7 @@ CREATE TABLE conversations (
     conversation_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     buyer_id BIGINT UNSIGNED NOT NULL,
     seller_id BIGINT UNSIGNED NOT NULL,
-    listing_id BIGINT UNSIGNED NULL,
+    listing_id BIGINT UNSIGNED NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
