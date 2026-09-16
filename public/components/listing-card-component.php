@@ -1,8 +1,16 @@
 <?php
-$listings = array(
-    [1, "White Minimalist Desk", "Fair", 35, "Home & Furniture", "Shipping", "asset/listing-desk.jpg"],
-    [2, "Pastel Pink & White Wireless Keyboard", "Excellent", 1, "Electronics", "Meetup", "asset/listing-wireless-keyboard.jpg"]
-    )
+// Include connection file here
+
+$sql = "SELECT listings.listing_id, listings.condition, listings.item_name, 
+            listings.price, listings.category_id, listings.fulfillment_type,
+            listing_images.image_url
+            FROM listings
+            FULL JOIN listing_images
+            ON listings.listing_id = listing_images.listing_id AND display_order == 1
+            WHERE listing_status == 'active'";
+
+// establish connection and query
+$listings = null    // change null once connection file is done
 ?>
 
 <?php foreach ($listings as $listing): ?>
@@ -13,7 +21,6 @@ $listings = array(
         >
             <img
                 src="<?= htmlspecialchars($listing['image_url']) ?>"
-                alt=""
             >
         </a>
 
