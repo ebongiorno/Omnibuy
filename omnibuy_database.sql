@@ -113,12 +113,8 @@ CREATE TABLE categories (
     
 )
 
-
--- =========================================
--- LISTINGS AND SELLER MANAGEMENT
--- =========================================
 CREATE TABLE listings (
-    listing_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    listing_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     seller_user_id BIGINT UNSIGNED NOT NULL,
     category_id BIGINT UNSIGNED NOT NULL,
     item_name VARCHAR(100) NOT NULL,
@@ -136,15 +132,19 @@ CREATE TABLE listings (
 
     shipping_cost DECIMAL(10, 2) NULL,
     estimated_shipping_days TINYINT UNSIGNED NULL,
+
+    location_zip_code VARCHAR(10) NULL,
+    latitude DECIMAL(9, 6) NULL,
+    longitude DECIMAL(9, 6) NULL,
+
     meetup_location_type ENUM(
         'coffee_shop',
         'parking_lot',
         'library',
         'other'
     ) NULL,
-    meetup_radius SMALLINT UNSIGNED NULL,
 
-
+    seller_meetup_radius SMALLINT UNSIGNED NULL,
     auction_end_at TIMESTAMP NULL,
     price DECIMAL(10, 2) NOT NULL,
 
@@ -162,13 +162,12 @@ CREATE TABLE listings (
 
     quantity INT UNSIGNED NOT NULL,
 
-
     listing_status ENUM(
-    'draft',
-    'active',
-    'hidden',
-    'sold',
-    'archived'
+        'draft',
+        'active',
+        'hidden',
+        'sold',
+        'archived'
     ) NOT NULL,
 
     created_at TIMESTAMP NOT NULL
@@ -180,85 +179,109 @@ CREATE TABLE listings (
 
     renewed_at TIMESTAMP NULL,
 
-
-    PRIMARY KEY (listing_id),
-
-
     CONSTRAINT fk_listings_seller
-    FOREIGN KEY (seller_user_id)
-    REFERENCES seller_profiles(user_id),
+        FOREIGN KEY (seller_user_id)
+        REFERENCES seller_profiles(user_id),
 
     CONSTRAINT fk_listings_category
         FOREIGN KEY (category_id)
         REFERENCES categories(category_id),
 
-
-        CONSTRAINT chk_listings_shipping_cost
-        CHECK (
-            shipping_cost IS NULL
-            OR shipping_cost >= 0
-        ),
+    CONSTRAINT chk_listings_shipping_cost
+        CHECK (shipping_cost >= 0),
 
     CONSTRAINT chk_listings_shipping_days
-        CHECK (
-            estimated_shipping_days IS NULL
-            OR estimated_shipping_days > 0
-        ),
+        CHECK (estimated_shipping_days > 0),
 
-    CONSTRAINT chk_listings_meetup_radius
-        CHECK (
-            meetup_radius IS NULL
-            OR meetup_radius > 0
-        ),
+    CONSTRAINT chk_listings_seller_meetup_radius
+        CHECK (seller_meetup_radius > 0),
 
     CONSTRAINT chk_listings_price
-        CHECK (
-            price > 0
-        ),
+        CHECK (price > 0),
 
     CONSTRAINT chk_listings_quantity
-        CHECK (
-            quantity > 0
-        )
-
-    )
-    ENGINE = InnoDB
-    DEFAULT CHARSET = utf8mb4
-    COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE listing_images (
-    listing_image_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    listing_id BIGINT UNSIGNED NOT NULL,
-    image_url VARCHAR(2000) NOT NULL,
-    display_order TINYINT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (listing_image_id),
-
-    CONSTRAINT fk_listing_images_listing
-        FOREIGN KEY (listing_id)
-        REFERENCES listings(listing_id),
-
-    CONSTRAINT chk_listing_images_display_order
-        CHECK (
-            display_order >= 1
-        ),
-
-    CONSTRAINT uq_listing_images_display_order
-        UNIQUE (
-            listing_id,
-            display_order
-        )
+        CHECK (quantity >= 0)
 )
 ENGINE = InnoDB
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
--- listing_price_history
--- bids
+CREATE TABLE listing_images (
+    listing_image_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    listing_id BIGINT UNSIGNED NOT NULL,
 
+    image_url VARCHAR(2000)
+        CHARACTER SET ascii
+        COLLATE ascii_bin
+        NOT NULL,
+
+    display_order TINYINT UNSIGNED NOT NULL,
+
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_listing_images_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id),
+
+    CONSTRAINT chk_listing_images_display_order
+        CHECK (display_order >= 1),
+
+    CONSTRAINT uq_listing_images_url
+        UNIQUE (listing_id, image_url),
+
+    CONSTRAINT uq_listing_images_display_order
+        UNIQUE (listing_id, display_order)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE listing_price_history (
+    listing_price_history_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+
+    changed_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_listing_price_history_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id),
+
+    CONSTRAINT chk_listing_price_history_price
+        CHECK (price > 0)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE bids (
+    bid_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    bidder_user_id BIGINT UNSIGNED NOT NULL,
+    bid_amount DECIMAL(10, 2) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_bids_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id),
+
+    CONSTRAINT fk_bids_bidder
+        FOREIGN KEY (bidder_user_id)
+        REFERENCES users(user_id),
+
+    CONSTRAINT chk_bids_bid_amount
+        CHECK (bid_amount > 0)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
 
 -- =========================================
 -- MARKETPLACE DISCOVERY
