@@ -1,6 +1,6 @@
 <?php
 
-// Grab .env files
+// Grab values from .env file
 $host = getenv('DB_HOST');
 $port = (int) getenv('DB_PORT');
 $database = getenv('DB_NAME');
