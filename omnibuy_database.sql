@@ -99,7 +99,6 @@ COLLATE = utf8mb4_unicode_ci;
 -- =========================================
 -- CATEGORIES
 -- =========================================
--- categories
 CREATE TABLE categories (
     category_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     parent_category_id BIGINT UNSIGNED NULL,
@@ -295,7 +294,6 @@ COLLATE = utf8mb4_unicode_ci;
 -- =========================================
 -- MARKETPLACE DISCOVERY
 -- =========================================
--- search_history
 CREATE TABLE search_history (
     search_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
@@ -308,7 +306,6 @@ CREATE TABLE search_history (
         REFERENCES users(user_id)
 );
 
--- listing_views
 CREATE TABLE listing_views (
     listing_view_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
@@ -329,7 +326,7 @@ CREATE TABLE listing_views (
 -- CARTS AND CART ITEMS
 -- =========================================
 CREATE TABLE carts (
-    cart_id BIGINT. UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cart_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL UNIQUE,
     created_at TIMESTAMP
         NOT NULL
