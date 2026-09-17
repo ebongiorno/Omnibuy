@@ -63,7 +63,7 @@ function navActive(string $key, string $activeNav): string
     </form>
 
     <nav class="header-actions" aria-label="Account and shopping">
-      <a class="icon-link" href="/wishlist.php" aria-label="Wishlist">
+      <a class="icon-link" href="../pages/wishlist.php" aria-label="Wishlist">
         <span aria-hidden="true">♡</span>
         <span class="icon-link__label">Wishlist</span>
       </a>
@@ -100,7 +100,7 @@ function navActive(string $key, string $activeNav): string
             <a href="/account.php">Manage My Account</a>
             <a href="/orders.php">My Orders</a>
             <?php if (!empty($currentUser['is_seller'])): ?>
-              <a href="/my-listings.php">My Listings</a>
+              <a href="../pages/my-listings.php">My Listings</a>
             <?php endif; ?>
             <a href="/reviews.php">My Reviews</a>
             <form action="/logout.php" method="post">
