@@ -102,7 +102,7 @@ COLLATE = utf8mb4_unicode_ci;
 -- categories
 CREATE TABLE categories (
     category_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    parent_category_id BIGINT UNSIGNED NULL, 
+    parent_category_id BIGINT UNSIGNED NULL,
     category_name VARCHAR(100) NOT NULL,
     description TEXT NULL,
     image_url VARCHAR(2000) NULL,
@@ -110,7 +110,7 @@ CREATE TABLE categories (
     CONSTRAINT fk_categories_parent
         FOREIGN KEY (parent_category_id)
         REFERENCES categories(category_id),
-    
+
     CONSTRAINT uq_categories_parent_name
         UNIQUE (parent_category_id, category_name),
 
@@ -119,18 +119,178 @@ CREATE TABLE categories (
             parent_category_id IS NULL
             OR parent_category_id <> category_id
         )
-    
+
 );
 
+CREATE TABLE listings (
+    listing_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    seller_user_id BIGINT UNSIGNED NOT NULL,
+    category_id BIGINT UNSIGNED NOT NULL,
+    item_name VARCHAR(100) NOT NULL,
+    item_description TEXT NULL,
 
--- =========================================
--- LISTINGS AND SELLER MANAGEMENT
--- =========================================
--- listings
--- listing_images
--- listing_price_history
--- bids
+    sale_type ENUM(
+        'auction',
+        'fixed_price'
+    ) NOT NULL,
 
+    fulfillment_type ENUM(
+        'shipping',
+        'meetup'
+    ) NOT NULL,
+
+    shipping_cost DECIMAL(10, 2) NULL,
+    estimated_shipping_days TINYINT UNSIGNED NULL,
+
+    location_zip_code VARCHAR(10) NULL,
+    latitude DECIMAL(9, 6) NULL,
+    longitude DECIMAL(9, 6) NULL,
+
+    meetup_location_type ENUM(
+        'coffee_shop',
+        'parking_lot',
+        'library',
+        'other'
+    ) NULL,
+
+    seller_meetup_radius SMALLINT UNSIGNED NULL,
+    auction_end_at TIMESTAMP NULL,
+    price DECIMAL(10, 2) NOT NULL,
+
+    `condition` ENUM(
+        'new',
+        'open_box',
+        'like_new',
+        'excellent',
+        'good',
+        'fair',
+        'poor',
+        'refurbished',
+        'for_parts'
+    ) NOT NULL,
+
+    quantity INT UNSIGNED NOT NULL,
+
+    listing_status ENUM(
+        'draft',
+        'active',
+        'hidden',
+        'sold',
+        'archived'
+    ) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    renewed_at TIMESTAMP NULL,
+
+    CONSTRAINT fk_listings_seller
+        FOREIGN KEY (seller_user_id)
+        REFERENCES seller_profiles(user_id),
+
+    CONSTRAINT fk_listings_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories(category_id),
+
+    CONSTRAINT chk_listings_shipping_cost
+        CHECK (shipping_cost >= 0),
+
+    CONSTRAINT chk_listings_shipping_days
+        CHECK (estimated_shipping_days > 0),
+
+    CONSTRAINT chk_listings_seller_meetup_radius
+        CHECK (seller_meetup_radius > 0),
+
+    CONSTRAINT chk_listings_price
+        CHECK (price > 0),
+
+    CONSTRAINT chk_listings_quantity
+        CHECK (quantity >= 0)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE listing_images (
+    listing_image_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    listing_id BIGINT UNSIGNED NOT NULL,
+
+    image_url VARCHAR(2000)
+        CHARACTER SET ascii
+        COLLATE ascii_bin
+        NOT NULL,
+
+    display_order TINYINT UNSIGNED NOT NULL,
+
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_listing_images_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id),
+
+    CONSTRAINT chk_listing_images_display_order
+        CHECK (display_order >= 1),
+
+    CONSTRAINT uq_listing_images_url
+        UNIQUE (listing_id, image_url),
+
+    CONSTRAINT uq_listing_images_display_order
+        UNIQUE (listing_id, display_order)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE listing_price_history (
+    listing_price_history_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+
+    changed_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_listing_price_history_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id),
+
+    CONSTRAINT chk_listing_price_history_price
+        CHECK (price > 0)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE bids (
+    bid_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    bidder_user_id BIGINT UNSIGNED NOT NULL,
+    bid_amount DECIMAL(10, 2) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_bids_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id),
+
+    CONSTRAINT fk_bids_bidder
+        FOREIGN KEY (bidder_user_id)
+        REFERENCES users(user_id),
+
+    CONSTRAINT chk_bids_bid_amount
+        CHECK (bid_amount > 0)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
 
 -- =========================================
 -- MARKETPLACE DISCOVERY
@@ -139,7 +299,7 @@ CREATE TABLE categories (
 CREATE TABLE search_history (
     search_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
-    search_query VARCHAR(255) NOT NULL, 
+    search_query VARCHAR(255) NOT NULL,
     search_type ENUM('items', 'seller_profiles') NOT NULL DEFAULT 'items',
     searched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -178,7 +338,7 @@ CREATE TABLE carts (
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT fk_carts_user
         FOREIGN KEY (user_id)
         REFERENCES users(user_id)
@@ -195,7 +355,7 @@ CREATE TABLE cart_items (
     added_at TIMESTAMP
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT uq_cart_listing
         UNIQUE (cart_id, listing_id),
 
@@ -226,7 +386,7 @@ CREATE TABLE addresses (
     is_default BOOLEAN
         NOT NULL
         DEFAULT FALSE,
-    
+
     CONSTRAINT fk_addresses_user
         FOREIGN KEY (user_id)
         REFERENCES users(user_id)
@@ -274,7 +434,7 @@ CREATE TABLE orders (
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT fk_orders_buyer
         FOREIGN KEY (buyer_user_id)
         REFERENCES users(user_id),
@@ -313,7 +473,7 @@ CREATE TABLE order_items (
         NOT NULL
         DEFAULT 0.00
         CHECK (shipping_cost >= 0),
-    
+
     CONSTRAINT chk_meetup_shipping_cost
         CHECK (
         fulfillment_type <> 'meetup'
@@ -331,7 +491,7 @@ CREATE TABLE order_items (
                 AND item_status = 'ready_for_meetup'
             )
         ),
-    
+
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id)
         REFERENCES orders(order_id),
@@ -420,18 +580,108 @@ COLLATE = utf8mb4_unicode_ci;
 -- =========================================
 -- FAVORITES
 -- =========================================
--- wishlist_items
+CREATE TABLE wishlist_items (
+    wishlist_item_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT uq_wishlist_user_listing
+        UNIQUE (user_id, listing_id),
+    CONSTRAINT fk_wishlist_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_wishlist_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+)
 
 -- =========================================
 -- MESSAGING
 -- =========================================
--- conversations
--- messages
+CREATE TABLE conversations (
+    conversation_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    buyer_id BIGINT UNSIGNED NOT NULL,
+    seller_id BIGINT UNSIGNED NOT NULL,
+    listing_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
+    CONSTRAINT uq_conversation_participants_listing
+        UNIQUE (buyer_id, seller_id, listing_id),
+    CONSTRAINT chk_conversation_different_users
+        CHECK (buyer_id <> seller_id),
+    CONSTRAINT fk_conversation_buyer
+        FOREIGN KEY (buyer_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_conversation_seller
+        FOREIGN KEY (seller_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_conversation_listing
+        FOREIGN KEY (listing_id)
+        REFERENCES listings(listing_id)
+)
+
+CREATE TABLE messages (
+    message_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversation_id BIGINT UNSIGNED NOT NULL,
+    sender_user_id BIGINT UNSIGNED NOT NULL,
+    message_text TEXT NOT NULL,
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    seen_at TIMESTAMP NULL DEFAULT NULL,
+
+    CONSTRAINT chk_message_not_empty
+        CHECK (CHAR_LENGTH(TRIM(body)) > 0),
+    CONSTRAINT fk_message_conversation
+        FOREIGN KEY (conversation_id)
+        REFERENCES conversations(conversation_id),
+    CONSTRAINT fk_message_sender
+        FOREIGN KEY (sender_id)
+        REFERENCES users(user_id)
+)
 
 -- =========================================
 -- SAFETY AND MODERATION
 -- =========================================
--- user_blocks
--- user_reports
+CREATE TABLE user_blocks (
+    user_block_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    blocker_user_id BIGINT UNSIGNED NOT NULL,
+    blocked_user_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_user_block
+        UNIQUE (blocker_user_id, blocked_user_id),
+    CONSTRAINT chk_no_self_block
+        CHECK (blocker_user_id <> blocked_user_id),
+    CONSTRAINT fk_block_blocker
+        FOREIGN KEY (blocker_user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_block_blocked
+        FOREIGN KEY (blocked_user_id)
+        REFERENCES users(user_id)
+)
+
+CREATE TABLE user_reports (
+    user_report_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reporter_user_id BIGINT UNSIGNED NOT NULL,
+    reported_user_id BIGINT UNSIGNED NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    report_status ENUM(
+        'pending',
+        'reviewing',
+        'resolved',
+        'dismissed'
+    ) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_no_self_report
+        CHECK (reporter_user_id <> reported_user_id),
+    CONSTRAINT fk_report_reporter
+        FOREIGN KEY (reporter_user_id)
+        REFERENCES users(user_id),
+    CONSTRAINT fk_report_reported
+        FOREIGN KEY (reported_user_id)
+        REFERENCES users(user_id)
+)
