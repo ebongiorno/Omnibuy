@@ -14,7 +14,7 @@ $header = '../components/header.php';
 include $header;
 ?>
 
-<section class="shell" style="padding-block: var(--space-8);">
+<section class="shell">
     <h1>My Listings</h1>
     <p>Your listings will appear here.</p>
 </section>
