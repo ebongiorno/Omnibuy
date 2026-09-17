@@ -1,16 +1,22 @@
 <?php
-// Include connection file here
+require_once 'db_connect.php';
 
-$sql = "SELECT listings.listing_id, listings.condition, listings.item_name, 
-            listings.price, listings.category_id, listings.fulfillment_type,
-            listing_images.image_url
-            FROM listings
-            FULL JOIN listing_images
-            ON listings.listing_id = listing_images.listing_id AND display_order == 1
-            WHERE listing_status == 'active'";
+$sql = "SELECT l.listing_id, l.`condition`, l.item_name, 
+            l.price, l.category_id, l.fulfillment_type,
+            li.image_url, c.category_name
+            FROM listings as l
+            LEFT JOIN listing_images as li
+                ON l.listing_id = li.listing_id 
+                AND li.display_order = 1
+            LEFT JOIN categories as c 
+                ON l.category_id = c.category_id
+            WHERE listing_status == 'active'
+            ORDER BY l.created_at DESC 
+            LIMIT 10";
 
 // establish connection and query
-$listings = null    // change null once connection file is done
+$stmt = $pdo->query($sql);
+$listings = $stmt->fetchAll();
 ?>
 
 <?php foreach ($listings as $listing): ?>
@@ -20,7 +26,7 @@ $listings = null    // change null once connection file is done
             href="listing.php?id=<?= $listing['listing_id'] ?>"
         >
             <img
-                src="<?= htmlspecialchars($listing['image_url']) ?>"
+                src="<?= htmlspecialchars($listing['image_url'] ?? 'assets/listing-default-img.jpg') ?>"
             >
         </a>
 
