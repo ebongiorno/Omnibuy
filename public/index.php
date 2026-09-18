@@ -10,7 +10,7 @@ $sql = "SELECT l.listing_id, l.`condition`, l.item_name,
                 AND li.display_order = 1
             LEFT JOIN categories as c 
                 ON l.category_id = c.category_id
-            WHERE listing_status == 'active'
+            WHERE listing_status = 'active'
             ORDER BY l.created_at DESC 
             LIMIT 10";
 
