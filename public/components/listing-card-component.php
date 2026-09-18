@@ -1,35 +1,4 @@
-<?php
-require_once 'db_connect.php';
 
-$sql = "SELECT l.listing_id, l.`condition`, l.item_name, 
-            l.price, l.category_id, l.fulfillment_type,
-            li.image_url, c.category_name
-            FROM listings as l
-            LEFT JOIN listing_images as li
-                ON l.listing_id = li.listing_id 
-                AND li.display_order = 1
-            LEFT JOIN categories as c 
-                ON l.category_id = c.category_id
-            WHERE listing_status == 'active'
-            ORDER BY l.created_at DESC 
-            LIMIT 10";
-
-// establish connection and query
-$stmt = $pdo->query($sql);
-$listings = $stmt->fetchAll();
-
-/*
-Once database is established, replace placeholder listing cards with:
-
-<div class="listing-grid">
-    <?php foreach ($listings as $listing): ?>
-        <?php include 'components/listing-card-component.php'; ?>
-    <?php endforeach; ?>
-</div>
-
-*/
-
-?>
 
 <?php foreach ($listings as $listing): ?>
     <article class="listing-card">

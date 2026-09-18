@@ -1,5 +1,34 @@
 <?php
-    //future php code here
+require_once __DIR__ . '/../db_connect.php';
+
+$sql = "SELECT l.listing_id, l.`condition`, l.item_name, 
+            l.price, l.category_id, l.fulfillment_type,
+            li.image_url, c.category_name
+            FROM listings as l
+            LEFT JOIN listing_images as li
+                ON l.listing_id = li.listing_id 
+                AND li.display_order = 1
+            LEFT JOIN categories as c 
+                ON l.category_id = c.category_id
+            WHERE listing_status == 'active'
+            ORDER BY l.created_at DESC 
+            LIMIT 10";
+
+// establish connection and query
+$stmt = $pdo->query($sql);
+$listings = $stmt->fetchAll();
+
+/*
+Once database is established, replace placeholder listing cards with:
+
+<div class="listing-grid">
+    <?php foreach ($listings as $listing): ?>
+        <?php include 'components/listing-card-component.php'; ?>
+    <?php endforeach; ?>
+</div>
+
+*/
+
 ?>
 
 <!DOCTYPE html>
@@ -395,108 +424,11 @@
                 <div class="listing-grid">
 
 
-                    <!-- Listing Card -->
-                    <article class="listing-card">
-
-                        <a
-                            class="listing-card__image-link"
-                            href="listing.php?id=1"
-                        >
-                            <div class="listing-card__image">
-                                <img src="assets/listing-wireless-keyboard.jpg">
-                            </div>
-                        </a>
-
-
-                        <div class="listing-card__body">
-
-                            <div class="listing-card__top-row">
-                                <span class="listing-card__condition">
-                                    Excellent
-                                </span>
-
-                                <button
-                                    class="listing-card__favorite"
-                                    type="button"
-                                    aria-label="Add Wireless Mechanical Keyboard to wishlist"
-                                >
-                                    ♡
-                                </button>
-                            </div>
-
-
-                            <h3 class="listing-card__title">
-                                <a href="listing.php?id=1">
-                                    Wireless Mechanical Keyboard
-                                </a>
-                            </h3>
-
-
-                            <p class="listing-card__price">
-                                $45.00
-                            </p>
-
-
-                            <div class="listing-card__meta">
-                                <span>Electronics</span>
-                                <span>Shipping</span>
-                            </div>
-
-                        </div>
-
-                    </article>
-
-
-                    <!-- Listing Card -->
-                    <article class="listing-card">
-
-                        <a
-                            class="listing-card__image-link"
-                            href="listing.php?id=6"
-                        >
-                            <div class="listing-card__image">
-                                <img src="assets/listing-desk.jpg">
-                            </div>
-                        </a>
-
-
-                        <div class="listing-card__body">
-
-                            <div class="listing-card__top-row">
-                                <span class="listing-card__condition">
-                                    Good
-                                </span>
-
-                                <button
-                                    class="listing-card__favorite"
-                                    type="button"
-                                    aria-label="Add Wooden Study Desk to wishlist"
-                                >
-                                    ♡
-                                </button>
-                            </div>
-
-
-                            <h3 class="listing-card__title">
-                                <a href="listing.php?id=6">
-                                    Wooden Study Desk
-                                </a>
-                            </h3>
-
-
-                            <p class="listing-card__price">
-                                $70.00
-                            </p>
-
-
-                            <div class="listing-card__meta">
-                                <span>Furniture</span>
-                                <span>Meetup</span>
-                            </div>
-
-                        </div>
-
-                    </article>
+                    <div class="listing-grid">
+                        <?php foreach ($listings as $listing): ?>
+                            <?php include 'components/listing-card-component.php'; ?>
+                        <?php endforeach; ?>
+                    </div>
 
 
                     <!-- Add additional mock cards while DB is unavailable -->
