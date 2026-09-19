@@ -8,30 +8,26 @@ USE omnibuy;
 -- USERS AND PROFILES
 -- =========================================
 CREATE TABLE users (
-    user_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    user_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    is_email_verified BOOLEAN NOT NULL
-        DEFAULT FALSE,
+    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     phone_number VARCHAR(20) NOT NULL,
     birth_date DATE NOT NULL,
     profile_image_url VARCHAR(2000) NULL,
-    bio TEXT NULL
-        DEFAULT NULL,
-    is_last_name_hidden BOOLEAN NOT NULL
-        DEFAULT FALSE,
+    bio TEXT NULL DEFAULT NULL,
+    is_last_name_hidden BOOLEAN NOT NULL DEFAULT FALSE,
     account_status ENUM(
         'active',
         'suspended',
         'restricted'
     ) NOT NULL
         DEFAULT 'active',
-    PRIMARY KEY (user_id),
+    
     UNIQUE KEY uq_users_username (username),
     UNIQUE KEY uq_users_email (email)
 )
@@ -73,14 +69,12 @@ END$$
 DELIMITER ;
 
 CREATE TABLE seller_profiles (
-    user_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
     store_name VARCHAR(100) NOT NULL,
-    became_seller_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
-    is_verified BOOLEAN NOT NULL
-        DEFAULT FALSE,
+    became_seller_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     payout_account_reference VARCHAR(100) NOT NULL,
-    PRIMARY KEY (user_id),
+    
     UNIQUE KEY uq_seller_profiles_store_name (
         store_name
     ),
@@ -100,7 +94,7 @@ COLLATE = utf8mb4_unicode_ci;
 -- CATEGORIES
 -- =========================================
 CREATE TABLE categories (
-    category_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    category_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     parent_category_id BIGINT UNSIGNED NULL,
     category_name VARCHAR(100) NOT NULL,
     description TEXT NULL,
@@ -226,8 +220,7 @@ CREATE TABLE listing_images (
 
     display_order TINYINT UNSIGNED NOT NULL,
 
-    created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_listing_images_listing
         FOREIGN KEY (listing_id)
@@ -252,8 +245,7 @@ CREATE TABLE listing_price_history (
     listing_id BIGINT UNSIGNED NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
 
-    changed_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_listing_price_history_listing
         FOREIGN KEY (listing_id)
@@ -295,7 +287,7 @@ COLLATE = utf8mb4_unicode_ci;
 -- MARKETPLACE DISCOVERY
 -- =========================================
 CREATE TABLE search_history (
-    search_history_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    search_history_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     search_query VARCHAR(255) NOT NULL,
     search_type ENUM('items', 'seller_profiles') NOT NULL DEFAULT 'items',
@@ -307,7 +299,7 @@ CREATE TABLE search_history (
 );
 
 CREATE TABLE listing_views (
-    listing_view_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    listing_view_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     listing_id BIGINT UNSIGNED NOT NULL,
     viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -326,11 +318,9 @@ CREATE TABLE listing_views (
 -- CARTS AND CART ITEMS
 -- =========================================
 CREATE TABLE carts (
-    cart_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cart_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL UNIQUE,
-    created_at TIMESTAMP
-        NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP
@@ -342,16 +332,11 @@ CREATE TABLE carts (
 );
 
 CREATE TABLE cart_items (
-    cart_item_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cart_item_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     cart_id BIGINT UNSIGNED NOT NULL,
     listing_id BIGINT UNSIGNED NOT NULL
-    quantity INT UNSIGNED
-        NOT NULL
-        DEFAULT 1
-        CHECK (quantity > 0),
-    added_at TIMESTAMP
-        NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    quantity INT UNSIGNED NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_cart_listing
         UNIQUE (cart_id, listing_id),
@@ -368,7 +353,7 @@ CREATE TABLE cart_items (
 -- ADDRESSES AND LOCATION
 -- =========================================
 CREATE TABLE addresses (
-    address_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    address_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     address_line_1 VARCHAR(100) NOT NULL,
     address_line_2 VARCHAR(100) NULL DEFAULT NULL,
@@ -380,9 +365,7 @@ CREATE TABLE addresses (
         'shipping',
         'billing'
     ) NOT NULL,
-    is_default BOOLEAN
-        NOT NULL
-        DEFAULT FALSE,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
 
     CONSTRAINT fk_addresses_user
         FOREIGN KEY (user_id)
@@ -393,7 +376,7 @@ CREATE TABLE addresses (
 -- ORDERS AND FULFILLMENT
 -- =========================================
 CREATE TABLE orders (
-    order_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     buyer_user_id BIGINT UNSIGNED NOT NULL,
     shipping_address_id BIGINT UNSIGNED NULL DEFAULT NULL,
     billing_address_id BIGINT UNSIGNED NOT NULL
@@ -444,15 +427,11 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE order_items (
-    order_items_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_items_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT UNSIGNED NOT NULL,
     listing_id BIGINT UNSIGNED NOT NULL,
-    quantity INT UNSIGNED
-        NOT NULL
-        CHECK  (quantity > 0),
-    unit_price DECIMAL(10, 2)
-        NOT NULL
-        CHECK (unit_price > 0),
+    quantity INT UNSIGNED NOT NULL CHECK  (quantity > 0),
+    unit_price DECIMAL(10, 2) NOT NULL CHECK (unit_price > 0),
     fullfillment_type ENUM(
         'shipping',
         'meetup'
@@ -502,18 +481,15 @@ CREATE TABLE order_items (
 -- REVIEWS AND REPUTATION
 -- =========================================
 CREATE TABLE user_reviews (
-    user_review_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_review_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     reviewer_user_id BIGINT UNSIGNED NOT NULL,
     reviewed_user_id BIGINT UNSIGNED NOT NULL,
     order_item_id BIGINT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     star_rating TINYINT UNSIGNED NOT NULL,
-    title VARCHAR(100) NULL
-        DEFAULT NULL,
-    description VARCHAR(2000) NULL
-        DEFAULT NULL,
-    PRIMARY KEY (user_review_id),
+    title VARCHAR(100) NULL DEFAULT NULL,
+    description VARCHAR(2000) NULL DEFAULT NULL,
+    
     CONSTRAINT chk_user_reviews_different_users
         CHECK (
             reviewer_user_id <> reviewed_user_id
@@ -542,17 +518,14 @@ DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE listing_reviews (
-    listing_review_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    listing_review_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     reviewer_user_id BIGINT UNSIGNED NOT NULL,
     order_item_id BIGINT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     star_rating TINYINT UNSIGNED NOT NULL,
-    title VARCHAR(100) NULL
-        DEFAULT NULL,
-    description TEXT NULL
-        DEFAULT NULL,
-    PRIMARY KEY (listing_review_id),
+    title VARCHAR(100) NULL DEFAULT NULL,
+    description TEXT NULL DEFAULT NULL,
+
     CONSTRAINT chk_listing_reviews_star_rating
         CHECK (
             star_rating BETWEEN 1 AND 5
@@ -597,7 +570,7 @@ CREATE TABLE wishlist_items (
 -- MESSAGING
 -- =========================================
 CREATE TABLE conversations (
-    conversation_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversation_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     buyer_id BIGINT UNSIGNED NOT NULL,
     seller_id BIGINT UNSIGNED NOT NULL,
     listing_id BIGINT UNSIGNED NOT NULL,
@@ -620,7 +593,7 @@ CREATE TABLE conversations (
 )
 
 CREATE TABLE messages (
-    message_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    message_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     conversation_id BIGINT UNSIGNED NOT NULL,
     sender_user_id BIGINT UNSIGNED NOT NULL,
     message_text TEXT NOT NULL,
@@ -641,7 +614,7 @@ CREATE TABLE messages (
 -- SAFETY AND MODERATION
 -- =========================================
 CREATE TABLE user_blocks (
-    user_block_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_block_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     blocker_user_id BIGINT UNSIGNED NOT NULL,
     blocked_user_id BIGINT UNSIGNED NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -659,7 +632,7 @@ CREATE TABLE user_blocks (
 )
 
 CREATE TABLE user_reports (
-    user_report_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_report_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     reporter_user_id BIGINT UNSIGNED NOT NULL,
     reported_user_id BIGINT UNSIGNED NOT NULL,
     reason VARCHAR(100) NOT NULL,
