@@ -510,22 +510,22 @@ INSERT INTO listing_images (
     display_order
 )
 VALUES
-    (1, 1, '/assets/images/seed/keyboard.jpg', 1),
-    (2, 1, '/assets/images/seed/keyboard_2.jpg', 2),
+    (1, 1, '/assets/images/listing/listing-wireless-keyboard.jpg', 1),
+    (2, 1, '/assets/images/listing/listing-wireless-keyboard_2.jpg', 2),
 
-    (3, 2, '/assets/images/seed/headphones.jpg', 1),
-    (4, 3, '/assets/images/seed/denim_jacket.jpg', 1),
-    (5, 4, '/assets/images/seed/kettle.jpg', 1),
-    (6, 5, '/assets/images/seed/docking_station.jpg', 1),
-    (7, 6, '/assets/images/seed/study_desk.jpg', 1),
-    (8, 7, '/assets/images/seed/office_chair.jpg', 1),
-    (9, 8, '/assets/images/seed/winter_coat.jpg', 1),
-    (10, 9, '/assets/images/seed/database_textbook.jpg', 1),
-    (11, 10, '/assets/images/seed/running_shoes.jpg', 1),
-    (12, 11, '/assets/images/seed/gaming_mouse.jpg', 1),
-    (13, 12, '/assets/images/seed/floor_lamp.jpg', 1),
-    (14, 13, '/assets/images/seed/backpack.jpg', 1),
-    (15, 14, '/assets/images/seed/speaker.jpg', 1);
+    (3, 2, '/assets/images/listing/listing-headphones.jpg', 1),
+    (4, 3, '/assets/images/listing/listing-denim_jacket.jpg', 1),
+    (5, 4, '/assets/images/listing/listing-kettle.jpg', 1),
+    (6, 5, '/assets/images/listing/listing-docking_station.jpg', 1),
+    (7, 6, '/assets/images/listing/listing-study_desk.jpg', 1),
+    (8, 7, '/assets/images/listing/listing-office_chair.jpg', 1),
+    (9, 8, '/assets/images/listing/listing-winter_coat.jpg', 1),
+    (10, 9, '/assets/images/listing/listing-database_textbook.jpg', 1),
+    (11, 10, '/assets/images/listing/listing-running_shoes.jpg', 1),
+    (12, 11, '/assets/images/listing/listing-gaming_mouse.jpg', 1),
+    (13, 12, '/assets/images/listing/listing-floor_lamp.jpg', 1),
+    (14, 13, '/assets/images/listing/listing-backpack.jpg', 1),
+    (15, 14, '/assets/images/listing/listing-speaker.jpg', 1);
 
 
 -- =========================================
