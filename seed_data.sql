@@ -514,7 +514,7 @@ VALUES
     (2, 1, '/assets/images/listing/listing-wireless-keyboard-2.jpg', 2),
 
     (3, 2, '/assets/images/listing/listing-headphones.jpg', 1),
-    (4, 3, '/assets/images/listing/listing-denim_jacket.jpg', 1),
+    (4, 3, '/assets/images/listing/listing-denim-jacket.jpg', 1),
     (5, 4, '/assets/images/listing/listing-kettle.jpg', 1),
     (6, 5, '/assets/images/listing/listing-docking-station.jpg', 1),
     (7, 6, '/assets/images/listing/listing-study-desk.jpg', 1),
