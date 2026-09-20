@@ -654,4 +654,8 @@ CREATE TABLE user_reports (
     CONSTRAINT fk_report_reported
         FOREIGN KEY (reported_user_id)
         REFERENCES users(user_id)
+<<<<<<< HEAD
 )
+=======
+)
+>>>>>>> 3581438 (making database up to date)
