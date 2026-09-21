@@ -12,7 +12,8 @@
 
     <div class="listing-card__body">
         <span class="listing-card__condition">
-            <?= htmlspecialchars($listing['condition']) ?>
+            <?= htmlspecialchars(
+                ucwords(str_replace('_', ' ', $listing['condition']))) ?>
         </span>
 
         <h3 class="listing-card__title">
@@ -31,7 +32,8 @@
             </span>
 
             <span>
-                <?= htmlspecialchars($listing['fulfillment_type']) ?>
+                <?= htmlspecialchars(
+                    ucwords(str_replace('_', ' ', $listing['fulfillment_type']))) ?>
             </span>
         </div>
     </div>
