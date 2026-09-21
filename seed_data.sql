@@ -81,7 +81,7 @@ VALUES
         'jamie@example.com',
         'DEV_ONLY_HASH_4',
         TRUE,
-        NULL,
+        '555-0104',
         '2001-06-03',
         NULL,
         'Looking for good marketplace deals.',
@@ -96,7 +96,7 @@ VALUES
         'casey@example.com',
         'DEV_ONLY_HASH_5',
         FALSE,
-        NULL,
+        '555-0105',
         '1999-11-18',
         NULL,
         NULL,
@@ -510,22 +510,22 @@ INSERT INTO listing_images (
     display_order
 )
 VALUES
-    (1, 1, '/assets/images/seed/keyboard.jpg', 1),
-    (2, 1, '/assets/images/seed/keyboard_2.jpg', 2),
+    (1, 1, '/assets/images/listing/listing-wireless-keyboard.jpg', 1),
+    (2, 1, '/assets/images/listing/listing-wireless-keyboard-2.jpg', 2),
 
-    (3, 2, '/assets/images/seed/headphones.jpg', 1),
-    (4, 3, '/assets/images/seed/denim_jacket.jpg', 1),
-    (5, 4, '/assets/images/seed/kettle.jpg', 1),
-    (6, 5, '/assets/images/seed/docking_station.jpg', 1),
-    (7, 6, '/assets/images/seed/study_desk.jpg', 1),
-    (8, 7, '/assets/images/seed/office_chair.jpg', 1),
-    (9, 8, '/assets/images/seed/winter_coat.jpg', 1),
-    (10, 9, '/assets/images/seed/database_textbook.jpg', 1),
-    (11, 10, '/assets/images/seed/running_shoes.jpg', 1),
-    (12, 11, '/assets/images/seed/gaming_mouse.jpg', 1),
-    (13, 12, '/assets/images/seed/floor_lamp.jpg', 1),
-    (14, 13, '/assets/images/seed/backpack.jpg', 1),
-    (15, 14, '/assets/images/seed/speaker.jpg', 1);
+    (3, 2, '/assets/images/listing/listing-headphones.jpg', 1),
+    (4, 3, '/assets/images/listing/listing-denim-jacket.jpg', 1),
+    (5, 4, '/assets/images/listing/listing-kettle.jpg', 1),
+    (6, 5, '/assets/images/listing/listing-docking-station.jpg', 1),
+    (7, 6, '/assets/images/listing/listing-study-desk.jpg', 1),
+    (8, 7, '/assets/images/listing/listing-office-chair.jpg', 1),
+    (9, 8, '/assets/images/listing/listing-winter-coat.jpg', 1),
+    (10, 9, '/assets/images/listing/listing-trading-cards.jpg', 1),
+    (11, 10, '/assets/images/listing/listing-running-shoes.jpg', 1),
+    (12, 11, '/assets/images/listing/listing-gaming-mouse.jpg', 1),
+    (13, 12, '/assets/images/listing/listing-floor-lamp.jpg', 1),
+    (14, 13, '/assets/images/listing/listing-backpack.jpg', 1),
+    (15, 14, '/assets/images/listing/listing-speaker.jpg', 1);
 
 
 -- =========================================
