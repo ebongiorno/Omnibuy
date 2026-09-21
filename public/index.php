@@ -268,7 +268,7 @@ Once database is established, replace placeholder listing cards with:
                         class="hero-card__media"
                         aria-hidden="true"
                     >
-                        <img src="assets/homepage-image.jpg">
+                        <img src="assets/images/homepage-image.jpg">
                     </div>
 
                 </div>
@@ -314,7 +314,7 @@ Once database is established, replace placeholder listing cards with:
                         href="category.php?id=1"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-electronics.jpg">
+                            <img src="assets/images/category/category-parent-electronics.jpg">
                         </div>
 
                         <h3>Electronics</h3>
@@ -326,7 +326,7 @@ Once database is established, replace placeholder listing cards with:
                         href="category.php?id=2"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-home-furniture.jpg">
+                            <img src="assets/images/category/category-parent-home-furniture.jpg">
                         </div>
 
                         <h3>Home & Furniture</h3>
@@ -338,7 +338,7 @@ Once database is established, replace placeholder listing cards with:
                         href="category.php?id=3"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-clothing.jpg">
+                            <img src="assets/images/category/category-parent-clothing.jpg">
                         </div>
 
                         <h3>Clothing</h3>
@@ -350,7 +350,7 @@ Once database is established, replace placeholder listing cards with:
                         href="category.php?id=4"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-books.jpg">
+                            <img src="assets/images/category/category-parent-books.jpg">
                         </div>
 
                         <h3>Books</h3>
