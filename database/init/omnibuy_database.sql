@@ -16,7 +16,7 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    phone_number VARCHAR(20) NOT NULL,
+    phone_number VARCHAR(20) NULL DEFAULT NULL,
     birth_date DATE NOT NULL,
     profile_image_url VARCHAR(2000) NULL,
     bio TEXT NULL DEFAULT NULL,
