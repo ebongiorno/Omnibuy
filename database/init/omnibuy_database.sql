@@ -105,15 +105,43 @@ CREATE TABLE categories (
         REFERENCES categories(category_id),
 
     CONSTRAINT uq_categories_parent_name
-        UNIQUE (parent_category_id, category_name),
-
-    CONSTRAINT chk_categories_not_self_parent
-        CHECK (
-            parent_category_id IS NULL
-            OR parent_category_id <> category_id
-        )
-
+        UNIQUE (parent_category_id, category_name)
 );
+
+-- =========================================================
+-- CATEGORY SELF-PARENT VALIDATION
+-- Original schema rule:
+-- parent_category_id IS NULL OR parent_category_id <> category_id
+--
+-- MySQL does not allow AUTO_INCREMENT columns (category_id) in
+-- a CHECK constraint, so triggers are used instead.
+-- =========================================================
+
+DELIMITER $$
+
+CREATE TRIGGER trg_categories_not_self_parent_insert
+BEFORE INSERT ON categories
+FOR EACH ROW
+BEGIN
+    IF NEW.parent_category_id IS NOT NULL
+       AND NEW.parent_category_id = NEW.category_id THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'a category cannot be its own parent';
+    END IF;
+END$$
+
+CREATE TRIGGER trg_categories_not_self_parent_update
+BEFORE UPDATE ON categories
+FOR EACH ROW
+BEGIN
+    IF NEW.parent_category_id IS NOT NULL
+       AND NEW.parent_category_id = NEW.category_id THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'a category cannot be its own parent';
+    END IF;
+END$$
+
+DELIMITER ;
 
 CREATE TABLE listings (
     listing_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -334,7 +362,7 @@ CREATE TABLE carts (
 CREATE TABLE cart_items (
     cart_item_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     cart_id BIGINT UNSIGNED NOT NULL,
-    listing_id BIGINT UNSIGNED NOT NULL
+    listing_id BIGINT UNSIGNED NOT NULL,
     quantity INT UNSIGNED NOT NULL DEFAULT 1 CHECK (quantity > 0),
     added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -379,8 +407,7 @@ CREATE TABLE orders (
     order_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     buyer_user_id BIGINT UNSIGNED NOT NULL,
     shipping_address_id BIGINT UNSIGNED NULL DEFAULT NULL,
-    billing_address_id BIGINT UNSIGNED NOT NULL
-
+    billing_address_id BIGINT UNSIGNED NOT NULL,
     order_status ENUM(
         'pending',
         'in_progress',
@@ -427,15 +454,15 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE order_items (
-    order_items_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    order_item_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT UNSIGNED NOT NULL,
     listing_id BIGINT UNSIGNED NOT NULL,
     quantity INT UNSIGNED NOT NULL CHECK  (quantity > 0),
     unit_price DECIMAL(10, 2) NOT NULL CHECK (unit_price > 0),
-    fullfillment_type ENUM(
+    fulfillment_type ENUM(
         'shipping',
         'meetup'
-    ) NOT NULL
+    ) NOT NULL,
     item_status ENUM(
         'pending',
         'confirmed',
@@ -564,7 +591,7 @@ CREATE TABLE wishlist_items (
     CONSTRAINT fk_wishlist_listing
         FOREIGN KEY (listing_id)
         REFERENCES listings(listing_id)
-)
+);
 
 -- =========================================
 -- MESSAGING
@@ -590,7 +617,7 @@ CREATE TABLE conversations (
     CONSTRAINT fk_conversation_listing
         FOREIGN KEY (listing_id)
         REFERENCES listings(listing_id)
-)
+);
 
 CREATE TABLE messages (
     message_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -601,14 +628,14 @@ CREATE TABLE messages (
     seen_at TIMESTAMP NULL DEFAULT NULL,
 
     CONSTRAINT chk_message_not_empty
-        CHECK (CHAR_LENGTH(TRIM(body)) > 0),
+        CHECK (CHAR_LENGTH(TRIM(message_text)) > 0),
     CONSTRAINT fk_message_conversation
         FOREIGN KEY (conversation_id)
         REFERENCES conversations(conversation_id),
     CONSTRAINT fk_message_sender
-        FOREIGN KEY (sender_id)
+        FOREIGN KEY (sender_user_id)
         REFERENCES users(user_id)
-)
+);
 
 -- =========================================
 -- SAFETY AND MODERATION
@@ -629,7 +656,7 @@ CREATE TABLE user_blocks (
     CONSTRAINT fk_block_blocked
         FOREIGN KEY (blocked_user_id)
         REFERENCES users(user_id)
-)
+);
 
 CREATE TABLE user_reports (
     user_report_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -654,8 +681,4 @@ CREATE TABLE user_reports (
     CONSTRAINT fk_report_reported
         FOREIGN KEY (reported_user_id)
         REFERENCES users(user_id)
-<<<<<<< HEAD
-)
-=======
-)
->>>>>>> 3581438 (making database up to date)
+);
