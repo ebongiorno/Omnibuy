@@ -18,17 +18,6 @@ $sql = "SELECT l.listing_id, l.`condition`, l.item_name,
 $stmt = $pdo->query($sql);
 $listings = $stmt->fetchAll();
 
-/*
-Once database is established, replace placeholder listing cards with:
-
-<div class="listing-grid">
-    <?php foreach ($listings as $listing): ?>
-        <?php include 'components/listing-card-component.php'; ?>
-    <?php endforeach; ?>
-</div>
-
-*/
-
 ?>
 
 <!DOCTYPE html>
