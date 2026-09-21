@@ -38,9 +38,9 @@ Once database is established, replace placeholder listing cards with:
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSS Stylesheets -->
-    <link rel="stylesheet" href="css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="css/shared-navigation.css">
-    <link rel="stylesheet" href="css/homepage.css">
+    <link rel="stylesheet" href="assets/css/omnibuy-design-tokens.css">
+    <link rel="stylesheet" href="assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="assets/css/homepage.css">
 
     <!-- Enables the use of Font Awesome's Icons -->
     <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
