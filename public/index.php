@@ -1,5 +1,30 @@
 <?php
-    //future php code here
+require_once __DIR__ . '/../db_connect.php';
+
+$sql = "SELECT l.listing_id, l.`condition`, l.item_name, 
+            l.price, l.category_id, l.fulfillment_type,
+            li.image_url, c.category_name
+            FROM listings as l
+            LEFT JOIN listing_images as li
+                ON l.listing_id = li.listing_id 
+                AND li.display_order = 1
+            LEFT JOIN categories as c 
+                ON l.category_id = c.category_id
+            WHERE listing_status = 'active'
+            ORDER BY l.created_at DESC 
+            LIMIT 20";
+
+$listings = [];
+$feedError = false;
+
+try {
+    // establish connection and query
+    $stmt = $pdo->query($sql);
+    $listings = $stmt->fetchAll();
+} catch (PDOException $e) {
+    $feedError = true;
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -9,9 +34,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSS Stylesheets -->
-    <link rel="stylesheet" href="css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="css/shared-navigation.css">
-    <link rel="stylesheet" href="css/homepage.css">
+    <link rel="stylesheet" href="assets/css/omnibuy-design-tokens.css">
+    <link rel="stylesheet" href="assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="assets/css/homepage.css">
 
     <!-- Enables the use of Font Awesome's Icons -->
     <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -239,7 +264,7 @@
                         class="hero-card__media"
                         aria-hidden="true"
                     >
-                        <img src="assets/homepage-image.jpg">
+                        <img src="assets/images/homepage-image.jpg">
                     </div>
 
                 </div>
@@ -285,7 +310,7 @@
                         href="category.php?id=1"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-electronics.jpg">
+                            <img src="assets/images/category/category-parent-electronics.jpg">
                         </div>
 
                         <h3>Electronics</h3>
@@ -297,7 +322,7 @@
                         href="category.php?id=2"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-home-furniture.jpg">
+                            <img src="assets/images/category/category-parent-home-furniture.jpg">
                         </div>
 
                         <h3>Home & Furniture</h3>
@@ -309,7 +334,7 @@
                         href="category.php?id=3"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-clothing.jpg">
+                            <img src="assets/images/category/category-parent-clothing.jpg">
                         </div>
 
                         <h3>Clothing</h3>
@@ -321,7 +346,7 @@
                         href="category.php?id=4"
                     >
                         <div class="category-card__image">
-                            <img src="assets/category-parent-books.jpg">
+                            <img src="assets/images/category/category-parent-books.jpg">
                         </div>
 
                         <h3>Books</h3>
@@ -387,154 +412,46 @@
 
                 </div>
 
-
-                <!--
-                    PHP will eventually loop through database
-                    results and generate these cards.
-                -->
-                <div class="listing-grid">
-
-
-                    <!-- Listing Card -->
-                    <article class="listing-card">
-
-                        <a
-                            class="listing-card__image-link"
-                            href="listing.php?id=1"
-                        >
-                            <div class="listing-card__image">
-                                <img src="assets/listing-wireless-keyboard.jpg">
-                            </div>
-                        </a>
-
-
-                        <div class="listing-card__body">
-
-                            <div class="listing-card__top-row">
-                                <span class="listing-card__condition">
-                                    Excellent
-                                </span>
-
-                                <button
-                                    class="listing-card__favorite"
-                                    type="button"
-                                    aria-label="Add Wireless Mechanical Keyboard to wishlist"
-                                >
-                                    ♡
-                                </button>
-                            </div>
-
-
-                            <h3 class="listing-card__title">
-                                <a href="listing.php?id=1">
-                                    Wireless Mechanical Keyboard
-                                </a>
-                            </h3>
-
-
-                            <p class="listing-card__price">
-                                $45.00
-                            </p>
-
-
-                            <div class="listing-card__meta">
-                                <span>Electronics</span>
-                                <span>Shipping</span>
-                            </div>
-
-                        </div>
-
-                    </article>
-
-
-                    <!-- Listing Card -->
-                    <article class="listing-card">
-
-                        <a
-                            class="listing-card__image-link"
-                            href="listing.php?id=6"
-                        >
-                            <div class="listing-card__image">
-                                <img src="assets/listing-desk.jpg">
-                            </div>
-                        </a>
-
-
-                        <div class="listing-card__body">
-
-                            <div class="listing-card__top-row">
-                                <span class="listing-card__condition">
-                                    Good
-                                </span>
-
-                                <button
-                                    class="listing-card__favorite"
-                                    type="button"
-                                    aria-label="Add Wooden Study Desk to wishlist"
-                                >
-                                    ♡
-                                </button>
-                            </div>
-
-
-                            <h3 class="listing-card__title">
-                                <a href="listing.php?id=6">
-                                    Wooden Study Desk
-                                </a>
-                            </h3>
-
-
-                            <p class="listing-card__price">
-                                $70.00
-                            </p>
-
-
-                            <div class="listing-card__meta">
-                                <span>Furniture</span>
-                                <span>Meetup</span>
-                            </div>
-
-                        </div>
-
-                    </article>
-
-
-                    <!-- Add additional mock cards while DB is unavailable -->
-
-                </div>
-
-
-                <!-- =================================
-                     EMPTY STATE
-                     Hidden unless no listings exist.
-                     ================================= -->
-
-                <div class="feed-message" hidden>
-                    <h3>No listings available</h3>
-
-                    <p>
-                        Check back later for newly listed items.
-                    </p>
-                </div>
-
-
-                <!-- =================================
+                <?php if ($feedError): ?>
+                    <!-- =================================
                      ERROR STATE
                      Hidden unless retrieval fails.
                      ================================= -->
 
-                <div
-                    class="feed-message feed-message--error"
-                    role="alert"
-                    hidden
-                >
-                    <h3>Unable to display feed</h3>
+                    <div
+                        class="feed-message feed-message--error"
+                        role="alert"
+                        hidden
+                    >
+                        <h3>Unable to display feed</h3>
 
-                    <p>
-                        Try again later.
-                    </p>
-                </div>
+                        <p>
+                            Try again later.
+                        </p>
+                    </div>
+                <?php elseif (empty($listings)): ?>
+                    <!-- =================================
+                     EMPTY STATE
+                     Hidden unless no listings exist.
+                     ================================= -->
+                    <div class="feed-message" hidden>
+                        <h3>No listings available</h3>
 
+                        <p>
+                            Check back later for newly listed items.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <!--
+                    PHP will eventually loop through database
+                    results and generate these cards.
+                    -->
+                    <div class="listing-grid">
+                        <?php foreach ($listings as $listing): ?>
+                            <?php include 'components/listing-card-component.php'; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
 
             </div>
         </section>
