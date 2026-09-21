@@ -6,9 +6,11 @@
             class="listing-card__image-link"
             href="listing.php?id=<?= $listing['listing_id'] ?>"
         >
-            <img
+            <div class="listing-card__image">
+                <img
                 src="<?= htmlspecialchars($listing['image_url'] ?? 'assets/images/listing/listing-default-img.jpg') ?>"
-            >
+                >
+            </div>
         </a>
 
         <div class="listing-card__body">
