@@ -422,17 +422,9 @@ Once database is established, replace placeholder listing cards with:
                     results and generate these cards.
                 -->
                 <div class="listing-grid">
-
-
-                    <div class="listing-grid">
-                        <?php foreach ($listings as $listing): ?>
-                            <?php include 'components/listing-card-component.php'; ?>
-                        <?php endforeach; ?>
-                    </div>
-
-
-                    <!-- Add additional mock cards while DB is unavailable -->
-
+                    <?php foreach ($listings as $listing): ?>
+                        <?php include 'components/listing-card-component.php'; ?>
+                    <?php endforeach; ?>
                 </div>
 
 
