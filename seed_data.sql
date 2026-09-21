@@ -247,8 +247,8 @@ VALUES
 
     (
         4, 2, 8,
-        'Electric Kettle',
-        'Stainless steel electric kettle.',
+        'Vintage Kettle Collection',
+        'Stainless steel kettles.',
         'fixed_price',
         'shipping',
         5.99,
@@ -268,8 +268,8 @@ VALUES
 
     (
         5, 1, 5,
-        'USB-C Docking Station',
-        'Dock with HDMI, USB, and Ethernet ports.',
+        'Nintendo Switch 2 Charging Dock',
+        'Dock includes AC power adapter, USB ports, and controller.',
         'fixed_price',
         'shipping',
         4.99,
@@ -335,7 +335,7 @@ VALUES
 
     (
         8, 3, 10,
-        'Black Winter Coat',
+        'Mint Winter Coat',
         'Warm winter coat worn only a few times.',
         'fixed_price',
         'meetup',
@@ -356,7 +356,7 @@ VALUES
 
     (
         9, 2, 4,
-        'Database Systems Textbook',
+        'Shiny Charizard Pokemon Cards',
         'Introductory database textbook with some highlighting.',
         'fixed_price',
         'meetup',
@@ -368,7 +368,7 @@ VALUES
         'library',
         5,
         NULL,
-        30.00,
+        1500.00,
         'good',
         1,
         'active',
