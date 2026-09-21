@@ -7,7 +7,7 @@
             href="listing.php?id=<?= $listing['listing_id'] ?>"
         >
             <img
-                src="<?= htmlspecialchars($listing['image_url'] ?? 'assets/listing-default-img.jpg') ?>"
+                src="<?= htmlspecialchars($listing['image_url'] ?? 'assets/images/listing/listing-default-img.jpg') ?>"
             >
         </a>
 
