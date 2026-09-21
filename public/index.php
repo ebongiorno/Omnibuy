@@ -12,11 +12,18 @@ $sql = "SELECT l.listing_id, l.`condition`, l.item_name,
                 ON l.category_id = c.category_id
             WHERE listing_status = 'active'
             ORDER BY l.created_at DESC 
-            LIMIT 10";
+            LIMIT 20";
 
-// establish connection and query
-$stmt = $pdo->query($sql);
-$listings = $stmt->fetchAll();
+$listings = [];
+$feedError = false;
+
+try {
+    // establish connection and query
+    $stmt = $pdo->query($sql);
+    $listings = $stmt->fetchAll();
+} catch (PDOException $e) {
+    $feedError = true;
+}
 
 ?>
 
@@ -405,49 +412,46 @@ $listings = $stmt->fetchAll();
 
                 </div>
 
-
-                <!--
-                    PHP will eventually loop through database
-                    results and generate these cards.
-                -->
-                <div class="listing-grid">
-                    <?php foreach ($listings as $listing): ?>
-                        <?php include 'components/listing-card-component.php'; ?>
-                    <?php endforeach; ?>
-                </div>
-
-
-                <!-- =================================
-                     EMPTY STATE
-                     Hidden unless no listings exist.
-                     ================================= -->
-
-                <div class="feed-message" hidden>
-                    <h3>No listings available</h3>
-
-                    <p>
-                        Check back later for newly listed items.
-                    </p>
-                </div>
-
-
-                <!-- =================================
+                <?php if ($feedError): ?>
+                    <!-- =================================
                      ERROR STATE
                      Hidden unless retrieval fails.
                      ================================= -->
 
-                <div
-                    class="feed-message feed-message--error"
-                    role="alert"
-                    hidden
-                >
-                    <h3>Unable to display feed</h3>
+                    <div
+                        class="feed-message feed-message--error"
+                        role="alert"
+                        hidden
+                    >
+                        <h3>Unable to display feed</h3>
 
-                    <p>
-                        Try again later.
-                    </p>
-                </div>
+                        <p>
+                            Try again later.
+                        </p>
+                    </div>
+                <?php elseif (empty($listings)): ?>
+                    <!-- =================================
+                     EMPTY STATE
+                     Hidden unless no listings exist.
+                     ================================= -->
+                    <div class="feed-message" hidden>
+                        <h3>No listings available</h3>
 
+                        <p>
+                            Check back later for newly listed items.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <!--
+                    PHP will eventually loop through database
+                    results and generate these cards.
+                    -->
+                    <div class="listing-grid">
+                        <?php foreach ($listings as $listing): ?>
+                            <?php include 'components/listing-card-component.php'; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
 
             </div>
         </section>
