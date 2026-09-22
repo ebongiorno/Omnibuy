@@ -402,8 +402,7 @@ try {
 
 
                     <!-- Initial/simple sorting control -->
-                    <form class="feed-controls" method="get" action="index.php">
-
+                    <form class="feed-controls" method="get" action="index.php#browse-feed">
                         <label for="feed-sort">
                             Sort by
                         </label>
