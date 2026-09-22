@@ -1,6 +1,20 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 
+$sort = $_GET['sort'] ?? 'recent';
+
+$sortOptions = [
+    'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'price_low' => 'l.price ASC, l.created_at DESC',
+    'price_high' => 'l.price DESC, l.created_at DESC'
+];
+
+if (!array_key_exists($sort, $sortOptions)) {
+    $sort = 'recent';
+}
+
+$sortType = $sortOptions[$sort];
+
 $sql = "SELECT l.listing_id, l.`condition`, l.item_name, 
             l.price, l.category_id, l.fulfillment_type,
             li.image_url, c.category_name
@@ -11,8 +25,8 @@ $sql = "SELECT l.listing_id, l.`condition`, l.item_name,
             LEFT JOIN categories as c 
                 ON l.category_id = c.category_id
             WHERE listing_status = 'active'
-            ORDER BY l.created_at DESC 
-            LIMIT 20";
+            ORDER BY $sortType
+            LIMIT 10";
 
 $listings = [];
 $feedError = false;
@@ -388,22 +402,29 @@ try {
 
 
                     <!-- Initial/simple sorting control -->
-                    <div class="feed-controls">
+                    <div class="feed-controls" method="get" action="index.php">
 
                         <label for="feed-sort">
                             Sort by
                         </label>
 
-                        <select id="feed-sort" name="sort">
-                            <option value="recent">
+                        <select id="feed-sort" name="sort" onchange="this.form.submit()">
+                            <option 
+                                value="recent"
+                                <?= $sort === 'recent' ? 'selected' : '' ?> 
+                                >
                                 Newest
                             </option>
 
-                            <option value="price_low">
+                            <option 
+                                value="price_low"
+                                <?= $sort === 'price_low' ? 'selected' : '' ?>>
                                 Price: Low to High
                             </option>
 
-                            <option value="price_high">
+                            <option 
+                                value="price_high"
+                                <?= $sort === 'price_high' ? 'selected' : '' ?>>
                                 Price: High to Low
                             </option>
                         </select>
