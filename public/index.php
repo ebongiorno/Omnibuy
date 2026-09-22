@@ -402,7 +402,7 @@ try {
 
 
                     <!-- Initial/simple sorting control -->
-                    <div class="feed-controls" method="get" action="index.php">
+                    <form class="feed-controls" method="get" action="index.php">
 
                         <label for="feed-sort">
                             Sort by
@@ -429,7 +429,7 @@ try {
                             </option>
                         </select>
 
-                    </div>
+                    </form>
 
                 </div>
 
