@@ -1,5 +1,6 @@
 <?php
-    //future php code here
+    $header = 'components/header.php';
+    include $header;
 ?>
 
 <!DOCTYPE html>
@@ -9,9 +10,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSS Stylesheets -->
-    <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="/assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="/assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/omnibuy-design-tokens.css">
+    <link rel="stylesheet" href="assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="assets/css/homepage.css">
 
     <!-- Enables the use of Font Awesome's Icons -->
     <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -19,184 +20,6 @@
     <title>OmniBuy</title>
 </head>
 <body>
-
-    <!-- Accessibility -->
-    <a class="skip-link" href="#main-content">
-        Skip to main content
-    </a>
-
-
-    <!-- =========================================
-         SHARED HEADER
-         ========================================= -->
-
-    <header class="site-header">
-
-        <div class="shell site-header__top">
-
-            <!-- Logo -->
-            <a class="brand" href="index.php" aria-label="OmniBuy home">
-                <i class="fa-solid fa-box-open"></i>
-                OmniBuy
-            </a>
-
-
-            <!-- Search -->
-            <form
-                class="site-search"
-                action="search.php"
-                method="get"
-                role="search"
-            >
-                <label class="sr-only" for="search-type">
-                    Search type
-                </label>
-
-                <select
-                    class="site-search__type"
-                    id="search-type"
-                    name="search_type"
-                >
-                    <option value="items">Search Items</option>
-                    <option value="seller_profiles">Search Profiles</option>
-                </select>
-
-
-                <label class="sr-only" for="search-query">
-                    Search OmniBuy
-                </label>
-
-                <input
-                    class="site-search__input"
-                    id="search-query"
-                    name="q"
-                    type="search"
-                    placeholder="Search OmniBuy..."
-                    autocomplete="off"
-                >
-
-                <button
-                    class="site-search__button"
-                    type="submit"
-                >
-                    Search
-                </button>
-            </form>
-
-
-            <!-- Header Actions -->
-            <div class="header-actions">
-
-                <a
-                    class="icon-link"
-                    href="wishlist.php"
-                    aria-label="Wishlist"
-                >
-                    <i class="fa-solid fa-heart"></i>
-                    <span class="icon-link__label">Wishlist</span>
-                </a>
-
-
-                <a
-                    class="icon-link"
-                    href="cart.php"
-                    aria-label="Shopping cart"
-                >
-
-                    <i class="fa-solid fa-cart-shopping"></i>
-
-                    <!-- Temporary/example cart count -->
-                    <span class="count-badge">2</span>
-
-                    <span class="icon-link__label">Cart</span>
-                </a>
-
-
-                <!-- Logged-out version -->
-                <a class="text-link" href="login.php">
-                    Log In
-                </a>
-
-                <a
-                    class="button button--primary button--small"
-                    href="signup.php"
-                >
-                    Sign Up
-                </a>
-
-
-                <!-- Mobile Navigation Button -->
-                <button
-                    class="mobile-nav-toggle"
-                    type="button"
-                    aria-expanded="false"
-                    aria-controls="primary-navigation"
-                    aria-label="Toggle navigation"
-                >
-                    ☰
-                </button>
-
-            </div>
-        </div>
-
-
-        <!-- =====================================
-             PRIMARY NAVIGATION
-             ===================================== -->
-
-        <div class="site-header__nav-wrap">
-            <nav
-                class="shell primary-nav"
-                id="primary-navigation"
-                aria-label="Primary navigation"
-            >
-                <a
-                    class="primary-nav__link is-active"
-                    href="index.php"
-                >
-                    Home
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=1"
-                >
-                    Electronics
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=2"
-                >
-                    Home & Furniture
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=3"
-                >
-                    Clothing
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=4"
-                >
-                    Books
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="categories.php"
-                >
-                    All Categories
-                </a>
-            </nav>
-        </div>
-
-    </header>
-
-
     <!-- =========================================
          HOMEPAGE
          ========================================= -->
