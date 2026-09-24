@@ -139,11 +139,12 @@ docker compose ps
 You should see three services: `omnibuy-web` (PHP/Apache), `omnibuy-db`
 (MySQL 8.0), and `omnibuy-phpmyadmin`.
 
-The database container mounts the project root as
-`/docker-entrypoint-initdb.d`, so `omnibuy_database.sql` and `seed_data.sql`
-are imported automatically **the first time the `mysql_data` volume is
-created**. If you change the schema/seed files later, you need to reset the
-volume for them to re-import:
+The database container mounts two files into `/docker-entrypoint-initdb.d`:
+`database/init/omnibuy_database.sql` as `01-schema.sql` and `seed_data.sql` as
+`02-seed.sql`. MySQL runs them in filename order, so the schema is created
+first and the seed data second. They are imported automatically **the first
+time the `mysql_data` volume is created**. If you change the schema/seed files
+later, you need to reset the volume for them to re-import:
 
 ```bash
 docker compose down -v

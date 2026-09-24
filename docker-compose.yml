@@ -33,7 +33,8 @@ services:
 
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./:/docker-entrypoint-initdb.d:ro
+      - ./database/init/omnibuy_database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
 
     healthcheck:
       test:

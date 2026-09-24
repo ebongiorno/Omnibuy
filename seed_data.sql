@@ -81,7 +81,7 @@ VALUES
         'jamie@example.com',
         'DEV_ONLY_HASH_4',
         TRUE,
-        NULL,
+        '555-0104',
         '2001-06-03',
         NULL,
         'Looking for good marketplace deals.',
@@ -96,7 +96,7 @@ VALUES
         'casey@example.com',
         'DEV_ONLY_HASH_5',
         FALSE,
-        NULL,
+        '555-0105',
         '1999-11-18',
         NULL,
         NULL,
@@ -174,6 +174,8 @@ INSERT INTO listings (
     `condition`,
     quantity,
     listing_status,
+    created_at,
+    updated_at,
     renewed_at
 )
 VALUES
@@ -200,6 +202,8 @@ VALUES
         'excellent',
         1,
         'active',
+        '2026-08-28 14:35:00',
+        '2026-08-28 14:35:00',
         NULL
     ),
 
@@ -221,6 +225,8 @@ VALUES
         'like_new',
         1,
         'active',
+        '2026-09-18 09:20:00',
+        '2026-09-18 09:20:00',
         NULL
     ),
 
@@ -242,13 +248,15 @@ VALUES
         'good',
         1,
         'active',
+        '2026-09-03 17:45:00',
+        '2026-09-03 17:45:00',
         NULL
     ),
 
     (
         4, 2, 8,
-        'Electric Kettle',
-        'Stainless steel electric kettle.',
+        'Vintage Kettle Collection',
+        'Stainless steel kettles.',
         'fixed_price',
         'shipping',
         5.99,
@@ -263,13 +271,15 @@ VALUES
         'good',
         2,
         'active',
+        '2026-07-26 11:10:00',
+        '2026-07-26 11:10:00',
         NULL
     ),
 
     (
         5, 1, 5,
-        'USB-C Docking Station',
-        'Dock with HDMI, USB, and Ethernet ports.',
+        'Nintendo Switch 2 Charging Dock',
+        'Dock includes AC power adapter, USB ports, and controller.',
         'fixed_price',
         'shipping',
         4.99,
@@ -284,6 +294,8 @@ VALUES
         'like_new',
         1,
         'active',
+        '2026-09-21 08:15:00',
+        '2026-09-21 08:15:00',
         NULL
     ),
 
@@ -309,6 +321,8 @@ VALUES
         'good',
         1,
         'active',
+        '2026-08-11 13:05:00',
+        '2026-08-11 13:05:00',
         NULL
     ),
 
@@ -330,12 +344,14 @@ VALUES
         'fair',
         1,
         'active',
+        '2026-09-09 16:30:00',
+        '2026-09-09 16:30:00',
         NULL
     ),
 
     (
         8, 3, 10,
-        'Black Winter Coat',
+        'Mint Winter Coat',
         'Warm winter coat worn only a few times.',
         'fixed_price',
         'meetup',
@@ -351,12 +367,14 @@ VALUES
         'like_new',
         1,
         'active',
+        '2026-06-14 10:25:00',
+        '2026-06-14 10:25:00',
         NULL
     ),
 
     (
         9, 2, 4,
-        'Database Systems Textbook',
+        'Shiny Charizard Pokemon Cards',
         'Introductory database textbook with some highlighting.',
         'fixed_price',
         'meetup',
@@ -368,10 +386,12 @@ VALUES
         'library',
         5,
         NULL,
-        30.00,
-        'good',
+        1500.00,
+        'excellent',
         1,
         'active',
+        '2026-09-20 19:40:00',
+        '2026-09-20 19:40:00',
         NULL
     ),
 
@@ -390,9 +410,11 @@ VALUES
         10,
         NULL,
         35.00,
-        'excellent',
+        'good',
         1,
         'active',
+        '2026-08-31 07:50:00',
+        '2026-08-31 07:50:00',
         NULL
     ),
 
@@ -418,6 +440,8 @@ VALUES
         'good',
         1,
         'hidden',
+        '2026-09-12 12:00:00',
+        '2026-09-15 08:30:00',
         NULL
     ),
 
@@ -443,6 +467,8 @@ VALUES
         'good',
         0,
         'sold',
+        '2026-07-05 15:15:00',
+        '2026-08-02 18:10:00',
         NULL
     ),
 
@@ -468,6 +494,8 @@ VALUES
         'fair',
         1,
         'archived',
+        '2026-05-22 09:05:00',
+        '2026-07-01 10:00:00',
         NULL
     ),
 
@@ -493,6 +521,8 @@ VALUES
         'excellent',
         1,
         'draft',
+        '2026-09-19 21:10:00',
+        '2026-09-19 21:10:00',
         NULL
     );
 
@@ -510,22 +540,22 @@ INSERT INTO listing_images (
     display_order
 )
 VALUES
-    (1, 1, '/assets/images/seed/keyboard.jpg', 1),
-    (2, 1, '/assets/images/seed/keyboard_2.jpg', 2),
+    (1, 1, '/assets/images/listing/listing-wireless-keyboard.jpg', 1),
+    (2, 1, '/assets/images/listing/listing-wireless-keyboard-2.jpg', 2),
 
-    (3, 2, '/assets/images/seed/headphones.jpg', 1),
-    (4, 3, '/assets/images/seed/denim_jacket.jpg', 1),
-    (5, 4, '/assets/images/seed/kettle.jpg', 1),
-    (6, 5, '/assets/images/seed/docking_station.jpg', 1),
-    (7, 6, '/assets/images/seed/study_desk.jpg', 1),
-    (8, 7, '/assets/images/seed/office_chair.jpg', 1),
-    (9, 8, '/assets/images/seed/winter_coat.jpg', 1),
-    (10, 9, '/assets/images/seed/database_textbook.jpg', 1),
-    (11, 10, '/assets/images/seed/running_shoes.jpg', 1),
-    (12, 11, '/assets/images/seed/gaming_mouse.jpg', 1),
-    (13, 12, '/assets/images/seed/floor_lamp.jpg', 1),
-    (14, 13, '/assets/images/seed/backpack.jpg', 1),
-    (15, 14, '/assets/images/seed/speaker.jpg', 1);
+    (3, 2, '/assets/images/listing/listing-headphones.jpg', 1),
+    (4, 3, '/assets/images/listing/listing-denim-jacket.jpg', 1),
+    (5, 4, '/assets/images/listing/listing-kettle.jpg', 1),
+    (6, 5, '/assets/images/listing/listing-docking-station.jpg', 1),
+    (7, 6, '/assets/images/listing/listing-study-desk.jpg', 1),
+    (8, 7, '/assets/images/listing/listing-office-chair.jpg', 1),
+    (9, 8, '/assets/images/listing/listing-winter-coat.jpg', 1),
+    (10, 9, '/assets/images/listing/listing-trading-cards.jpg', 1),
+    (11, 10, '/assets/images/listing/listing-running-shoes.jpg', 1),
+    (12, 11, '/assets/images/listing/listing-gaming-mouse.jpg', 1),
+    (13, 12, '/assets/images/listing/listing-floor-lamp.jpg', 1),
+    (14, 13, '/assets/images/listing/listing-backpack.jpg', 1),
+    (15, 14, '/assets/images/listing/listing-speaker.jpg', 1);
 
 
 -- =========================================
