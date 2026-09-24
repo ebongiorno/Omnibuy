@@ -426,3 +426,7 @@
 
 </body>
 </html>
+<?php
+$footer = 'components/footer.php';
+include $footer;
+?>

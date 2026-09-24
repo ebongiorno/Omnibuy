@@ -35,3 +35,5 @@ include $header;
 
 $footer = '../components/footer.php';
 include $footer;
+
+?>
