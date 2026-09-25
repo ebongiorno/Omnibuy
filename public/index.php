@@ -454,7 +454,7 @@ try {
                      EMPTY STATE
                      Hidden unless no listings exist.
                      ================================= -->
-                    <div class="feed-message" hidden>
+                    <div class="feed-message">
                         <h3>No listings available</h3>
 
                         <p>
