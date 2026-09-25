@@ -83,7 +83,7 @@ try {
             <!-- Search -->
             <form
                 class="site-search"
-                action="search.php"
+                action="pages/search.php"
                 method="get"
                 role="search"
             >
@@ -500,7 +500,7 @@ try {
 
                     <a
                         class="text-link"
-                        href="search.php?sort=recent"
+                        href="pages/search.php?sort=recent"
                     >
                         View more
                     </a>
