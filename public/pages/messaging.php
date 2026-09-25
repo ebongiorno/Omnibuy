@@ -1,7 +1,41 @@
 <?php
-$header = '../components/header.php';
-include $header;
-?>
+
+declare(strict_types=1);
+
+session_start();
+
+/*
+ * messaging.php
+ * OmniBuy conversation hub / inbox skeleton.
+ *
+ * Production wiring TODO:
+ * - Require an authenticated user before loading the inbox.
+ * - Query only conversations where the session user is buyer or seller.
+ * - Join the other participant, listing context, latest message, and unread count.
+ * - Sort by conversations.updated_at DESC.
+ * - Use prepared SQL and derive identity from the session only.
+ */
+
+// Production auth guard:
+// if (!isset($_SESSION['user_id'])) {
+//     header('Location: /login.php');
+//     exit;
+// }
+
+$currentUserId = (int) ($_SESSION['user_id'] ?? 1); // Temporary layout fixture.
+
+// Variables consumed by the existing reusable header.php.
+$pageTitle = 'Messages | OmniBuy';
+$activeNav = '';
+$isLoggedIn = isset($_SESSION['user_id']);
+$currentUser = $isLoggedIn ? [
+    'username' => (string) ($_SESSION['username'] ?? 'Account'),
+    'avatar_url' => (string) ($_SESSION['avatar_url'] ?? '/assets/img/default-avatar.png'),
+    'is_seller' => (bool) ($_SESSION['is_seller'] ?? false),
+] : null;
+$cartCount = (int) ($_SESSION['cart_count'] ?? 0);
+$unreadCount = 2; // TODO: Replace with unread message query.
+
 
 // TODO: Replace with a prepared database query.
 $conversations = [
@@ -32,7 +66,7 @@ function e(string $value): string
 
 require_once __DIR__ . '/../components/header.php';
 ?>
-<link rel="stylesheet" href="../css/messaging.css">
+<link rel="stylesheet" href="../assets/css/messaging.css">
 
 <section class="messages-page shell" aria-labelledby="messages-title">
   <div class="messages-page__heading">
