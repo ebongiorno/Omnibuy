@@ -324,7 +324,7 @@ try {
 
                     <a
                         class="text-link"
-                        href="search.php?sort=recent"
+                        href="pages/search.php?sort=recent"
                     >
                         View more
                     </a>
