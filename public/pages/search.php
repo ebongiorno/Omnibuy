@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../db_connect.php';
+
 // Search functionality will be implemented next.
 // These values let the page preserve what the user searched for.
 
