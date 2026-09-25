@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+
+.env
+.env.*
+
+build-info/
+
+*.log
+
+.DS_Store
+Thumbs.db

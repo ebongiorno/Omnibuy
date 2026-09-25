@@ -81,3 +81,16 @@ Backup of *.doc*
 
 ### PHP / Composer ###
 vendor/
+
+### Sprint 2 CI/CD ###
+.env
+.env.local
+.env.production
+.env.development
+
+*.log
+
+build-info/
+
+.DS_Store
+Thumbs.db

@@ -1,0 +1,217 @@
+name: OmniBuy CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omnibuy-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and Test OmniBuy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate build version
+        shell: bash
+        run: |
+          set -e
+
+          BASE_VERSION=$(tr -d '[:space:]' < VERSION)
+          SHORT_SHA="${GITHUB_SHA::7}"
+          BUILD_VERSION="${BASE_VERSION}.${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+
+          echo "BUILD_VERSION=$BUILD_VERSION" >> "$GITHUB_ENV"
+
+          echo "OmniBuy Build: $BUILD_VERSION"
+          echo "Commit: $GITHUB_SHA"
+
+      - name: Validate required files
+        shell: bash
+        run: |
+          set -e
+
+          test -f Dockerfile
+          test -f docker-compose.yml
+
+          echo "Required files found."
+
+      - name: Validate Docker Compose
+        run: |
+          docker compose config --quiet
+
+      - name: Build OmniBuy Docker image
+        shell: bash
+        run: |
+          set -e
+
+          IMAGE_NAME="omnibuy:${BUILD_VERSION}"
+
+          docker build \
+            --label "org.opencontainers.image.title=OmniBuy" \
+            --label "org.opencontainers.image.version=${BUILD_VERSION}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "$IMAGE_NAME" \
+            .
+
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
+
+      - name: Verify Docker image
+        run: |
+          docker image inspect "$IMAGE_NAME" > /dev/null
+          echo "Docker build passed."
+
+      - name: Run PHP syntax tests
+        shell: bash
+        run: |
+          set -e
+
+          docker run --rm "$IMAGE_NAME" sh -c '
+            set -e
+
+            FAILED=0
+            COUNT=0
+
+            while IFS= read -r FILE; do
+              COUNT=$((COUNT + 1))
+
+              echo "Checking $FILE"
+
+              if ! php -l "$FILE"; then
+                FAILED=1
+              fi
+
+            done <<EOF
+          $(find /var/www/html \
+              -type f \
+              -name "*.php" \
+              ! -path "*/vendor/*")
+          EOF
+
+            echo "PHP files checked: $COUNT"
+
+            if [ "$COUNT" -eq 0 ]; then
+              echo "No PHP files found."
+              exit 1
+            fi
+
+            if [ "$FAILED" -ne 0 ]; then
+              echo "PHP syntax test failed."
+              exit 1
+            fi
+
+            echo "PHP syntax tests passed."
+          '
+
+      - name: Verify Docker Compose build
+        run: |
+          docker compose build
+
+      - name: Create build summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# OmniBuy CI"
+            echo ""
+            echo "| Item | Value |"
+            echo "|---|---|"
+            echo "| Build | \`${BUILD_VERSION:-Unavailable}\` |"
+            echo "| Run | \`${GITHUB_RUN_NUMBER}\` |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Branch | \`${GITHUB_REF_NAME}\` |"
+            echo "| Trigger | \`${GITHUB_EVENT_NAME}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down --volumes --remove-orphans || true
+
+
+  database:
+    name: Test OmniBuy Database
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+
+        env:
+          MYSQL_ROOT_PASSWORD: root_ci_password
+          MYSQL_DATABASE: omnibuy
+          MYSQL_USER: omnibuy_user
+          MYSQL_PASSWORD: omnibuy_ci_password
+
+        ports:
+          - 3306:3306
+
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_ci_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify SQL file
+        run: |
+          test -f database/init/omnibuy_database.sql
+
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Import OmniBuy database
+        env:
+          MYSQL_PWD: root_ci_password
+        run: |
+          mysql \
+            -h 127.0.0.1 \
+            -P 3306 \
+            -u root \
+            omnibuy \
+            < database/init/omnibuy_database.sql
+
+      - name: Verify database tables
+        env:
+          MYSQL_PWD: root_ci_password
+        shell: bash
+        run: |
+          TABLE_COUNT=$(mysql \
+            -N \
+            -h 127.0.0.1 \
+            -P 3306 \
+            -u root \
+            -e "
+              SELECT COUNT(*)
+              FROM information_schema.tables
+              WHERE table_schema='omnibuy';
+            ")
+
+          echo "Tables created: $TABLE_COUNT"
+
+          if [ "$TABLE_COUNT" -le 0 ]; then
+            echo "No database tables were created."
+            exit 1
+          fi
+
+          echo "Database test passed."
