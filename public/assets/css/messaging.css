@@ -1,0 +1,96 @@
+/*
+ * OmniBuy messaging pages.
+ *
+ * This stylesheet intentionally uses the existing variables from
+ * omnibuy-design-tokens.css instead of defining a second design system.
+ * shared-navigation.css continues to own the reusable header/navigation styles.
+ */
+
+.messages-page,
+.conversation-page {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-12);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+.messages-page__heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.messages-page__heading h1,
+.messages-page__heading p {
+  margin: 0;
+}
+
+.messages-page__heading h1 {
+  color: var(--color-navy);
+}
+
+.messages-page__heading p {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.message-card {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.conversation-list {
+  min-height: 260px;
+}
+
+.conversation-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-4);
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.conversation-row:last-child {
+  border-bottom: 0;
+}
+
+.conversation-row:hover {
+  background: var(--color-surface-secondary);
+}
+
+.conversation-row--unread {
+  background: var(--color-primary-light);
+}
+
+.conversation-row--unread:hover {
+  background: var(--color-primary-light);
+}
+
+.conversation-row__image {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-input);
+  object-fit: cover;
+  background: var(--color-surface-secondary);
+}
+
+.conversation-row__content {
+  min-width: 0;
+}
+
+.conversation-row__title-line {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.conversation-row__title-line strong {
