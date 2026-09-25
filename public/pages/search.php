@@ -2,16 +2,82 @@
 
 require_once __DIR__ . '/../db_connect.php';
 
-// Search functionality will be implemented next.
-// These values let the page preserve what the user searched for.
+// =========================================
+// SEARCH INPUT
+// =========================================
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
 
-// Placeholder values until database search is implemented.
 $listings = [];
 $searchError = false;
-$resultCount = count($listings);
+$resultCount = 0;
+
+
+// =========================================
+// ITEM SEARCH
+// =========================================
+
+if ($searchType === 'items' && $searchQuery !== '') {
+
+    $sql = "
+        SELECT
+            l.listing_id,
+            l.item_name,
+            l.item_description,
+            l.price,
+            l.`condition`,
+            l.fulfillment_type,
+            l.category_id,
+            l.created_at,
+            li.image_url,
+            c.category_name
+        FROM listings AS l
+
+        LEFT JOIN listing_images AS li
+            ON l.listing_id = li.listing_id
+            AND li.display_order = 1
+
+        LEFT JOIN categories AS c
+            ON l.category_id = c.category_id
+
+        WHERE l.listing_status = 'active'
+          AND (
+                l.item_name LIKE :item_name
+                OR l.item_description LIKE :description
+                OR c.category_name LIKE :category
+          )
+
+        ORDER BY l.created_at DESC, l.listing_id DESC
+    ";
+
+    try {
+
+        $stmt = $pdo->prepare($sql);
+
+        $searchValue = '%' . $searchQuery . '%';
+
+        $stmt->execute([
+            'item_name' => $searchValue,
+            'description' => $searchValue,
+            'category' => $searchValue
+        ]);
+
+        $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $resultCount = count($listings);
+
+    } catch (PDOException $e) {
+
+        $searchError = true;
+
+        // Log technical details server-side instead of
+        // displaying database errors to the user.
+        error_log(
+            'OmniBuy item search failed: ' . $e->getMessage()
+        );
+    }
+}
 
 ?>
 
