@@ -45,7 +45,7 @@ function navActive(string $key, string $activeNav): string
       <span class="brand__mark" aria-hidden="true">◈</span>
     </a>
 
-    <form class="site-search" action="/search.php" method="get" role="search">
+    <form class="site-search" action="/pages/search.php" method="get" role="search">
       <label class="sr-only" for="global-search">Search OmniBuy</label>
       <select class="site-search__type" name="type" aria-label="Search type">
         <option value="items">Items</option>
