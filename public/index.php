@@ -110,7 +110,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              POPULAR CATEGORIES
              ===================================== -->
@@ -195,7 +194,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              BROWSE / RECOMMENDED FEED
              ===================================== -->
@@ -265,7 +263,6 @@ try {
                     <div
                         class="feed-message feed-message--error"
                         role="alert"
-                        hidden
                     >
                         <h3>Unable to display feed</h3>
 
@@ -299,7 +296,6 @@ try {
 
             </div>
         </section>
-
 
         <!-- =====================================
              LATEST ITEMS
@@ -343,7 +339,6 @@ try {
 
     </main>
 
-
     <!-- =========================================
          MOBILE NAVIGATION
          ========================================= -->
@@ -364,6 +359,7 @@ try {
 
 </body>
 </html>
+
 <?php
 $footer = 'components/footer.php';
 include $footer;
