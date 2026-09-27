@@ -265,7 +265,6 @@ try {
                     <div
                         class="feed-message feed-message--error"
                         role="alert"
-                        hidden
                     >
                         <h3>Unable to display feed</h3>
 
