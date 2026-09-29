@@ -442,54 +442,102 @@ if ($searchType === 'items' && $searchQuery !== '') {
                     
                     <!-- Condition filter -->
                     <div class="filter-group">
-                        <label for="condition-filter">
-                            Condition
-                        </label>
-                         
-                        <select
-                            id="condition-filter"
-                            name="condition"
-                        >
-                            <option value="">
-                                All Conditions
-                            </option>
+                        <fieldset class="filter-options">
+                            <legend>
+                                Condition
+                            </legend>
 
-                            <option value="new">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="new"
+                                    <?= $conditionFilter === 'new' ? 'checked' : '' ?>
+                                >
                                 New
-                            </option>
+                            </label>
 
-                            <option value="open_box">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="open_box"
+                                    <?= $conditionFilter === 'open_box' ? 'checked' : '' ?>
+                                >
                                 Open Box
-                            </option>
+                            </label>
 
-                            <option value="like_new">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="like_new"
+                                    <?= $conditionFilter === 'like_new' ? 'checked' : '' ?>
+                                >
                                 Like New
-                            </option>
+                            </label>
 
-                            <option value="excellent">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="excellent"
+                                    <?= $conditionFilter === 'excellent' ? 'checked' : '' ?>
+                                >
                                 Excellent
-                            </option>
+                            </label>
 
-                            <option value="good">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="good"
+                                    <?= $conditionFilter === 'good' ? 'checked' : '' ?>
+                                >
                                 Good
-                            </option>
+                            </label>
 
-                            <option value="fair">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="fair"
+                                    <?= $conditionFilter === 'fair' ? 'checked' : '' ?>
+                                >
                                 Fair
-                            </option>
+                            </label>
 
-                            <option value="poor">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="poor"
+                                    <?= $conditionFilter === 'poor' ? 'checked' : '' ?>
+                                >
                                 Poor
-                            </option>
+                            </label>
 
-                            <option value="refurbished">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="refurbished"
+                                    <?= $conditionFilter === 'refurbished' ? 'checked' : '' ?>
+                                >
                                 Refurbished
-                            </option>
+                            </label>
 
-                            <option value="for_parts">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="condition"
+                                    value="for_parts"
+                                    <?= $conditionFilter === 'for_parts' ? 'checked' : '' ?>
+                                >
                                 For Parts
-                            </option>
-                        </select>
+                            </label>
+
+                        </fieldset>
                     </div>
 
                     <!-- Category filter -->
