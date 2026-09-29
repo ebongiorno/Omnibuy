@@ -13,10 +13,40 @@ $currentUser = [
 $cartCount = 2;
 $unreadCount = 3;
 
+$errors = [];
+$title = '';
+$price = '';
+$description = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = trim($_POST['title'] ?? '');
+    $price = trim($_POST['price'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+
+    if ($title === '') {
+        $errors['title'] = 'Listing title is required.';
+    }
+
+    if ($price === '') {
+        $errors['price'] = 'Price is required.';
+    } elseif (!is_numeric($price) || (float) $price <= 0) {
+        $errors['price'] = 'Price must be greater than 0.';
+    }
+
+    if ($description === '') {
+        $errors['description'] = 'Description is required.';
+    }
+
+    if (empty($errors)) {
+        // Validation passed.
+        // Database saving and next-step handling will be added later.
+    }
+}
 
 $header = '../components/header.php';
 include $header;
 ?>
+
 <link rel="stylesheet" href="../assets/css/create-listing.css">
 
 <section class="shell create-listing">
@@ -26,21 +56,56 @@ include $header;
 
     <div class="create-listing__field">
       <label for="title">Listing Title</label>
-      <input type="text" id="title" name="title">
+
+      <input
+        type="text"
+        id="title"
+        name="title"
+        value="<?= htmlspecialchars($title) ?>"
+        required
+      >
+
+      <?php if (isset($errors['title'])): ?>
+        <p><?= htmlspecialchars($errors['title']) ?></p>
+      <?php endif; ?>
     </div>
 
     <div class="create-listing__field">
       <label for="price">Price</label>
-      <input type="number" id="price" name="price" step="0.01">
+
+      <input
+        type="number"
+        id="price"
+        name="price"
+        step="0.01"
+        min="0.01"
+        value="<?= htmlspecialchars($price) ?>"
+        required
+      >
+
+      <?php if (isset($errors['price'])): ?>
+        <p><?= htmlspecialchars($errors['price']) ?></p>
+      <?php endif; ?>
     </div>
 
     <div class="create-listing__field">
       <label for="description">Description</label>
-      <textarea id="description" name="description" rows="6"></textarea>
+
+      <textarea
+        id="description"
+        name="description"
+        rows="6"
+        required
+      ><?= htmlspecialchars($description) ?></textarea>
+
+      <?php if (isset($errors['description'])): ?>
+        <p><?= htmlspecialchars($errors['description']) ?></p>
+      <?php endif; ?>
     </div>
 
     <div class="create-listing__field">
       <label for="photos">Photos</label>
+
       <input
         type="file"
         id="photos"
