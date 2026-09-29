@@ -8,6 +8,27 @@ require_once __DIR__ . '/../../db_connect.php';
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
+$conditionFilter = $_GET['condition'] ?? '';
+
+$allowedConditions = [
+    'new',
+    'open_box',
+    'like_new',
+    'excellent',
+    'good',
+    'fair',
+    'poor',
+    'refurbished',
+    'for_parts'
+];
+if ($conditionFilter !== '' && !in_array($conditionFilter, $allowedConditions, true)) {
+    $conditionFilter = '';
+}
+
+$conditionSql = '';
+if ($conditionFilter !== '') {
+    $conditionSql = 'AND l.`condition` = :condition';
+}
 
 $listings = [];
 $searchError = false;
@@ -42,11 +63,13 @@ if ($searchType === 'items' && $searchQuery !== '') {
             ON l.category_id = c.category_id
 
         WHERE l.listing_status = 'active'
-          AND (
+            AND (
                 l.item_name LIKE :item_name
                 OR l.item_description LIKE :description
                 OR c.category_name LIKE :category
-          )
+            )
+            $conditionSql
+            
 
         ORDER BY l.created_at DESC, l.listing_id DESC
     ";
@@ -57,11 +80,16 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
         $searchValue = '%' . $searchQuery . '%';
 
-        $stmt->execute([
+        $params = [
             'item_name' => $searchValue,
             'description' => $searchValue,
             'category' => $searchValue
-        ]);
+        ];
+        if ($conditionFilter !== '') {
+            $params['condition'] = $conditionFilter;
+        }
+
+        $stmt->execute($params);
 
         $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -411,121 +439,244 @@ if ($searchType === 'items' && $searchQuery !== '') {
                         </button>
 
                     </div>
+                    <form
+                        class="search-filters__form"
+                        action="search.php"
+                        method="get"
+                    >
 
-
-                    <!-- Category filter -->
-                    <div class="filter-group">
-
-                        <label for="category-filter">
-                            Category
-                        </label>
-
-                        <select
-                            id="category-filter"
-                            name="category"
-                            disabled
+                        <!-- Preserve the existing search -->
+                        <input
+                            type="hidden"
+                            name="q"
+                            value="<?= htmlspecialchars($searchQuery) ?>"
                         >
-                            <option>
-                                All Categories
-                            </option>
-                        </select>
 
-                        <p class="filter-group__note">
-                            Category filtering will be added later.
-                        </p>
+                        <input
+                            type="hidden"
+                            name="search_type"
+                            value="<?= htmlspecialchars($searchType) ?>"
+                        >
+                        <!-- Condition filter -->
+                        <div class="filter-group">
+                            <fieldset class="filter-options">
+                                <legend>
+                                    Condition
+                                </legend>
 
-                    </div>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="new"
+                                        <?= $conditionFilter === 'new' ? 'checked' : '' ?>
+                                    >
+                                    New
+                                </label>
 
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="open_box"
+                                        <?= $conditionFilter === 'open_box' ? 'checked' : '' ?>
+                                    >
+                                    Open Box
+                                </label>
 
-                    <!-- Price filter -->
-                    <div class="filter-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="like_new"
+                                        <?= $conditionFilter === 'like_new' ? 'checked' : '' ?>
+                                    >
+                                    Like New
+                                </label>
 
-                        <span class="filter-group__label">
-                            Price Range
-                        </span>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="excellent"
+                                        <?= $conditionFilter === 'excellent' ? 'checked' : '' ?>
+                                    >
+                                    Excellent
+                                </label>
 
-                        <div class="price-filter">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="good"
+                                        <?= $conditionFilter === 'good' ? 'checked' : '' ?>
+                                    >
+                                    Good
+                                </label>
 
-                            <input
-                                type="number"
-                                min="0"
-                                placeholder="Min"
-                                disabled
-                            >
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="fair"
+                                        <?= $conditionFilter === 'fair' ? 'checked' : '' ?>
+                                    >
+                                    Fair
+                                </label>
 
-                            <span aria-hidden="true">
-                                -
-                            </span>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="poor"
+                                        <?= $conditionFilter === 'poor' ? 'checked' : '' ?>
+                                    >
+                                    Poor
+                                </label>
 
-                            <input
-                                type="number"
-                                min="0"
-                                placeholder="Max"
-                                disabled
-                            >
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="refurbished"
+                                        <?= $conditionFilter === 'refurbished' ? 'checked' : '' ?>
+                                    >
+                                    Refurbished
+                                </label>
 
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="condition"
+                                        value="for_parts"
+                                        <?= $conditionFilter === 'for_parts' ? 'checked' : '' ?>
+                                    >
+                                    For Parts
+                                </label>
+
+                            </fieldset>
                         </div>
 
-                        <p class="filter-group__note">
-                            Price filtering will be added later.
-                        </p>
+                        <!-- Category filter -->
+                        <div class="filter-group">
 
-                    </div>
+                            <label for="category-filter">
+                                Category
+                            </label>
 
-                </aside>
+                            <select
+                                id="category-filter"
+                                name="category"
+                                disabled
+                            >
+                                <option>
+                                    All Categories
+                                </option>
+                            </select>
 
-
-                <!-- =============================
-                     RESULTS AREA
-                     ============================= -->
-
-                <section
-                    class="search-results"
-                    aria-labelledby="results-heading"
-                >
-
-                    <div class="search-results__toolbar">
-
-                        <div>
-
-                            <h2 id="results-heading">
-                                Listings
-                            </h2>
-
-                            <p class="search-results__count">
-                                <?= $resultCount ?> results
+                            <p class="filter-group__note">
+                                Category filtering will be added later.
                             </p>
 
                         </div>
 
 
-                        <!-- Sorting placeholder -->
-                        <div class="search-results__sort">
+                        <!-- Price filter -->
+                        <div class="filter-group">
 
-                            <label for="results-sort">
-                                Sort by
-                            </label>
+                            <span class="filter-group__label">
+                                Price Range
+                            </span>
 
-                            <select
-                                id="results-sort"
-                                name="sort"
-                            >
-                                <option value="recent">
-                                    Newest
-                                </option>
+                            <div class="price-filter">
 
-                                <option value="price_low">
-                                    Price: Low to High
-                                </option>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Min"
+                                    disabled
+                                >
 
-                                <option value="price_high">
-                                    Price: High to Low
-                                </option>
-                            </select>
+                                <span aria-hidden="true">
+                                    -
+                                </span>
+
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Max"
+                                    disabled
+                                >
+
+                            </div>
+
+                            <p class="filter-group__note">
+                                Price filtering will be added later.
+                            </p>
 
                         </div>
 
-                    </div>
+                        <button
+                            class="button button--primary"
+                            type="submit"
+                        >
+                            Apply Filters
+                        </button>
+                    </form>
+                </aside>
+
+
+                    <!-- =============================
+                        RESULTS AREA
+                        ============================= -->
+
+                    <section
+                        class="search-results"
+                        aria-labelledby="results-heading"
+                    >
+
+                        <div class="search-results__toolbar">
+
+                            <div>
+
+                                <h2 id="results-heading">
+                                    Listings
+                                </h2>
+
+                                <p class="search-results__count">
+                                    <?= $resultCount ?> results
+                                </p>
+
+                            </div>
+
+
+                            <!-- Sorting placeholder -->
+                            <div class="search-results__sort">
+
+                                <label for="results-sort">
+                                    Sort by
+                                </label>
+
+                                <select
+                                    id="results-sort"
+                                    name="sort"
+                                >
+                                    <option value="recent">
+                                        Newest
+                                    </option>
+
+                                    <option value="price_low">
+                                        Price: Low to High
+                                    </option>
+
+                                    <option value="price_high">
+                                        Price: High to Low
+                                    </option>
+                                </select>
+
+                            </div>
+
+                        </div>
 
 
                     <!-- =========================
