@@ -8,6 +8,27 @@ require_once __DIR__ . '/../../db_connect.php';
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
+$conditionFilter = $_GET['condition'] ?? '';
+
+$allowedConditions = [
+    'new',
+    'open_box',
+    'like_new',
+    'excellent',
+    'good',
+    'fair',
+    'poor',
+    'refurbished',
+    'for_parts'
+];
+if ($conditionFilter !== '' && !in_array($conditionFilter, $allowedConditions, true)) {
+    $conditionFilter = '';
+}
+
+$conditionSql = '';
+if ($conditionFilter !== '') {
+    $conditionSql = 'AND l.`condition` = :condition';
+}
 
 $listings = [];
 $searchError = false;
@@ -42,11 +63,13 @@ if ($searchType === 'items' && $searchQuery !== '') {
             ON l.category_id = c.category_id
 
         WHERE l.listing_status = 'active'
-          AND (
+            AND (
                 l.item_name LIKE :item_name
                 OR l.item_description LIKE :description
                 OR c.category_name LIKE :category
-          )
+            )
+            $conditionSql
+            
 
         ORDER BY l.created_at DESC, l.listing_id DESC
     ";
@@ -57,11 +80,16 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
         $searchValue = '%' . $searchQuery . '%';
 
-        $stmt->execute([
+        $params = [
             'item_name' => $searchValue,
             'description' => $searchValue,
             'category' => $searchValue
-        ]);
+        ];
+        if ($conditionFilter !== '') {
+            $params['condition'] = $conditionFilter;
+        }
+        
+        $stmt->execute($params);
 
         $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
