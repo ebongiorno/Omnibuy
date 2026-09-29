@@ -5,10 +5,17 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    env:
+      MYSQL_DATABASE: omnibuy
+      MYSQL_USER: omnibuy_user
+      MYSQL_PASSWORD: ci_password
+      MYSQL_ROOT_PASSWORD: ci_root_password
 
     steps:
       - name: Checkout repository
