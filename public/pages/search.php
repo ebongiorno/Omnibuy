@@ -88,7 +88,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
         if ($conditionFilter !== '') {
             $params['condition'] = $conditionFilter;
         }
-        
+
         $stmt->execute($params);
 
         $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -439,7 +439,58 @@ if ($searchType === 'items' && $searchQuery !== '') {
                         </button>
 
                     </div>
+                    
+                    <!-- Condition filter -->
+                    <div class="filter-group">
+                        <label for="condition-filter">
+                            Condition
+                        </label>
+                         
+                        <select
+                            id="condition-filter"
+                            name="condition"
+                        >
+                            <option value="">
+                                All Conditions
+                            </option>
 
+                            <option value="new">
+                                New
+                            </option>
+
+                            <option value="open_box">
+                                Open Box
+                            </option>
+
+                            <option value="like_new">
+                                Like New
+                            </option>
+
+                            <option value="excellent">
+                                Excellent
+                            </option>
+
+                            <option value="good">
+                                Good
+                            </option>
+
+                            <option value="fair">
+                                Fair
+                            </option>
+
+                            <option value="poor">
+                                Poor
+                            </option>
+
+                            <option value="refurbished">
+                                Refurbished
+                            </option>
+
+                            <option value="for_parts">
+                                For Parts
+                            </option>
+                        </select>
+                    </div>
 
                     <!-- Category filter -->
                     <div class="filter-group">
