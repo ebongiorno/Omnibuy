@@ -110,7 +110,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              POPULAR CATEGORIES
              ===================================== -->
@@ -195,7 +194,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              BROWSE / RECOMMENDED FEED
              ===================================== -->
@@ -265,7 +263,6 @@ try {
                     <div
                         class="feed-message feed-message--error"
                         role="alert"
-                        hidden
                     >
                         <h3>Unable to display feed</h3>
 
@@ -300,7 +297,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              LATEST ITEMS
              ===================================== -->
@@ -324,7 +320,7 @@ try {
 
                     <a
                         class="text-link"
-                        href="search.php?sort=recent"
+                        href="pages/search.php?sort=recent"
                     >
                         View more
                     </a>
@@ -342,7 +338,6 @@ try {
         </section>
 
     </main>
-
 
     <!-- =========================================
          MOBILE NAVIGATION
@@ -364,6 +359,7 @@ try {
 
 </body>
 </html>
+
 <?php
 $footer = 'components/footer.php';
 include $footer;
