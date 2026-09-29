@@ -23,6 +23,10 @@ jobs:
       - name: Show container status
         run: docker compose ps
 
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
       - name: Stop Docker containers
         if: always()
         run: docker compose down
