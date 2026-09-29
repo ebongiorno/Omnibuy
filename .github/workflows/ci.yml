@@ -20,6 +20,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Check PHP syntax
+        run: |
+          find . -name "*.php" -print0 | xargs -0 -n1 php -l
 
       - name: Build Docker containers
         run: docker compose build
@@ -30,6 +39,10 @@ jobs:
       - name: Show container status
         run: docker compose ps
 
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
       - name: Stop Docker containers
         if: always()
-        run: docker compose down
+        run: docker compose down --remove-orphans
