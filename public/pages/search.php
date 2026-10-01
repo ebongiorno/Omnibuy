@@ -466,8 +466,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="new"
                                         <?= $conditionFilter === 'new' ? 'checked' : '' ?>
                                     >
@@ -476,8 +476,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="open_box"
                                         <?= $conditionFilter === 'open_box' ? 'checked' : '' ?>
                                     >
@@ -486,8 +486,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="like_new"
                                         <?= $conditionFilter === 'like_new' ? 'checked' : '' ?>
                                     >
@@ -496,8 +496,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="excellent"
                                         <?= $conditionFilter === 'excellent' ? 'checked' : '' ?>
                                     >
@@ -506,8 +506,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="good"
                                         <?= $conditionFilter === 'good' ? 'checked' : '' ?>
                                     >
@@ -516,8 +516,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="fair"
                                         <?= $conditionFilter === 'fair' ? 'checked' : '' ?>
                                     >
@@ -526,8 +526,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="poor"
                                         <?= $conditionFilter === 'poor' ? 'checked' : '' ?>
                                     >
@@ -536,8 +536,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="refurbished"
                                         <?= $conditionFilter === 'refurbished' ? 'checked' : '' ?>
                                     >
@@ -546,8 +546,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
                                 <label>
                                     <input
-                                        type="radio"
-                                        name="condition"
+                                        type="checkbox"
+                                        name="condition[]"
                                         value="for_parts"
                                         <?= $conditionFilter === 'for_parts' ? 'checked' : '' ?>
                                     >
