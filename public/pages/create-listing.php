@@ -1,5 +1,7 @@
 <?php
 
+session_start();
+
 $pageTitle = 'Create Listing | OmniBuy';
 $activeNav = 'sell';
 $isLoggedIn = true;
@@ -14,15 +16,18 @@ $cartCount = 2;
 $unreadCount = 3;
 
 $errors = [];
-$title = '';
-$price = '';
-$description = '';
+
+// Restore previously entered listing data from the session.
+$title = $_SESSION['listing']['title'] ?? '';
+$price = $_SESSION['listing']['price'] ?? '';
+$description = $_SESSION['listing']['description'] ?? '';
 
 $allowedImageTypes = [
     'image/jpeg',
     'image/png',
     'image/webp',
 ];
+
 $maxImageSize = 10 * 1024 * 1024;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -69,8 +74,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        // Validation passed.
-        // Permanent image storage and database saving will be added later.
+        // Preserve Step 1 listing data for the next step.
+        $_SESSION['listing']['title'] = $title;
+        $_SESSION['listing']['price'] = $price;
+        $_SESSION['listing']['description'] = $description;
+
+        // Continue to Step 2.
+        header('Location: create-listing-details.php');
+        exit;
     }
 }
 
