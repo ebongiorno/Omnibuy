@@ -23,8 +23,7 @@ $allowedImageTypes = [
     'image/png',
     'image/webp',
 ];
-
-$maxImageSize = 5 * 1024 * 1024;
+$maxImageSize = 10 * 1024 * 1024;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
@@ -56,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($fileSize > $maxImageSize) {
-                $errors['photos'] = 'Each photo must be 5MB or smaller.';
+                $errors['photos'] = 'Each photo must be 10MB or smaller.';
                 break;
             }
 
