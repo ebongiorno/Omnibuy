@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../db_connect.php';
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
 $conditionFilter = $_GET['condition'] ?? '';
+$fulfillmentFilter = $_GET['fulfillment'] ?? '';
 
 $allowedConditions = [
     'new',
@@ -28,6 +29,19 @@ if ($conditionFilter !== '' && !in_array($conditionFilter, $allowedConditions, t
 $conditionSql = '';
 if ($conditionFilter !== '') {
     $conditionSql = 'AND l.`condition` = :condition';
+}
+
+$allowedFulfillmentTypes = [
+    'shipping',
+    'meetup'
+];
+if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillmentTypes, true)) {
+    $fulfillmentFilter = '';
+}
+
+$fulfillmentSql = '';
+if ($fulfillmentFilter !== '') {
+    $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
 }
 
 $listings = [];
@@ -69,6 +83,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                 OR c.category_name LIKE :category
             )
             $conditionSql
+            $fulfillmentSql
             
 
         ORDER BY l.created_at DESC, l.listing_id DESC
@@ -87,6 +102,9 @@ if ($searchType === 'items' && $searchQuery !== '') {
         ];
         if ($conditionFilter !== '') {
             $params['condition'] = $conditionFilter;
+        }
+        if ($fulfillmentFilter !== '') {
+            $params['fulfillment'] = $fulfillmentFilter;
         }
 
         $stmt->execute($params);
