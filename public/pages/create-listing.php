@@ -18,6 +18,13 @@ $title = '';
 $price = '';
 $description = '';
 
+$allowedImageTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+];
+$maxImageSize = 10 * 1024 * 1024;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $price = trim($_POST['price'] ?? '');
@@ -37,9 +44,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['description'] = 'Description is required.';
     }
 
+    if (isset($_FILES['photos']) && !empty($_FILES['photos']['name'][0])) {
+        foreach ($_FILES['photos']['tmp_name'] as $index => $tmpName) {
+            $uploadError = $_FILES['photos']['error'][$index];
+            $fileSize = $_FILES['photos']['size'][$index];
+
+            if ($uploadError !== UPLOAD_ERR_OK) {
+                $errors['photos'] = 'One or more photos could not be uploaded.';
+                break;
+            }
+
+            if ($fileSize > $maxImageSize) {
+                $errors['photos'] = 'Each photo must be 10MB or smaller.';
+                break;
+            }
+
+            $mimeType = mime_content_type($tmpName);
+
+            if (!in_array($mimeType, $allowedImageTypes, true)) {
+                $errors['photos'] = 'Photos must be JPG, PNG, or WEBP images.';
+                break;
+            }
+        }
+    }
+
     if (empty($errors)) {
         // Validation passed.
-        // Database saving and next-step handling will be added later.
+        // Permanent image storage and database saving will be added later.
     }
 }
 
@@ -110,9 +141,13 @@ include $header;
         type="file"
         id="photos"
         name="photos[]"
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,.webp"
         multiple
       >
+
+      <?php if (isset($errors['photos'])): ?>
+        <p><?= htmlspecialchars($errors['photos']) ?></p>
+      <?php endif; ?>
     </div>
 
     <button class="create-listing__submit" type="submit">
