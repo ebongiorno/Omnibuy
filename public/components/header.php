@@ -34,6 +34,9 @@ function navActive(string $key, string $activeNav): string
 
   <link rel="stylesheet" href="../css/omnibuy-design-tokens.css">
   <link rel="stylesheet" href="../css/shared-navigation.css">
+
+  <!-- Enables the use of Font Awesome's Icons -->
+  <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -41,11 +44,13 @@ function navActive(string $key, string $activeNav): string
 <header class="site-header">
   <div class="site-header__top shell">
     <a class="brand" href="/" aria-label="OmniBuy home">
-      <span class="brand__name">OmniBuy</span>
-      <span class="brand__mark" aria-hidden="true">◈</span>
+      <span class="brand__name">
+        OmniBuy 
+        <i class="fa-solid fa-box-open"></i>
+      </span>
     </a>
 
-    <form class="site-search" action="/search.php" method="get" role="search">
+    <form class="site-search" action="/pages/search.php" method="get" role="search">
       <label class="sr-only" for="global-search">Search OmniBuy</label>
       <select class="site-search__type" name="type" aria-label="Search type">
         <option value="items">Items</option>
@@ -64,12 +69,12 @@ function navActive(string $key, string $activeNav): string
 
     <nav class="header-actions" aria-label="Account and shopping">
       <a class="icon-link" href="../pages/wishlist.php" aria-label="Wishlist">
-        <span aria-hidden="true">♡</span>
+        <i class="fa-solid fa-heart"></i>
         <span class="icon-link__label">Wishlist</span>
       </a>
 
       <a class="icon-link" href="/inbox.php" aria-label="Messages">
-        <span aria-hidden="true">✉</span>
+        <i class="fa-solid fa-envelope"></i>
         <span class="icon-link__label">Messages</span>
         <?php if ($unreadCount > 0): ?>
           <span class="count-badge" aria-label="<?= (int) $unreadCount ?> unread messages"><?= (int) $unreadCount ?></span>
@@ -77,7 +82,7 @@ function navActive(string $key, string $activeNav): string
       </a>
 
       <a class="icon-link" href="/cart.php" aria-label="Cart">
-        <span aria-hidden="true">🛒</span>
+        <i class="fa-solid fa-cart-shopping"></i>
         <span class="icon-link__label">Cart</span>
         <?php if ($cartCount > 0): ?>
           <span class="count-badge" aria-label="<?= (int) $cartCount ?> items in cart"><?= (int) $cartCount ?></span>
@@ -115,7 +120,7 @@ function navActive(string $key, string $activeNav): string
 
       <button class="mobile-nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-mobile-nav-toggle>
         <span class="sr-only">Toggle navigation</span>
-        <span aria-hidden="true">☰</span>
+        <i class="fa-solid fa-bars"></i>
       </button>
     </nav>
   </div>
