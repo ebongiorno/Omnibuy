@@ -30,6 +30,11 @@ jobs:
         run: |
           find . -name "*.php" -print0 | xargs -0 -n1 php -l
 
+
+      - name: Run automated PHP tests
+        run: php tests/create-listing-test.php
+
+
       - name: Build Docker containers
         run: docker compose build
 
