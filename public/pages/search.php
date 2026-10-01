@@ -553,20 +553,14 @@ if ($searchType === 'items' && $searchQuery !== '') {
                          ========================= -->
 
                     <?php else: ?>
-
                         <div class="listing-grid">
-
                             <?php foreach ($listings as $listing): ?>
-
                                 <?php
                                 include __DIR__
                                     . '/../components/listing-card-component.php';
                                 ?>
-
                             <?php endforeach; ?>
-
                         </div>
-
                     <?php endif; ?>
 
                 </section>
