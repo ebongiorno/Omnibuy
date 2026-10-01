@@ -575,6 +575,36 @@ if ($searchType === 'items' && $searchQuery !== '') {
                             </fieldset>
                         </div>
 
+                        <!-- Delivery filter -->
+                        <div class="filter-group">
+                            <fieldset class="filter-options">
+                                <legend>
+                                    Delivery Method
+                                </legend>
+
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="fulfillment"
+                                        value="shipping"
+                                        <?= $fulfillmentFilter === 'shipping' ? 'checked' : '' ?>
+                                    >
+                                    Shipping
+                                </label>
+
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="fulfillment"
+                                        value="meetup"
+                                        <?= $fulfillmentFilter === 'meetup' ? 'checked' : '' ?>
+                                    >
+                                    Meetup
+                                </label>
+
+                            </fieldset>
+                        </div>
+
                         <!-- Category filter -->
                         <div class="filter-group">
 
