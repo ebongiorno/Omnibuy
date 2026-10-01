@@ -644,57 +644,57 @@ if ($searchType === 'items' && $searchQuery !== '') {
                 </aside>
 
 
-                    <!-- =============================
-                        RESULTS AREA
-                        ============================= -->
+                <!-- =============================
+                    RESULTS AREA
+                    ============================= -->
 
-                    <section
-                        class="search-results"
-                        aria-labelledby="results-heading"
-                    >
+                <section
+                    class="search-results"
+                    aria-labelledby="results-heading"
+                >
 
-                        <div class="search-results__toolbar">
+                    <div class="search-results__toolbar">
 
-                            <div>
+                        <div>
 
-                                <h2 id="results-heading">
-                                    Listings
-                                </h2>
+                            <h2 id="results-heading">
+                                Listings
+                            </h2>
 
-                                <p class="search-results__count">
-                                    <?= $resultCount ?> results
-                                </p>
-
-                            </div>
-
-
-                            <!-- Sorting placeholder -->
-                            <div class="search-results__sort">
-
-                                <label for="results-sort">
-                                    Sort by
-                                </label>
-
-                                <select
-                                    id="results-sort"
-                                    name="sort"
-                                >
-                                    <option value="recent">
-                                        Newest
-                                    </option>
-
-                                    <option value="price_low">
-                                        Price: Low to High
-                                    </option>
-
-                                    <option value="price_high">
-                                        Price: High to Low
-                                    </option>
-                                </select>
-
-                            </div>
+                            <p class="search-results__count">
+                                <?= $resultCount ?> results
+                            </p>
 
                         </div>
+
+
+                        <!-- Sorting placeholder -->
+                        <div class="search-results__sort">
+
+                            <label for="results-sort">
+                                Sort by
+                            </label>
+
+                            <select
+                                id="results-sort"
+                                name="sort"
+                            >
+                                <option value="recent">
+                                    Newest
+                                </option>
+
+                                <option value="price_low">
+                                    Price: Low to High
+                                </option>
+
+                                <option value="price_high">
+                                    Price: High to Low
+                                </option>
+                            </select>
+
+                        </div>
+
+                    </div>
 
 
                     <!-- =========================
