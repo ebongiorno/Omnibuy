@@ -3,13 +3,17 @@ name: CI
 on:
   pull_request:
     branches: [main]
+
   push:
     branches: [main]
+
+  workflow_dispatch:
 
 jobs:
   validate:
     name: Validate PHP syntax
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,14 +23,21 @@ jobs:
           php-version: "8.2"
 
       - name: Lint PHP files
-        run: find . -name "*.php" -not -path "./.git/*" -print0 | xargs -0 -n1 php -l
+        run: |
+          find . \
+            -name "*.php" \
+            -not -path "./.git/*" \
+            -print0 |
+          xargs -0 -n1 php -l
 
   build:
     name: Build Docker image
     needs: validate
     runs-on: ubuntu-latest
+
     outputs:
       full_version: ${{ steps.version.outputs.full_version }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,41 +45,52 @@ jobs:
         id: version
         run: |
           BASE_VERSION=$(cat VERSION)
-          FULL_VERSION="${BASE_VERSION}.${GITHUB_RUN_NUMBER}-$(git rev-parse --short HEAD)"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          FULL_VERSION="${BASE_VERSION}.${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+
           echo "full_version=$FULL_VERSION" >> "$GITHUB_OUTPUT"
           echo "Building version $FULL_VERSION"
 
-      - name: Build image
-        run: docker build -t omnibuy:${{ steps.version.outputs.full_version }} .
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t omnibuy:${{ steps.version.outputs.full_version }} \
+            .
 
   test:
     name: Run stack and smoke test
     needs: build
     runs-on: ubuntu-latest
+
     env:
       MYSQL_DATABASE: omnibuy_test
       MYSQL_USER: omnibuy_user
       MYSQL_PASSWORD: test_password
       MYSQL_ROOT_PASSWORD: test_root_password
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Start containers
-        run: docker compose up -d --build
+        run: |
+          docker compose up -d --build
 
       - name: Wait for database to be healthy
         run: |
           for i in $(seq 1 20); do
             status=$(docker inspect -f '{{.State.Health.Status}}' omnibuy-db 2>/dev/null || echo "starting")
+
             if [ "$status" = "healthy" ]; then
               echo "Database is healthy"
               exit 0
             fi
+
             echo "Waiting for database... ($status)"
             sleep 3
           done
+
           echo "Database did not become healthy in time"
-          docker compose logs db
+          docker compose logs
           exit 1
 
       - name: Smoke test web container
@@ -78,17 +100,21 @@ jobs:
               echo "Web container responded successfully"
               exit 0
             fi
+
             echo "Waiting for web container..."
             sleep 3
           done
+
           echo "Web container did not respond in time"
-          docker compose logs web
+          docker compose logs
           exit 1
 
-      - name: Dump logs on failure
+      - name: Show logs on failure
         if: failure()
-        run: docker compose logs
+        run: |
+          docker compose logs --no-color
 
       - name: Tear down
         if: always()
-        run: docker compose down -v
+        run: |
+          docker compose down -v --remove-orphans
