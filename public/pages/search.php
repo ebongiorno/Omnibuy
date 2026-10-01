@@ -159,7 +159,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
             <!-- Logo -->
             <a
                 class="brand"
-                href="index.php"
+                href="../index.php"
                 aria-label="OmniBuy home"
             >
                 <i class="fa-solid fa-box-open"></i>
