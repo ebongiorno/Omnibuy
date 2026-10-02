@@ -58,7 +58,7 @@ jobs:
             .
 
   test:
-    name: Run stack and smoke test
+    name: Run stack, database validation, and smoke test
     needs: build
     runs-on: ubuntu-latest
 
