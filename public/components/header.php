@@ -43,7 +43,7 @@ function navActive(string $key, string $activeNav): string
 
 <header class="site-header">
   <div class="site-header__top shell">
-    <a class="brand" href="/" aria-label="OmniBuy home">
+    <a class="brand" href="../index.php" aria-label="OmniBuy home">
       <span class="brand__name">
         OmniBuy 
         <i class="fa-solid fa-box-open"></i>
