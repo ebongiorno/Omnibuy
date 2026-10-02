@@ -58,7 +58,7 @@ jobs:
             .
 
   test:
-    name: Run stack and smoke test
+    name: Run stack, database validation, and smoke test
     needs: build
     runs-on: ubuntu-latest
 
@@ -92,6 +92,71 @@ jobs:
           echo "Database did not become healthy in time"
           docker compose logs
           exit 1
+      
+      - name: Validate database initialization
+        run: |
+          echo "Checking that database exists..."
+
+          DATABASE_FOUND=$(docker exec omnibuy-db \
+            mysql \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -Nse "SELECT SCHEMA_NAME
+                  FROM INFORMATION_SCHEMA.SCHEMATA
+                  WHERE SCHEMA_NAME = '$MYSQL_DATABASE';")
+
+          if [ "$DATABASE_FOUND" != "$MYSQL_DATABASE" ]; then
+            echo "Database '$MYSQL_DATABASE' was not created."
+            exit 1
+          fi
+
+          echo "Database '$MYSQL_DATABASE' exists."
+
+          echo "Checking required schema tables..."
+
+          REQUIRED_TABLES="
+          users
+          seller_profiles
+          categories
+          listings
+          listing_images
+          listing_price_history
+          bids
+          search_history
+          listing_views
+          carts
+          cart_items
+          addresses
+          orders
+          order_items
+          user_reviews
+          listing_reviews
+          wishlist_items
+          conversations
+          messages
+          user_blocks
+          user_reports
+          "
+
+          for table in $REQUIRED_TABLES; do
+            TABLE_FOUND=$(docker exec omnibuy-db \
+              mysql \
+              -h 127.0.0.1 \
+              -u root \
+              -p"$MYSQL_ROOT_PASSWORD" \
+              -D "$MYSQL_DATABASE" \
+              -Nse "SHOW TABLES LIKE '$table';")
+
+            if [ "$TABLE_FOUND" != "$table" ]; then
+              echo "Missing required table: $table"
+              exit 1
+            fi
+
+            echo "Found table: $table"
+          done
+
+          echo "Database schema initialized successfully."
 
       - name: Smoke test web container
         run: |
