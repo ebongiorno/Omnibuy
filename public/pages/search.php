@@ -12,6 +12,7 @@ $conditionFilters = $_GET['condition'] ?? [];
 if (!is_array($conditionFilters)) {
     $conditionFilters = [];
 }
+$fulfillmentFilter = $_GET['fulfillment'] ?? '';
 
 $allowedConditions = [
     'new',
@@ -41,6 +42,19 @@ if (!empty($conditionFilters)) {
         'AND l.`condition` IN (' .
         implode(', ', $conditionPlaceholders) .
         ')';
+}
+
+$allowedFulfillmentTypes = [
+    'shipping',
+    'meetup'
+];
+if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillmentTypes, true)) {
+    $fulfillmentFilter = '';
+}
+
+$fulfillmentSql = '';
+if ($fulfillmentFilter !== '') {
+    $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
 }
 
 $listings = [];
@@ -82,6 +96,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                 OR c.category_name LIKE :category
             )
             $conditionSql
+            $fulfillmentSql
             
 
         ORDER BY l.created_at DESC, l.listing_id DESC
@@ -99,6 +114,10 @@ if ($searchType === 'items' && $searchQuery !== '') {
             'category' => $searchValue
         ];
         $params = array_merge($params, $conditionParams);
+        
+        if ($fulfillmentFilter !== '') {
+            $params['fulfillment'] = $fulfillmentFilter;
+        }
 
 
         $stmt->execute($params);
@@ -569,6 +588,36 @@ if ($searchType === 'items' && $searchQuery !== '') {
                             </fieldset>
                         </div>
 
+                        <!-- Delivery filter -->
+                        <div class="filter-group">
+                            <fieldset class="filter-options">
+                                <legend>
+                                    Delivery Method
+                                </legend>
+
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="fulfillment"
+                                        value="shipping"
+                                        <?= $fulfillmentFilter === 'shipping' ? 'checked' : '' ?>
+                                    >
+                                    Shipping
+                                </label>
+
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="fulfillment"
+                                        value="meetup"
+                                        <?= $fulfillmentFilter === 'meetup' ? 'checked' : '' ?>
+                                    >
+                                    Meetup
+                                </label>
+
+                            </fieldset>
+                        </div>
+
                         <!-- Category filter -->
                         <div class="filter-group">
 
@@ -638,57 +687,57 @@ if ($searchType === 'items' && $searchQuery !== '') {
                 </aside>
 
 
-                    <!-- =============================
-                        RESULTS AREA
-                        ============================= -->
+                <!-- =============================
+                    RESULTS AREA
+                    ============================= -->
 
-                    <section
-                        class="search-results"
-                        aria-labelledby="results-heading"
-                    >
+                <section
+                    class="search-results"
+                    aria-labelledby="results-heading"
+                >
 
-                        <div class="search-results__toolbar">
+                    <div class="search-results__toolbar">
 
-                            <div>
+                        <div>
 
-                                <h2 id="results-heading">
-                                    Listings
-                                </h2>
+                            <h2 id="results-heading">
+                                Listings
+                            </h2>
 
-                                <p class="search-results__count">
-                                    <?= $resultCount ?> results
-                                </p>
-
-                            </div>
-
-
-                            <!-- Sorting placeholder -->
-                            <div class="search-results__sort">
-
-                                <label for="results-sort">
-                                    Sort by
-                                </label>
-
-                                <select
-                                    id="results-sort"
-                                    name="sort"
-                                >
-                                    <option value="recent">
-                                        Newest
-                                    </option>
-
-                                    <option value="price_low">
-                                        Price: Low to High
-                                    </option>
-
-                                    <option value="price_high">
-                                        Price: High to Low
-                                    </option>
-                                </select>
-
-                            </div>
+                            <p class="search-results__count">
+                                <?= $resultCount ?> results
+                            </p>
 
                         </div>
+
+
+                        <!-- Sorting placeholder -->
+                        <div class="search-results__sort">
+
+                            <label for="results-sort">
+                                Sort by
+                            </label>
+
+                            <select
+                                id="results-sort"
+                                name="sort"
+                            >
+                                <option value="recent">
+                                    Newest
+                                </option>
+
+                                <option value="price_low">
+                                    Price: Low to High
+                                </option>
+
+                                <option value="price_high">
+                                    Price: High to Low
+                                </option>
+                            </select>
+
+                        </div>
+
+                    </div>
 
 
                     <!-- =========================
