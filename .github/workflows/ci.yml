@@ -93,6 +93,66 @@ jobs:
           docker compose logs
           exit 1
 
+      - name: Validate database schema
+        run: |
+          REQUIRED_TABLES=(
+            users
+            seller_profiles
+            categories
+            listings
+            carts
+            cart_items
+            orders
+            order_items
+          )
+
+          missing=0
+
+          for table in "${REQUIRED_TABLES[@]}"; do
+            count=$(docker exec omnibuy-db mysql \
+              -uroot -p"$MYSQL_ROOT_PASSWORD" \
+              -N -B \
+              -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${MYSQL_DATABASE}' AND table_name = '${table}';")
+
+            if [ "$count" -eq 0 ]; then
+              echo "Missing required table: $table"
+              missing=1
+            else
+              echo "Found required table: $table"
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Database schema validation failed."
+            docker compose logs db
+            exit 1
+          fi
+
+          echo "Database schema validation passed."
+
+      - name: Run automated PHP tests
+        run: |
+          shopt -s nullglob
+          failures=0
+
+          for test_file in tests/*-test.php; do
+            echo "=== Running $test_file ==="
+
+            if ! docker compose exec -T web php "$test_file"; then
+              echo "FAILED: $test_file"
+              failures=1
+            fi
+
+            echo
+          done
+
+          if [ "$failures" -ne 0 ]; then
+            echo "One or more PHP tests failed."
+            exit 1
+          fi
+
+          echo "All PHP tests passed."
+
       - name: Smoke test web container
         run: |
           for i in $(seq 1 10); do
