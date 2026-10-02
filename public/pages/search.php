@@ -8,7 +8,10 @@ require_once __DIR__ . '/../../db_connect.php';
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
-$conditionFilter = $_GET['condition'] ?? '';
+$conditionFilters = $_GET['condition'] ?? [];
+if (!is_array($conditionFilters)) {
+    $conditionFilters = [];
+}
 
 $allowedConditions = [
     'new',
@@ -21,13 +24,23 @@ $allowedConditions = [
     'refurbished',
     'for_parts'
 ];
-if ($conditionFilter !== '' && !in_array($conditionFilter, $allowedConditions, true)) {
-    $conditionFilter = '';
-}
+$conditionFilters = array_values(
+    array_intersect($conditionFilters, $allowedConditions)
+);
 
 $conditionSql = '';
-if ($conditionFilter !== '') {
-    $conditionSql = 'AND l.`condition` = :condition';
+$conditionParams = [];
+if (!empty($conditionFilters)) {
+    $conditionPlaceholders = [];
+    foreach ($conditionFilters as $index => $condition) {
+        $parameterName = 'condition' . $index;
+        $conditionPlaceholders[] = ':' . $parameterName;
+        $conditionParams[$parameterName] = $condition;
+    }
+    $conditionSql =
+        'AND l.`condition` IN (' .
+        implode(', ', $conditionPlaceholders) .
+        ')';
 }
 
 $listings = [];
@@ -85,9 +98,8 @@ if ($searchType === 'items' && $searchQuery !== '') {
             'description' => $searchValue,
             'category' => $searchValue
         ];
-        if ($conditionFilter !== '') {
-            $params['condition'] = $conditionFilter;
-        }
+        $params = array_merge($params, $conditionParams);
+
 
         $stmt->execute($params);
 
