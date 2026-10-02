@@ -122,6 +122,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
     <!-- Shared OmniBuy styles -->
     <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="/assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="/assets/css/listing-card.css">
 
     <!-- Search page styles -->
     <link rel="stylesheet" href="/assets/css/search.css">
