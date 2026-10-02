@@ -1,5 +1,4 @@
 <?php
-
 require_once __DIR__ . '/../../db_connect.php';
 
 // =========================================
@@ -42,6 +41,19 @@ if (!empty($conditionFilters)) {
         'AND l.`condition` IN (' .
         implode(', ', $conditionPlaceholders) .
         ')';
+}
+
+$allowedFulfillmentTypes = [
+    'shipping',
+    'meetup'
+];
+if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillmentTypes, true)) {
+    $fulfillmentFilter = '';
+}
+
+$fulfillmentSql = '';
+if ($fulfillmentFilter !== '') {
+    $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
 }
 
 $allowedFulfillmentTypes = [
@@ -118,6 +130,9 @@ if ($searchType === 'items' && $searchQuery !== '') {
         if ($fulfillmentFilter !== '') {
             $params['fulfillment'] = $fulfillmentFilter;
         }
+        if ($fulfillmentFilter !== '') {
+            $params['fulfillment'] = $fulfillmentFilter;
+        }
 
 
         $stmt->execute($params);
@@ -154,6 +169,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
     <!-- Shared OmniBuy styles -->
     <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="/assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="/assets/css/listing-card.css">
 
     <!-- Search page styles -->
     <link rel="stylesheet" href="/assets/css/search.css">
@@ -178,217 +194,10 @@ if ($searchType === 'items' && $searchQuery !== '') {
         Skip to main content
     </a>
 
-
-    <!-- =========================================
-         SHARED HEADER
-         ========================================= -->
-
-    <header class="site-header">
-
-        <div class="shell site-header__top">
-
-            <!-- Logo -->
-            <a
-                class="brand"
-                href="index.php"
-                aria-label="OmniBuy home"
-            >
-                <i class="fa-solid fa-box-open"></i>
-                OmniBuy
-            </a>
-
-
-            <!-- Main Search -->
-            <form
-                class="site-search"
-                action="search.php"
-                method="get"
-                role="search"
-            >
-
-                <label
-                    class="sr-only"
-                    for="search-type"
-                >
-                    Search type
-                </label>
-
-                <select
-                    class="site-search__type"
-                    id="search-type"
-                    name="search_type"
-                >
-
-                    <option
-                        value="items"
-                        <?= $searchType === 'items'
-                            ? 'selected'
-                            : '' ?>
-                    >
-                        Search Items
-                    </option>
-
-                    <option
-                        value="seller_profiles"
-                        <?= $searchType === 'seller_profiles'
-                            ? 'selected'
-                            : '' ?>
-                    >
-                        Search Profiles
-                    </option>
-
-                </select>
-
-
-                <label
-                    class="sr-only"
-                    for="search-query"
-                >
-                    Search OmniBuy
-                </label>
-
-                <input
-                    class="site-search__input"
-                    id="search-query"
-                    name="q"
-                    type="search"
-                    value="<?= htmlspecialchars($searchQuery) ?>"
-                    placeholder="Search OmniBuy..."
-                    autocomplete="off"
-                >
-
-
-                <button
-                    class="site-search__button"
-                    type="submit"
-                >
-                    Search
-                </button>
-
-            </form>
-
-
-            <!-- Header Actions -->
-            <div class="header-actions">
-
-                <a
-                    class="icon-link"
-                    href="wishlist.php"
-                    aria-label="Wishlist"
-                >
-                    <i class="fa-solid fa-heart"></i>
-
-                    <span class="icon-link__label">
-                        Wishlist
-                    </span>
-                </a>
-
-
-                <a
-                    class="icon-link"
-                    href="cart.php"
-                    aria-label="Shopping cart"
-                >
-                    <i class="fa-solid fa-cart-shopping"></i>
-
-                    <span class="count-badge">
-                        2
-                    </span>
-
-                    <span class="icon-link__label">
-                        Cart
-                    </span>
-                </a>
-
-
-                <a
-                    class="text-link"
-                    href="login.php"
-                >
-                    Log In
-                </a>
-
-
-                <a
-                    class="button button--primary button--small"
-                    href="signup.php"
-                >
-                    Sign Up
-                </a>
-
-
-                <button
-                    class="mobile-nav-toggle"
-                    type="button"
-                    aria-expanded="false"
-                    aria-controls="primary-navigation"
-                    aria-label="Toggle navigation"
-                >
-                    ☰
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <!-- Primary Navigation -->
-        <div class="site-header__nav-wrap">
-
-            <nav
-                class="shell primary-nav"
-                id="primary-navigation"
-                aria-label="Primary navigation"
-            >
-
-                <a
-                    class="primary-nav__link"
-                    href="index.php"
-                >
-                    Home
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=1"
-                >
-                    Electronics
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=2"
-                >
-                    Home & Furniture
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=3"
-                >
-                    Clothing
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="category.php?id=4"
-                >
-                    Books
-                </a>
-
-                <a
-                    class="primary-nav__link"
-                    href="categories.php"
-                >
-                    All Categories
-                </a>
-
-            </nav>
-
-        </div>
-
-    </header>
-
+    <?php
+        $header = __DIR__ . '/../components/header.php';
+        include $header;
+    ?>
 
     <!-- =========================================
          SEARCH RESULTS
@@ -822,20 +631,14 @@ if ($searchType === 'items' && $searchQuery !== '') {
                          ========================= -->
 
                     <?php else: ?>
-
                         <div class="listing-grid">
-
                             <?php foreach ($listings as $listing): ?>
-
                                 <?php
                                 include __DIR__
-                                    . '/components/listing-card-component.php';
+                                    . '/../components/listing-card-component.php';
                                 ?>
-
                             <?php endforeach; ?>
-
                         </div>
-
                     <?php endif; ?>
 
                 </section>

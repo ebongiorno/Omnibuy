@@ -1,9 +1,6 @@
 -- Omnibuy Database
 -- CPSC 491, Section 10
 
-CREATE DATABASE IF NOT EXISTS omnibuy;
-USE omnibuy;
-
 -- =========================================
 -- USERS AND PROFILES
 -- =========================================
