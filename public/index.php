@@ -53,6 +53,7 @@ try {
     <link rel="stylesheet" href="assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="assets/css/shared-navigation.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="/assets/css/listing-card.css">
 
     <!-- Enables the use of Font Awesome's Icons -->
     <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>

@@ -1,6 +1,4 @@
 <?php
-$header = __DIR__ . '/../components/header.php';
-include $header;
 require_once __DIR__ . '/../../db_connect.php';
 
 // =========================================
@@ -142,6 +140,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
     <!-- Shared OmniBuy styles -->
     <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="/assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="/assets/css/listing-card.css">
 
     <!-- Search page styles -->
     <link rel="stylesheet" href="/assets/css/search.css">
@@ -165,6 +164,11 @@ if ($searchType === 'items' && $searchQuery !== '') {
     <a class="skip-link" href="#main-content">
         Skip to main content
     </a>
+
+    <?php
+        $header = __DIR__ . '/../components/header.php';
+        include $header;
+    ?>
 
     <!-- =========================================
          SEARCH RESULTS
@@ -598,20 +602,14 @@ if ($searchType === 'items' && $searchQuery !== '') {
                          ========================= -->
 
                     <?php else: ?>
-
                         <div class="listing-grid">
-
                             <?php foreach ($listings as $listing): ?>
-
                                 <?php
                                 include __DIR__
-                                    . '/components/listing-card-component.php';
+                                    . '/../components/listing-card-component.php';
                                 ?>
-
                             <?php endforeach; ?>
-
                         </div>
-
                     <?php endif; ?>
 
                 </section>
