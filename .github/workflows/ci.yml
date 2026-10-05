@@ -92,30 +92,32 @@ jobs:
           echo "Database did not become healthy in time"
           docker compose logs
           exit 1
-
-      - name: Diagnose MySQL container
+      
+      - name: Wait for MySQL TCP connection
         run: |
-          echo "=== Container status ==="
-          docker ps -a
+          echo "Waiting for MySQL TCP connection..."
 
-          echo "=== MySQL container state ==="
-          docker inspect omnibuy-db \
-            --format='Status={{.State.Status}} Health={{.State.Health.Status}}'
+          for i in $(seq 1 30); do
+            if docker exec omnibuy-db \
+              mysqladmin \
+              --protocol=TCP \
+              -h 127.0.0.1 \
+              -u root \
+              -p"$MYSQL_ROOT_PASSWORD" \
+              ping --silent
+            then
+              echo "MySQL TCP connection is ready."
+              exit 0
+            fi
 
-          echo "=== MySQL process ==="
-          docker exec omnibuy-db sh -c \
-            'ps aux | grep "[m]ysqld" || ps | grep "[m]ysqld" || true'
+            echo "Waiting for MySQL TCP... attempt $i/30"
+            sleep 3
+          done
 
-          echo "=== Listening TCP ports ==="
-          docker exec omnibuy-db sh -c \
-            'ss -lntp 2>/dev/null || netstat -lntp 2>/dev/null || true'
+          echo "MySQL did not become available over TCP."
 
-          echo "=== MySQL socket files ==="
-          docker exec omnibuy-db sh -c \
-            'find /var/run /run /tmp -name "*.sock" 2>/dev/null || true'
-
-          echo "=== Database logs ==="
-          docker logs omnibuy-db --tail 200
+          docker compose logs --no-color
+          exit 1
       
       - name: Test MySQL connection
         run: |
@@ -215,9 +217,24 @@ jobs:
           docker compose logs
           exit 1
 
-      - name: Show logs on failure
+      - name: Diagnose failure
         if: failure()
         run: |
+          echo "=== Container status ==="
+          docker ps -a
+
+          echo "=== Database state ==="
+          docker inspect omnibuy-db \
+            --format='Status={{.State.Status}} Health={{.State.Health.Status}}'
+
+          echo "=== Listening ports ==="
+          docker exec omnibuy-db sh -c \
+            'ss -lntp 2>/dev/null || netstat -lntp 2>/dev/null || true'
+
+          echo "=== MySQL logs ==="
+          docker logs omnibuy-db --tail 200
+
+          echo "=== Full compose logs ==="
           docker compose logs --no-color
 
       - name: Tear down
