@@ -92,6 +92,30 @@ jobs:
           echo "Database did not become healthy in time"
           docker compose logs
           exit 1
+
+      - name: Diagnose MySQL container
+        run: |
+          echo "=== Container status ==="
+          docker ps -a
+
+          echo "=== MySQL container state ==="
+          docker inspect omnibuy-db \
+            --format='Status={{.State.Status}} Health={{.State.Health.Status}}'
+
+          echo "=== MySQL process ==="
+          docker exec omnibuy-db sh -c \
+            'ps aux | grep "[m]ysqld" || ps | grep "[m]ysqld" || true'
+
+          echo "=== Listening TCP ports ==="
+          docker exec omnibuy-db sh -c \
+            'ss -lntp 2>/dev/null || netstat -lntp 2>/dev/null || true'
+
+          echo "=== MySQL socket files ==="
+          docker exec omnibuy-db sh -c \
+            'find /var/run /run /tmp -name "*.sock" 2>/dev/null || true'
+
+          echo "=== Database logs ==="
+          docker logs omnibuy-db --tail 200
       
       - name: Test MySQL connection
         run: |
