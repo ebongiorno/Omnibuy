@@ -92,6 +92,11 @@ jobs:
           echo "Database did not become healthy in time"
           docker compose logs
           exit 1
+      
+      - name: Test MySQL connection
+        run: |
+          docker exec omnibuy-db sh -c \
+            'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -D "$MYSQL_DATABASE" -e "SHOW TABLES;"'
 
       - name: Validate database initialization
         run: |
