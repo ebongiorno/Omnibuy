@@ -95,20 +95,29 @@ jobs:
       
       - name: Test MySQL connection
         run: |
-          docker exec omnibuy-db sh -c \
-            'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -D "$MYSQL_DATABASE" -e "SHOW TABLES;"'
+          docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -e "SHOW TABLES;"
 
       - name: Validate database initialization
         run: |
           echo "Checking that database exists..."
 
-          DATABASE_FOUND=$(docker exec omnibuy-db sh -c \
-            'mysql \
-              -u root \
-              -p"$MYSQL_ROOT_PASSWORD" \
-              -Nse "SELECT SCHEMA_NAME
-                    FROM INFORMATION_SCHEMA.SCHEMATA
-                    WHERE SCHEMA_NAME = '\''$MYSQL_DATABASE'\'';"')
+          DATABASE_FOUND=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -Nse \
+            "SELECT SCHEMA_NAME
+            FROM INFORMATION_SCHEMA.SCHEMATA
+            WHERE SCHEMA_NAME = '$MYSQL_DATABASE';")
 
           if [ "$DATABASE_FOUND" != "$MYSQL_DATABASE" ]; then
             echo "Database '$MYSQL_DATABASE' was not created."
@@ -144,12 +153,17 @@ jobs:
           "
 
           for table in $REQUIRED_TABLES; do
-            TABLE_FOUND=$(docker exec omnibuy-db sh -c \
-              'mysql \
-                -u root \
-                -p"$MYSQL_ROOT_PASSWORD" \
-                -D "$MYSQL_DATABASE" \
-                -Nse "SHOW TABLES LIKE '\'''$table''\''';"')
+            echo "Checking table: $table"
+
+            TABLE_FOUND=$(docker exec omnibuy-db \
+              mysql \
+              --protocol=TCP \
+              -h 127.0.0.1 \
+              -u root \
+              -p"$MYSQL_ROOT_PASSWORD" \
+              -D "$MYSQL_DATABASE" \
+              -Nse \
+              "SHOW TABLES LIKE '$table';")
 
             if [ "$TABLE_FOUND" != "$table" ]; then
               echo "Missing required table: $table"
