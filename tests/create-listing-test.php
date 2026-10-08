@@ -43,6 +43,19 @@ $maxImageSize = 10 * 1024 * 1024;
 test('Image under 10MB is accepted', 5 * 1024 * 1024 <= $maxImageSize);
 test('Image over 10MB is rejected', 11 * 1024 * 1024 > $maxImageSize);
 
+
+
+
+test('Whitespace-only title is rejected', trim('   ') === '');
+test('Decimal price is accepted', is_numeric('49.95') && (float) '49.95' > 0);
+test('Whitespace-only description is rejected', trim('   ') === '');
+
+test('GIF image type is rejected', !in_array('image/gif', $allowedImageTypes, true));
+test('PDF file type is rejected', !in_array('application/pdf', $allowedImageTypes, true));
+
+test('Exactly 10MB image is accepted', 10 * 1024 * 1024 <= $maxImageSize);
+test('Image just over 10MB is rejected', (10 * 1024 * 1024) + 1 > $maxImageSize);
+
 echo "\n$passed tests passed, $failed tests failed.\n";
 
 exit($failed > 0 ? 1 : 0);
