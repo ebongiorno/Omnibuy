@@ -553,13 +553,13 @@ if ($searchType === 'items' && $searchQuery !== '') {
                             >
 
                             <!-- Preserve active filters -->
-                            <?php if ($conditionFilters !== ''): ?>
+                            <?php foreach ($conditionFilters as $condition): ?>
                                 <input
                                     type="hidden"
                                     name="condition"
-                                    value="<?= htmlspecialchars($conditionFilters) ?>"
+                                    value="<?= htmlspecialchars($condition) ?>"
                                 >
-                            <?php endif; ?>
+                            <?php endforeach; ?>
 
                             <?php if ($fulfillmentFilter !== ''): ?>
                                 <input
