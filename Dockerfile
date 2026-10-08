@@ -2,6 +2,12 @@ FROM php:8.2-apache
 
 RUN docker-php-ext-install pdo pdo_mysql
 
+# Composer (and unzip, which it needs to install packages) for running PHPUnit
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 RUN a2enmod rewrite
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public

@@ -87,3 +87,7 @@ vendor/
 ### Logs / build artifacts ###
 *.log
 build-info/
+
+### PHPUnit ###
+.phpunit.cache/
+build/

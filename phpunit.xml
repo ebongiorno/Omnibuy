@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnRisky="true"
+         failOnEmptyTestSuite="true">
+
+    <!--
+        Unit:        fast tests of a single piece of PHP, no database or web server
+        Integration: tests against the real MySQL database (schema rules, constraints)
+        Functional:  HTTP requests to the running web container, checking real pages
+    -->
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Functional">
+            <directory>tests/Functional</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <!-- Base URL of the web server as seen from inside the web container -->
+        <env name="APP_URL" value="http://localhost" force="false"/>
+    </php>
+</phpunit>

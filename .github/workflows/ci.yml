@@ -201,6 +201,47 @@ jobs:
 
           echo "Database schema initialized successfully."
 
+      - name: Run automated PHP tests
+        run: |
+          shopt -s nullglob
+          failures=0
+
+          for test_file in tests/*-test.php; do
+            echo "=== Running $test_file ==="
+
+            if ! docker compose exec -T web php "$test_file"; then
+              echo "FAILED: $test_file"
+              failures=1
+            fi
+
+            echo
+          done
+
+          if [ "$failures" -ne 0 ]; then
+            echo "One or more PHP tests failed."
+            exit 1
+          fi
+
+          echo "All PHP tests passed."
+
+      - name: Install Composer dependencies
+        run: |
+          docker compose exec -T web composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run PHPUnit tests
+        run: |
+          docker compose exec -T web vendor/bin/phpunit \
+            --testdox \
+            --log-junit build/phpunit-junit.xml
+
+      - name: Upload PHPUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-results
+          path: build/phpunit-junit.xml
+          if-no-files-found: ignore
+
       - name: Smoke test web container
         run: |
           for i in $(seq 1 10); do
