@@ -58,7 +58,7 @@ jobs:
             .
 
   test:
-    name: Run stack and smoke test
+    name: Run stack, database validation, and smoke test
     needs: build
     runs-on: ubuntu-latest
 
@@ -92,6 +92,114 @@ jobs:
           echo "Database did not become healthy in time"
           docker compose logs
           exit 1
+      
+      - name: Wait for MySQL TCP connection
+        run: |
+          echo "Waiting for MySQL TCP connection..."
+
+          for i in $(seq 1 30); do
+            if docker exec omnibuy-db \
+              mysqladmin \
+              --protocol=TCP \
+              -h 127.0.0.1 \
+              -u root \
+              -p"$MYSQL_ROOT_PASSWORD" \
+              ping --silent
+            then
+              echo "MySQL TCP connection is ready."
+              exit 0
+            fi
+
+            echo "Waiting for MySQL TCP... attempt $i/30"
+            sleep 3
+          done
+
+          echo "MySQL did not become available over TCP."
+
+          docker compose logs --no-color
+          exit 1
+      
+      - name: Test MySQL connection
+        run: |
+          docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -e "SHOW TABLES;"
+
+      - name: Validate database initialization
+        run: |
+          echo "Checking that database exists..."
+
+          DATABASE_FOUND=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -Nse \
+            "SELECT SCHEMA_NAME
+            FROM INFORMATION_SCHEMA.SCHEMATA
+            WHERE SCHEMA_NAME = '$MYSQL_DATABASE';")
+
+          if [ "$DATABASE_FOUND" != "$MYSQL_DATABASE" ]; then
+            echo "Database '$MYSQL_DATABASE' was not created."
+            exit 1
+          fi
+
+          echo "Database '$MYSQL_DATABASE' exists."
+
+          echo "Checking required schema tables..."
+
+          REQUIRED_TABLES="
+          users
+          seller_profiles
+          categories
+          listings
+          listing_images
+          listing_price_history
+          bids
+          search_history
+          listing_views
+          carts
+          cart_items
+          addresses
+          orders
+          order_items
+          user_reviews
+          listing_reviews
+          wishlist_items
+          conversations
+          messages
+          user_blocks
+          user_reports
+          "
+
+          for table in $REQUIRED_TABLES; do
+            echo "Checking table: $table"
+
+            TABLE_FOUND=$(docker exec omnibuy-db \
+              mysql \
+              --protocol=TCP \
+              -h 127.0.0.1 \
+              -u root \
+              -p"$MYSQL_ROOT_PASSWORD" \
+              -D "$MYSQL_DATABASE" \
+              -Nse \
+              "SHOW TABLES LIKE '$table';")
+
+            if [ "$TABLE_FOUND" != "$table" ]; then
+              echo "Missing required table: $table"
+              exit 1
+            fi
+
+            echo "Found table: $table"
+          done
+
+          echo "Database schema initialized successfully."
 
       - name: Smoke test web container
         run: |
@@ -109,9 +217,24 @@ jobs:
           docker compose logs
           exit 1
 
-      - name: Show logs on failure
+      - name: Diagnose failure
         if: failure()
         run: |
+          echo "=== Container status ==="
+          docker ps -a
+
+          echo "=== Database state ==="
+          docker inspect omnibuy-db \
+            --format='Status={{.State.Status}} Health={{.State.Health.Status}}'
+
+          echo "=== Listening ports ==="
+          docker exec omnibuy-db sh -c \
+            'ss -lntp 2>/dev/null || netstat -lntp 2>/dev/null || true'
+
+          echo "=== MySQL logs ==="
+          docker logs omnibuy-db --tail 200
+
+          echo "=== Full compose logs ==="
           docker compose logs --no-color
 
       - name: Tear down
