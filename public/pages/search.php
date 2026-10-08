@@ -12,6 +12,19 @@ if (!is_array($conditionFilters)) {
     $conditionFilters = [];
 }
 $fulfillmentFilter = $_GET['fulfillment'] ?? '';
+$sortOption = $_GET['sort'] ?? 'recent';
+
+$allowedSortOptions = [
+    'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'price_low' => 'l.price ASC, l.listing_id DESC',
+    'price_high' => 'l.price DESC, l.listing_id DESC'
+];
+
+if (!array_key_exists($sortOption, $allowedSortOptions)) {
+    $sortOption = 'recent';
+}
+
+$orderBySql = $allowedSortOptions[$sortOption];
 
 $allowedConditions = [
     'new',
@@ -111,7 +124,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
             $fulfillmentSql
             
 
-        ORDER BY l.created_at DESC, l.listing_id DESC
+        ORDER BY $orderBySql
     ";
 
     try {
@@ -521,7 +534,40 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
 
                         <!-- Sorting placeholder -->
-                        <div class="search-results__sort">
+                        <form
+                            class="search-results__sort"
+                            action="search.php"
+                            method="get"
+                        >
+                            <!-- Preserve current search -->
+                            <input
+                                type="hidden"
+                                name="q"
+                                value="<?= htmlspecialchars($searchQuery) ?>"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="search_type"
+                                value="<?= htmlspecialchars($searchType) ?>"
+                            >
+
+                            <!-- Preserve active filters -->
+                            <?php if ($conditionFilters !== ''): ?>
+                                <input
+                                    type="hidden"
+                                    name="condition"
+                                    value="<?= htmlspecialchars($conditionFilters) ?>"
+                                >
+                            <?php endif; ?>
+
+                            <?php if ($fulfillmentFilter !== ''): ?>
+                                <input
+                                    type="hidden"
+                                    name="fulfillment"
+                                    value="<?= htmlspecialchars($fulfillmentFilter) ?>"
+                                >
+                            <?php endif; ?>
 
                             <label for="results-sort">
                                 Sort by
@@ -530,21 +576,31 @@ if ($searchType === 'items' && $searchQuery !== '') {
                             <select
                                 id="results-sort"
                                 name="sort"
+                                onchange="this.form.submit()"
                             >
-                                <option value="recent">
+                                <option
+                                    value="recent"
+                                    <?= $sortOption === 'recent' ? 'selected' : '' ?>
+                                >
                                     Newest
                                 </option>
 
-                                <option value="price_low">
+                                <option
+                                    value="price_low"
+                                    <?= $sortOption === 'price_low' ? 'selected' : '' ?>
+                                >
                                     Price: Low to High
                                 </option>
 
-                                <option value="price_high">
+                                <option
+                                    value="price_high"
+                                    <?= $sortOption === 'price_high' ? 'selected' : '' ?>
+                                >
                                     Price: High to Low
                                 </option>
                             </select>
 
-                        </div>
+                        </form>
 
                     </div>
 
