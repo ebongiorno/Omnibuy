@@ -322,7 +322,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="new"
-                                        <?= $conditionFilter === 'new' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'new' ? 'checked' : '' ?>
                                     >
                                     New
                                 </label>
@@ -332,7 +332,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="open_box"
-                                        <?= $conditionFilter === 'open_box' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'open_box' ? 'checked' : '' ?>
                                     >
                                     Open Box
                                 </label>
@@ -342,7 +342,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="like_new"
-                                        <?= $conditionFilter === 'like_new' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'like_new' ? 'checked' : '' ?>
                                     >
                                     Like New
                                 </label>
@@ -352,7 +352,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="excellent"
-                                        <?= $conditionFilter === 'excellent' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'excellent' ? 'checked' : '' ?>
                                     >
                                     Excellent
                                 </label>
@@ -362,7 +362,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="good"
-                                        <?= $conditionFilter === 'good' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'good' ? 'checked' : '' ?>
                                     >
                                     Good
                                 </label>
@@ -372,7 +372,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="fair"
-                                        <?= $conditionFilter === 'fair' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'fair' ? 'checked' : '' ?>
                                     >
                                     Fair
                                 </label>
@@ -382,7 +382,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="poor"
-                                        <?= $conditionFilter === 'poor' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'poor' ? 'checked' : '' ?>
                                     >
                                     Poor
                                 </label>
@@ -392,7 +392,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="refurbished"
-                                        <?= $conditionFilter === 'refurbished' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'refurbished' ? 'checked' : '' ?>
                                     >
                                     Refurbished
                                 </label>
@@ -402,7 +402,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                         type="checkbox"
                                         name="condition[]"
                                         value="for_parts"
-                                        <?= $conditionFilter === 'for_parts' ? 'checked' : '' ?>
+                                        <?= $conditionFilters === 'for_parts' ? 'checked' : '' ?>
                                     >
                                     For Parts
                                 </label>
