@@ -137,6 +137,7 @@ VALUES
     (2, NULL, 'Home and Furniture', 'Furniture, decor, and household products.', NULL),
     (3, NULL, 'Clothing', 'Clothing, shoes, and fashion accessories.', NULL),
     (4, NULL, 'Books', 'Books and educational materials.', NULL),
+    (11, NULL, 'Collectibles', 'Collectible items, memorabilia, and trading cards.', NULL),
 
     (5, 1, 'Computers', 'Computers and computer accessories.', NULL),
     (6, 1, 'Audio', 'Headphones, speakers, and audio equipment.', NULL),
@@ -145,13 +146,15 @@ VALUES
     (8, 2, 'Kitchen', 'Kitchen tools and appliances.', NULL),
 
     (9, 3, 'Mens Clothing', 'Clothing and accessories for men.', NULL),
-    (10, 3, 'Womens Clothing', 'Clothing and accessories for women.', NULL);
+    (10, 3, 'Womens Clothing', 'Clothing and accessories for women.', NULL),
+
+    (12, 11, 'Trading Cards', 'Collectible trading cards including sports and gaming cards.', NULL);
 
 
 -- =========================================
 -- LISTINGS
 -- =========================================
--- 10 active listings plus listings in other
+-- 16 active listings plus listings in other
 -- states so feed filtering can be tested.
 
 INSERT INTO listings (
@@ -299,6 +302,98 @@ VALUES
         NULL
     ),
 
+    (
+        17, 3, 10,
+        'Leather Doc Martens Boots Shoes',
+        'Brown leather ankle boots with minimal wear. Comfortable everyday boots in excellent condition.',
+        'fixed_price',
+        'shipping',
+        8.50,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        58.00,
+        'excellent',
+        1,
+        'active',
+        '2026-10-03 09:25:00',
+        '2026-10-03 09:25:00',
+        NULL
+    ),
+
+    (
+        18, 1, 6,
+        'Keyboard and Sound Equipment Bundle',
+        'Electronic keyboard bundled with sound equipment and accessories. Great starter setup for music practice or home recording.',
+        'fixed_price',
+        'shipping',
+        18.00,
+        5,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        552.00,
+        'good',
+        1,
+        'active',
+        '2026-10-04 15:10:00',
+        '2026-10-04 15:10:00',
+        NULL
+    ),
+
+    (
+        19, 1, 12,
+        'Classic Charizard Pokemon Card',
+        'Classic Charizard trading card kept in protective storage. A great addition for Pokemon card collectors.',
+        'fixed_price',
+        'shipping',
+        5.00,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        100.00,
+        'fair',
+        1,
+        'active',
+        '2026-10-05 11:45:00',
+        '2026-10-05 11:45:00',
+        NULL
+    ),
+
+    (
+        20, 1, 12,
+        'Classic Blastoise Pokemon Card',
+        'Classic Blastoise trading card stored in a protective sleeve. Ideal for collectors of vintage Pokemon cards.',
+        'fixed_price',
+        'shipping',
+        5.00,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        150.00,
+        'excellent',
+        1,
+        'active',
+        '2026-10-06 14:20:00',
+        '2026-10-06 14:20:00',
+        NULL
+    ),
+
     -- =====================================
     -- ACTIVE / MEETUP
     -- =====================================
@@ -373,9 +468,9 @@ VALUES
     ),
 
     (
-        9, 2, 4,
-        'Shiny Charizard Pokemon Cards',
-        'Introductory database textbook with some highlighting.',
+        9, 2, 12,
+        'Shiny Charizard Pokemon Card',
+        'Shiny Charizard Pokemon trading card stored in a protective sleeve.',
         'fixed_price',
         'meetup',
         NULL,
@@ -415,6 +510,52 @@ VALUES
         'active',
         '2026-08-31 07:50:00',
         '2026-08-31 07:50:00',
+        NULL
+    ),
+
+    (
+        15, 2, 7,
+        'Vintage Accent Chair',
+        'Vintage upholstered accent chair with a solid wooden frame. Shows light wear consistent with age.',
+        'fixed_price',
+        'meetup',
+        NULL,
+        NULL,
+        '92507',
+        33.975100,
+        -117.325400,
+        'parking_lot',
+        15,
+        NULL,
+        85.00,
+        'good',
+        1,
+        'active',
+        '2026-10-01 10:15:00',
+        '2026-10-01 10:15:00',
+        NULL
+    ),
+
+    (
+        16, 2, 7,
+        'Wooden Dining Chair',
+        'Solid wooden dining chair with a natural finish. Sturdy and in good overall condition.',
+        'fixed_price',
+        'meetup',
+        NULL,
+        NULL,
+        '92501',
+        33.980600,
+        -117.375500,
+        'coffee_shop',
+        10,
+        NULL,
+        40.00,
+        'good',
+        1,
+        'active',
+        '2026-10-02 13:40:00',
+        '2026-10-02 13:40:00',
         NULL
     ),
 
@@ -555,7 +696,15 @@ VALUES
     (12, 11, '/assets/images/listing/listing-gaming-mouse.jpg', 1),
     (13, 12, '/assets/images/listing/listing-floor-lamp.jpg', 1),
     (14, 13, '/assets/images/listing/listing-backpack.jpg', 1),
-    (15, 14, '/assets/images/listing/listing-speaker.jpg', 1);
+    (15, 14, '/assets/images/listing/listing-speaker.jpg', 1),
+
+    (16, 15, '/assets/images/listing/listing-vintage-chair.jpg', 1),
+    (17, 16, '/assets/images/listing/listing-chair.jpg', 1),
+    (18, 17, '/assets/images/listing/listing-boots1.jpg', 1),
+    (19, 17, '/assets/images/listing/listing-boots2.jpg', 2),
+    (20, 18, '/assets/images/listing/listing-keyboard-equipment.jpg', 1),
+    (21, 19, '/assets/images/listing/listing-trading-cards2.jpg', 1),
+    (22, 20, '/assets/images/listing/listing-trading-cards3.jpg', 1);
 
 
 -- =========================================
