@@ -78,6 +78,12 @@ Backup of *.doc*
 
 ### Environment variables ###
 .env
+.env.local
+.env.production
 
 ### PHP / Composer ###
 vendor/
+
+### Logs / build artifacts ###
+*.log
+build-info/

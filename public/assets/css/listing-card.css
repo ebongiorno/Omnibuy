@@ -1,0 +1,105 @@
+/* =========================================
+   LISTING CARDS
+   ========================================= */
+
+.listing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.listing-card {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    transition:
+        transform 150ms ease,
+        box-shadow 150ms ease;
+}
+
+.listing-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgb(15 23 42 / 0.08);
+}
+
+.listing-card__image {
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: var(--color-surface-secondary);
+}
+
+.listing-card__image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.listing-card__body {
+    padding: var(--space-4);
+}
+
+.listing-card__top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.listing-card__condition {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.listing-card__favorite {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 22px;
+}
+
+.listing-card__favorite:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.listing-card__title {
+    margin: var(--space-2) 0;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.listing-card__title a:hover {
+    color: var(--color-primary);
+}
+
+.listing-card__price {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.listing-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.listing-card__meta span + span::before {
+    margin-right: var(--space-2);
+    content: "•";
+}

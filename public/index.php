@@ -1,6 +1,6 @@
 <?php
-$header = 'components/header.php';
-include $header;
+    $header = 'components/header.php';
+    include $header;
 require_once __DIR__ . '/../db_connect.php';
 
 $sort = $_GET['sort'] ?? 'recent';
@@ -53,6 +53,7 @@ try {
     <link rel="stylesheet" href="assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="assets/css/shared-navigation.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="/assets/css/listing-card.css">
 
     <!-- Enables the use of Font Awesome's Icons -->
     <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -109,7 +110,6 @@ try {
 
             </div>
         </section>
-
 
         <!-- =====================================
              POPULAR CATEGORIES
@@ -195,7 +195,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              BROWSE / RECOMMENDED FEED
              ===================================== -->
@@ -265,7 +264,6 @@ try {
                     <div
                         class="feed-message feed-message--error"
                         role="alert"
-                        hidden
                     >
                         <h3>Unable to display feed</h3>
 
@@ -300,7 +298,6 @@ try {
             </div>
         </section>
 
-
         <!-- =====================================
              LATEST ITEMS
              ===================================== -->
@@ -324,7 +321,7 @@ try {
 
                     <a
                         class="text-link"
-                        href="search.php?sort=recent"
+                        href="pages/search.php?sort=recent"
                     >
                         View more
                     </a>
@@ -342,7 +339,6 @@ try {
         </section>
 
     </main>
-
 
     <!-- =========================================
          MOBILE NAVIGATION
