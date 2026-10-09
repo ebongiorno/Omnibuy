@@ -588,7 +588,7 @@ if (
                             <?php foreach ($conditionFilters as $condition): ?>
                                 <input
                                     type="hidden"
-                                    name="condition"
+                                    name="condition[]"
                                     value="<?= htmlspecialchars($condition) ?>"
                                 >
                             <?php endforeach; ?>
