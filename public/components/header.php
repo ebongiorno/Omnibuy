@@ -45,7 +45,7 @@ function navActive(string $key, string $activeNav): string
   <div class="site-header__top shell">
     <a class="brand" href="../index.php" aria-label="OmniBuy home">
       <span class="brand__name">
-        OmniBuy 
+        OmniBuy
         <i class="fa-solid fa-box-open"></i>
       </span>
     </a>
@@ -94,7 +94,7 @@ function navActive(string $key, string $activeNav): string
           <button class="account-menu__trigger" type="button" aria-expanded="false" aria-controls="account-menu-panel">
             <img
               class="account-menu__avatar"
-              src="<?= htmlspecialchars($currentUser['avatar_url'] ?? '/assets/img/default-avatar.png') ?>"
+              src="<?= htmlspecialchars($currentUser['avatar_url'] ?? '/assets/icons/default-avatar.png') ?>"
               alt=""
             >
             <span><?= htmlspecialchars($currentUser['username'] ?? 'Account') ?></span>
