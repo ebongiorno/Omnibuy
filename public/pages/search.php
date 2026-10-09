@@ -322,6 +322,11 @@ if (
                         action="search.php"
                         method="get"
                     >
+                        <input
+                            type="hidden"
+                            name="sort"
+                            value="<?= htmlspecialchars($sortOption) ?>"
+                        >
                     
                         <?php if ($browseAll): ?>
                             <input
