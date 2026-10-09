@@ -17,6 +17,7 @@ $browseAll = ($_GET['browse'] ?? '') === 'all';
 
 $allowedSortOptions = [
     'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'oldest' => 'l.created_at ASC, l.listing_id ASC',
     'price_low' => 'l.price ASC, l.listing_id DESC',
     'price_high' => 'l.price DESC, l.listing_id DESC'
 ];
@@ -321,6 +322,11 @@ if (
                         action="search.php"
                         method="get"
                     >
+                        <input
+                            type="hidden"
+                            name="sort"
+                            value="<?= htmlspecialchars($sortOption) ?>"
+                        >
                     
                         <?php if ($browseAll): ?>
                             <input
@@ -624,6 +630,13 @@ if (
                                     <?= $sortOption === 'recent' ? 'selected' : '' ?>
                                 >
                                     Newest
+                                </option>
+
+                                <option
+                                    value="oldest"
+                                    <?= $sortOption === 'oldest' ? 'selected' : '' ?>
+                                >
+                                    Oldest
                                 </option>
 
                                 <option
