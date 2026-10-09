@@ -13,6 +13,7 @@ if (!is_array($conditionFilters)) {
 }
 $fulfillmentFilter = $_GET['fulfillment'] ?? '';
 $sortOption = $_GET['sort'] ?? 'recent';
+$browseAll = ($_GET['browse'] ?? '') === 'all';
 
 $allowedSortOptions = [
     'recent' => 'l.created_at DESC, l.listing_id DESC',
@@ -86,12 +87,27 @@ $listings = [];
 $searchError = false;
 $resultCount = 0;
 
+$keywordSql = '';
+
+if ($searchQuery !== '') {
+    $keywordSql = "
+        AND (
+            l.item_name LIKE :item_name
+            OR l.item_description LIKE :description
+            OR c.category_name LIKE :category
+        )
+    ";
+}
+
 
 // =========================================
 // ITEM SEARCH
 // =========================================
 
-if ($searchType === 'items' && $searchQuery !== '') {
+if (
+    $searchType === 'items'
+    && ($searchQuery !== '' || $browseAll)
+) {
 
     $sql = "
         SELECT
@@ -115,11 +131,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
             ON l.category_id = c.category_id
 
         WHERE l.listing_status = 'active'
-            AND (
-                l.item_name LIKE :item_name
-                OR l.item_description LIKE :description
-                OR c.category_name LIKE :category
-            )
+            $keywordSql
             $conditionSql
             $fulfillmentSql
             
@@ -131,18 +143,24 @@ if ($searchType === 'items' && $searchQuery !== '') {
 
         $stmt = $pdo->prepare($sql);
 
-        $searchValue = '%' . $searchQuery . '%';
+        $params = [];
 
-        $params = [
-            'item_name' => $searchValue,
-            'description' => $searchValue,
-            'category' => $searchValue
-        ];
-        $params = array_merge($params, $conditionParams);
-        
-        if ($fulfillmentFilter !== '') {
-            $params['fulfillment'] = $fulfillmentFilter;
+        if ($searchQuery !== '') {
+
+            $searchValue = '%' . $searchQuery . '%';
+
+            $params = [
+                'item_name' => $searchValue,
+                'description' => $searchValue,
+                'category' => $searchValue
+            ];
         }
+
+        $params = array_merge(
+            $params,
+            $conditionParams
+        );
+
         if ($fulfillmentFilter !== '') {
             $params['fulfillment'] = $fulfillmentFilter;
         }
@@ -237,10 +255,16 @@ if ($searchType === 'items' && $searchQuery !== '') {
                     </p>
 
                     <h1>
-                        Search Results
+                        <?= $browseAll ? 'All Listings' : 'Search Results' ?>
                     </h1>
 
-                    <?php if ($searchQuery !== ''): ?>
+                    <?php if ($browseAll): ?>
+
+                        <p class="search-page__summary">
+                            Browse all available marketplace listings.
+                        </p>
+
+                    <?php elseif ($searchQuery !== ''): ?>
 
                         <p class="search-page__summary">
                             Results for
@@ -297,6 +321,14 @@ if ($searchType === 'items' && $searchQuery !== '') {
                         action="search.php"
                         method="get"
                     >
+                    
+                        <?php if ($browseAll): ?>
+                            <input
+                                type="hidden"
+                                name="browse"
+                                value="all"
+                            >
+                        <?php endif; ?>
 
                         <!-- Preserve the existing search -->
                         <input
@@ -569,6 +601,15 @@ if ($searchType === 'items' && $searchQuery !== '') {
                                 >
                             <?php endif; ?>
 
+                            <!-- Preserves browse mode -->
+                            <?php if ($browseAll): ?>
+                                <input
+                                    type="hidden"
+                                    name="browse"
+                                    value="all"
+                                >
+                            <?php endif; ?>
+
                             <label for="results-sort">
                                 Sort by
                             </label>
@@ -636,7 +677,7 @@ if ($searchType === 'items' && $searchQuery !== '') {
                          EMPTY / INITIAL STATE
                          ========================= -->
 
-                    <?php elseif ($searchQuery === ''): ?>
+                    <?php elseif ($searchQuery === '' && !$browseAll): ?>
 
                         <div class="search-message">
 
