@@ -17,14 +17,14 @@ if (!array_key_exists($sort, $sortOptions)) {
 
 $sortType = $sortOptions[$sort];
 
-$sql = "SELECT l.listing_id, l.`condition`, l.item_name, 
+$sql = "SELECT l.listing_id, l.`condition`, l.item_name,
             l.price, l.category_id, l.fulfillment_type,
             li.image_url, c.category_name
             FROM listings as l
             LEFT JOIN listing_images as li
-                ON l.listing_id = li.listing_id 
+                ON l.listing_id = li.listing_id
                 AND li.display_order = 1
-            LEFT JOIN categories as c 
+            LEFT JOIN categories as c
                 ON l.category_id = c.category_id
             WHERE listing_status = 'active'
             ORDER BY $sortType
@@ -231,20 +231,20 @@ try {
                         </label>
 
                         <select id="feed-sort" name="sort" onchange="this.form.submit()">
-                            <option 
+                            <option
                                 value="recent"
-                                <?= $sort === 'recent' ? 'selected' : '' ?> 
+                                <?= $sort === 'recent' ? 'selected' : '' ?>
                                 >
                                 Newest
                             </option>
 
-                            <option 
+                            <option
                                 value="price_low"
                                 <?= $sort === 'price_low' ? 'selected' : '' ?>>
                                 Price: Low to High
                             </option>
 
-                            <option 
+                            <option
                                 value="price_high"
                                 <?= $sort === 'price_high' ? 'selected' : '' ?>>
                                 Price: High to Low
@@ -360,8 +360,3 @@ try {
 
 </body>
 </html>
-
-<?php
-$footer = 'components/footer.php';
-include $footer;
-?>
