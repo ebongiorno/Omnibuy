@@ -7,13 +7,24 @@ require_once __DIR__ . '/../../db_connect.php';
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
+$allowedSearchTypes = [
+    'items',
+    'seller_profiles'
+];
+
+if (!in_array($searchType, $allowedSearchTypes, true)) {
+    $searchType = 'items';
+}
+
 $conditionFilters = $_GET['condition'] ?? [];
 if (!is_array($conditionFilters)) {
     $conditionFilters = [];
 }
 $fulfillmentFilter = $_GET['fulfillment'] ?? '';
 $sortOption = $_GET['sort'] ?? 'recent';
-$browseAll = ($_GET['browse'] ?? '') === 'all';
+$browseAll =
+    $searchType === 'items'
+    && ($_GET['browse'] ?? '') === 'all';
 
 $allowedSortOptions = [
     'recent' => 'l.created_at DESC, l.listing_id DESC',
