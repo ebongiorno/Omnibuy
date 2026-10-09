@@ -73,8 +73,8 @@ function navActive(string $key, string $activeNav): string
         <span class="icon-link__label">Wishlist</span>
       </a>
 
-      <a class="icon-link" href="/inbox.php" aria-label="Messages">
-        <i class="fa-solid fa-envelope"></i>
+      <a class="icon-link" href="../pages/messaging.php" aria-label="Messages">
+        <span aria-hidden="true">✉</span>
         <span class="icon-link__label">Messages</span>
         <?php if ($unreadCount > 0): ?>
           <span class="count-badge" aria-label="<?= (int) $unreadCount ?> unread messages"><?= (int) $unreadCount ?></span>
