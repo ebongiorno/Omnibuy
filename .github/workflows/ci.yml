@@ -201,6 +201,62 @@ jobs:
 
           echo "Database schema initialized successfully."
 
+      - name: Validate seed data
+        run: |
+          echo "Checking seeded database contents..."
+
+          USER_COUNT=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT COUNT(*) FROM users;")
+
+          LISTING_COUNT=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT COUNT(*) FROM listings;")
+
+          ACTIVE_LISTING_COUNT=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT COUNT(*)
+             FROM listings
+             WHERE listing_status = 'active';")
+
+          if [ "$USER_COUNT" -lt 1 ]; then
+            echo "Seed validation failed: no users found."
+            exit 1
+          fi
+
+          if [ "$LISTING_COUNT" -lt 1 ]; then
+            echo "Seed validation failed: no listings found."
+            exit 1
+          fi
+
+          if [ "$ACTIVE_LISTING_COUNT" -lt 1 ]; then
+            echo "Seed validation failed: no active listings found."
+            exit 1
+          fi
+
+          echo "Seed validation passed."
+          echo "Users: $USER_COUNT"
+          echo "Listings: $LISTING_COUNT"
+          echo "Active listings: $ACTIVE_LISTING_COUNT"
+
       - name: Run automated PHP tests
         run: |
           shopt -s nullglob
