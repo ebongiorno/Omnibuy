@@ -29,6 +29,7 @@ $browseAll =
 
 $allowedSortOptions = [
     'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'oldest' => 'l.created_at ASC, l.listing_id ASC',
     'price_low' => 'l.price ASC, l.listing_id DESC',
     'price_high' => 'l.price DESC, l.listing_id DESC'
 ];
@@ -486,6 +487,16 @@ $hasNoResults =
                             class="search-filters__form"
                             action="search.php"
                             method="get"
+                    </div>
+                    <form
+                        class="search-filters__form"
+                        action="search.php"
+                        method="get"
+                    >
+                        <input
+                            type="hidden"
+                            name="sort"
+                            value="<?= htmlspecialchars($sortOption) ?>"
                         >
                     
                             <?php if ($browseAll): ?>
@@ -785,6 +796,19 @@ $hasNoResults =
                                 <label for="results-sort">
                                     Sort by
                                 </label>
+                                <option
+                                    value="oldest"
+                                    <?= $sortOption === 'oldest' ? 'selected' : '' ?>
+                                >
+                                    Oldest
+                                </option>
+
+                                <option
+                                    value="price_low"
+                                    <?= $sortOption === 'price_low' ? 'selected' : '' ?>
+                                >
+                                    Price: Low to High
+                                </option>
 
                                 <select
                                     id="results-sort"
