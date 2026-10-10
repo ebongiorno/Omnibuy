@@ -741,8 +741,7 @@ $hasNoResults =
                             </h2>
 
                             <p class="search-results__count">
-                                <?= $resultCount ?>
-                                <?= $resultCount === 1 ? 'result' : 'results' ?>
+                                <?= $resultCount . ' ' . ($resultCount === 1 ? 'result' : 'results') ?>
                             </p>
 
                         </div>
