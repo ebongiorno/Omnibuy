@@ -7,10 +7,6 @@ require_once __DIR__ . '/../../db_connect.php';
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
-$hasNoResults =
-    $searchType === 'seller_profiles'
-        ? empty($sellers)
-        : empty($listings);
 $allowedSearchTypes = [
     'items',
     'seller_profiles'
@@ -277,6 +273,11 @@ if (
     }
 }
 
+$hasNoResults =
+    $searchType === 'seller_profiles'
+        ? empty($sellers)
+        : empty($listings);
+
 ?>
 
 <!DOCTYPE html>
@@ -479,7 +480,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="new"
-                                            <?= in_array('new', $conditionFilters, true) ?>
+                                            <?= in_array('new', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         New
                                     </label>
@@ -489,7 +490,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="open_box"
-                                            <?= in_array('open_box', $conditionFilters, true) ?>
+                                            <?= in_array('open_box', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         Open Box
                                     </label>
@@ -499,7 +500,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="like_new"
-                                            <?= in_array('like_new', $conditionFilters, true) ?>
+                                            <?= in_array('like_new', $conditionFilters, true)  ? 'checked' : '' ?>
                                         >
                                         Like New
                                     </label>
@@ -509,7 +510,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="excellent"
-                                            <?= in_array('excellent', $conditionFilters, true) ?>
+                                            <?= in_array('excellent', $conditionFilters, true)  ? 'checked' : '' ?>
                                         >
                                         Excellent
                                     </label>
@@ -519,7 +520,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="good"
-                                            <?= in_array('good', $conditionFilters, true) ?>
+                                            <?= in_array('good', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         Good
                                     </label>
@@ -529,7 +530,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="fair"
-                                            <?= in_array('fair', $conditionFilters, true) ?>
+                                            <?= in_array('fair', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         Fair
                                     </label>
@@ -539,7 +540,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="poor"
-                                            <?= in_array('poor', $conditionFilters, true) ?>
+                                            <?= in_array('poor', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         Poor
                                     </label>
@@ -549,7 +550,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="refurbished"
-                                            <?= in_array('refurbished', $conditionFilters, true) ?>
+                                            <?= in_array('refurbished', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         Refurbished
                                     </label>
@@ -559,7 +560,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="for_parts"
-                                            <?= in_array('for_parts', $conditionFilters, true) ?>
+                                            <?= in_array('for_parts', $conditionFilters, true) ? 'checked' : '' ?>
                                         >
                                         For Parts
                                     </label>
@@ -835,7 +836,7 @@ if (
                          NO RESULTS STATE
                          ========================= -->
 
-                    <?php elseif (empty($hasNoResults)): ?>
+                    <?php elseif ($hasNoResults): ?>
 
                         <div class="search-message">
 
@@ -851,8 +852,11 @@ if (
                             </h3>
 
                             <p>
-                                Try another keyword or adjust your
-                                search criteria.
+                                <?php if ($searchType === 'seller_profiles'): ?>
+                                    Try another seller name, store name, or username.
+                                <?php else: ?>
+                                    Try another keyword or adjust your search criteria.
+                                <?php endif; ?>
                             </p>
 
                         </div>
