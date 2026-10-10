@@ -85,19 +85,6 @@ if ($fulfillmentFilter !== '') {
     $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
 }
 
-$allowedFulfillmentTypes = [
-    'shipping',
-    'meetup'
-];
-if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillmentTypes, true)) {
-    $fulfillmentFilter = '';
-}
-
-$fulfillmentSql = '';
-if ($fulfillmentFilter !== '') {
-    $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
-}
-
 $listings = [];
 $sellers = [];
 $searchError = false;
