@@ -479,7 +479,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="new"
-                                            <?= $conditionFilters === 'new' ? 'checked' : '' ?>
+                                            <?= in_array('new', $conditionFilters, true) ?>
                                         >
                                         New
                                     </label>
@@ -489,7 +489,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="open_box"
-                                            <?= $conditionFilters === 'open_box' ? 'checked' : '' ?>
+                                            <?= in_array('open_box', $conditionFilters, true) ?>
                                         >
                                         Open Box
                                     </label>
@@ -499,7 +499,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="like_new"
-                                            <?= $conditionFilters === 'like_new' ? 'checked' : '' ?>
+                                            <?= in_array('like_new', $conditionFilters, true) ?>
                                         >
                                         Like New
                                     </label>
@@ -509,7 +509,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="excellent"
-                                            <?= $conditionFilters === 'excellent' ? 'checked' : '' ?>
+                                            <?= in_array('excellent', $conditionFilters, true) ?>
                                         >
                                         Excellent
                                     </label>
@@ -519,7 +519,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="good"
-                                            <?= $conditionFilters === 'good' ? 'checked' : '' ?>
+                                            <?= in_array('good', $conditionFilters, true) ?>
                                         >
                                         Good
                                     </label>
@@ -529,7 +529,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="fair"
-                                            <?= $conditionFilters === 'fair' ? 'checked' : '' ?>
+                                            <?= in_array('fair', $conditionFilters, true) ?>
                                         >
                                         Fair
                                     </label>
@@ -539,7 +539,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="poor"
-                                            <?= $conditionFilters === 'poor' ? 'checked' : '' ?>
+                                            <?= in_array('poor', $conditionFilters, true) ?>
                                         >
                                         Poor
                                     </label>
@@ -549,7 +549,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="refurbished"
-                                            <?= $conditionFilters === 'refurbished' ? 'checked' : '' ?>
+                                            <?= in_array('refurbished', $conditionFilters, true) ?>
                                         >
                                         Refurbished
                                     </label>
@@ -559,7 +559,7 @@ if (
                                             type="checkbox"
                                             name="condition[]"
                                             value="for_parts"
-                                            <?= $conditionFilters === 'for_parts' ? 'checked' : '' ?>
+                                            <?= in_array('for_parts', $conditionFilters, true) ?>
                                         >
                                         For Parts
                                     </label>
