@@ -796,20 +796,7 @@ $hasNoResults =
                                 <label for="results-sort">
                                     Sort by
                                 </label>
-                                <option
-                                    value="oldest"
-                                    <?= $sortOption === 'oldest' ? 'selected' : '' ?>
-                                >
-                                    Oldest
-                                </option>
-
-                                <option
-                                    value="price_low"
-                                    <?= $sortOption === 'price_low' ? 'selected' : '' ?>
-                                >
-                                    Price: Low to High
-                                </option>
-
+                            
                                 <select
                                     id="results-sort"
                                     name="sort"
@@ -820,6 +807,13 @@ $hasNoResults =
                                         <?= $sortOption === 'recent' ? 'selected' : '' ?>
                                     >
                                         Newest
+                                    </option>
+
+                                    <option
+                                    value="oldest"
+                                    <?= $sortOption === 'oldest' ? 'selected' : '' ?>
+                                    >
+                                        Oldest
                                     </option>
 
                                     <option
