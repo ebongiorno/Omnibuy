@@ -92,12 +92,55 @@ $keywordSql = '';
 if ($searchQuery !== '') {
     $keywordSql = "
         AND (
-            l.item_name LIKE :item_name
-            OR l.item_description LIKE :description
-            OR c.category_name LIKE :category
+            l.item_name LIKE :item_name ESCAPE '!'
+            OR l.item_description LIKE :description ESCAPE '!'
+            OR c.category_name LIKE :category ESCAPE '!'
         )
     ";
 }
+
+// =========================================
+// HELPER FUNCTIONS
+// =========================================
+function executeWithRetry(
+    PDO $pdo,
+    string $sql,
+    array $params = [],
+    int $maxAttempts = 2,
+    int $delaySeconds = 2
+): array {
+    $attempt = 0;
+
+    while ($attempt < $maxAttempts) {
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            $attempt++;
+
+            if ($attempt >= $maxAttempts) {
+                throw $e;
+            }
+
+            sleep($delaySeconds);
+        }
+    }
+
+    return [];
+}
+
+function escapeLike(string $value): string
+{
+    return str_replace(
+        ['!', '%', '_'],
+        ['!!', '!%', '!_'],
+        $value
+    );
+}
+
 
 
 // =========================================
@@ -140,14 +183,11 @@ if (
     ";
 
     try {
-
-        $stmt = $pdo->prepare($sql);
-
         $params = [];
 
         if ($searchQuery !== '') {
-
-            $searchValue = '%' . $searchQuery . '%';
+            $escapedSearchQuery = escapeLike($searchQuery);
+            $searchValue = '%' . $escapedSearchQuery . '%';
 
             $params = [
                 'item_name' => $searchValue,
@@ -165,21 +205,20 @@ if (
             $params['fulfillment'] = $fulfillmentFilter;
         }
 
-
-        $stmt->execute($params);
-
-        $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $listings = executeWithRetry(
+            $pdo,
+            $sql,
+            $params
+        );
 
         $resultCount = count($listings);
 
     } catch (PDOException $e) {
-
         $searchError = true;
 
-        // Log technical details server-side instead of
-        // displaying database errors to the user.
         error_log(
-            'OmniBuy item search failed: ' . $e->getMessage()
+            'OmniBuy item search failed after retry: '
+            . $e->getMessage()
         );
     }
 }
@@ -219,13 +258,13 @@ if (
 
         WHERE u.account_status = 'active'
             AND (
-                sp.store_name LIKE :store_name
-                OR u.username LIKE :username
-                OR u.first_name LIKE :first_name
+                sp.store_name LIKE :store_name ESCAPE '!'
+                OR u.username LIKE :username ESCAPE '!'
+                OR u.first_name LIKE :first_name ESCAPE '!'
 
                 OR (
                     u.is_last_name_hidden = FALSE
-                    AND u.last_name LIKE :last_name
+                    AND u.last_name LIKE :last_name ESCAPE '!'
                 )
 
                 OR (
@@ -234,7 +273,7 @@ if (
                         u.first_name,
                         ' ',
                         u.last_name
-                    ) LIKE :full_name
+                    ) LIKE :full_name ESCAPE '!'
                 )
             )
 
@@ -244,31 +283,30 @@ if (
     ";
 
     try {
+        $escapedSearchQuery = escapeLike($searchQuery);
+        $searchValue = '%' . $escapedSearchQuery . '%';
 
-        $stmt = $pdo->prepare($sql);
-
-        $searchValue =
-            '%' . $searchQuery . '%';
-
-        $stmt->execute([
+        $params = [
             'store_name' => $searchValue,
             'username' => $searchValue,
             'first_name' => $searchValue,
             'last_name' => $searchValue,
             'full_name' => $searchValue
-        ]);
+        ];
 
-        $sellers =
-            $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sellers = executeWithRetry(
+            $pdo,
+            $sql,
+            $params
+        );
 
         $resultCount = count($sellers);
 
     } catch (PDOException $e) {
-
         $searchError = true;
 
         error_log(
-            'OmniBuy seller search failed: '
+            'OmniBuy seller search failed after retry: '
             . $e->getMessage()
         );
     }
