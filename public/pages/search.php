@@ -7,6 +7,10 @@ require_once __DIR__ . '/../../db_connect.php';
 
 $searchQuery = trim($_GET['q'] ?? '');
 $searchType = $_GET['search_type'] ?? 'items';
+$hasNoResults =
+    $searchType === 'seller_profiles'
+        ? empty($sellers)
+        : empty($listings);
 $allowedSearchTypes = [
     'items',
     'seller_profiles'
@@ -95,6 +99,7 @@ if ($fulfillmentFilter !== '') {
 }
 
 $listings = [];
+$sellers = [];
 $searchError = false;
 $resultCount = 0;
 
@@ -195,6 +200,96 @@ if (
     }
 }
 
+
+// =========================================
+// SELLER PROFILE SEARCH
+// =========================================
+
+if (
+    $searchType === 'seller_profiles'
+    && $searchQuery !== ''
+) {
+
+    $sql = "
+        SELECT
+            sp.user_id,
+            sp.store_name,
+            sp.is_verified,
+
+            u.username,
+            u.first_name,
+
+            CASE
+                WHEN u.is_last_name_hidden = FALSE
+                THEN u.last_name
+                ELSE NULL
+            END AS last_name,
+
+            u.profile_image_url,
+            u.bio
+
+        FROM seller_profiles AS sp
+
+        INNER JOIN users AS u
+            ON sp.user_id = u.user_id
+
+        WHERE u.account_status = 'active'
+            AND (
+                sp.store_name LIKE :store_name
+                OR u.username LIKE :username
+                OR u.first_name LIKE :first_name
+
+                OR (
+                    u.is_last_name_hidden = FALSE
+                    AND u.last_name LIKE :last_name
+                )
+
+                OR (
+                    u.is_last_name_hidden = FALSE
+                    AND CONCAT(
+                        u.first_name,
+                        ' ',
+                        u.last_name
+                    ) LIKE :full_name
+                )
+            )
+
+        ORDER BY
+            sp.store_name ASC,
+            u.username ASC
+    ";
+
+    try {
+
+        $stmt = $pdo->prepare($sql);
+
+        $searchValue =
+            '%' . $searchQuery . '%';
+
+        $stmt->execute([
+            'store_name' => $searchValue,
+            'username' => $searchValue,
+            'first_name' => $searchValue,
+            'last_name' => $searchValue,
+            'full_name' => $searchValue
+        ]);
+
+        $sellers =
+            $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $resultCount = count($sellers);
+
+    } catch (PDOException $e) {
+
+        $searchError = true;
+
+        error_log(
+            'OmniBuy seller search failed: '
+            . $e->getMessage()
+        );
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -266,7 +361,13 @@ if (
                     </p>
 
                     <h1>
-                        <?= $browseAll ? 'All Listings' : 'Search Results' ?>
+                        <?php if ($browseAll): ?>
+                            All Listings
+                        <?php elseif ($searchType === 'seller_profiles'): ?>
+                            Seller Search Results
+                        <?php else: ?>
+                            Search Results
+                        <?php endif; ?>
                     </h1>
 
                     <?php if ($browseAll): ?>
@@ -278,16 +379,29 @@ if (
                     <?php elseif ($searchQuery !== ''): ?>
 
                         <p class="search-page__summary">
-                            Results for
+
+                            <?php if ($searchType === 'seller_profiles'): ?>
+                                Seller profiles matching
+                            <?php else: ?>
+                                Results for
+                            <?php endif; ?>
+
                             <strong>
                                 “<?= htmlspecialchars($searchQuery) ?>”
                             </strong>
+
                         </p>
 
                     <?php else: ?>
 
                         <p class="search-page__summary">
-                            Search OmniBuy to find marketplace listings.
+
+                            <?php if ($searchType === 'seller_profiles'): ?>
+                                Search OmniBuy to find marketplace sellers.
+                            <?php else: ?>
+                                Search OmniBuy to find marketplace listings.
+                            <?php endif; ?>
+
                         </p>
 
                     <?php endif; ?>
@@ -312,243 +426,258 @@ if (
                     class="search-filters"
                     aria-labelledby="filter-heading"
                 >
+                    <?php if ($searchType === 'seller_profiles'): ?>
 
-                    <div class="search-filters__header">
+                        <div class="search-filters__header">
+                            <h2 id="filter-heading">
+                                Seller Search
+                            </h2>
+                        </div>
 
-                        <h2 id="filter-heading">
-                            Filters
-                        </h2>
+                        <p class="filter-group__note">
+                            Listing filters do not apply when searching
+                            seller profiles.
+                        </p>
 
-                        <button
-                            class="search-filters__clear"
-                            type="button"
+                    <?php else: ?>
+                        <div class="search-filters__header">
+
+                            <h2 id="filter-heading">
+                                Filters
+                            </h2>
+
+                            <button
+                                class="search-filters__clear"
+                                type="button"
+                            >
+                                Clear
+                            </button>
+
+                        </div>
+                        <form
+                            class="search-filters__form"
+                            action="search.php"
+                            method="get"
                         >
-                            Clear
-                        </button>
-
-                    </div>
-                    <form
-                        class="search-filters__form"
-                        action="search.php"
-                        method="get"
-                    >
                     
-                        <?php if ($browseAll): ?>
+                            <?php if ($browseAll): ?>
+                                <input
+                                    type="hidden"
+                                    name="browse"
+                                    value="all"
+                                >
+                            <?php endif; ?>
+
+                            <!-- Preserve the existing search -->
                             <input
                                 type="hidden"
-                                name="browse"
-                                value="all"
+                                name="q"
+                                value="<?= htmlspecialchars($searchQuery) ?>"
                             >
-                        <?php endif; ?>
 
-                        <!-- Preserve the existing search -->
-                        <input
-                            type="hidden"
-                            name="q"
-                            value="<?= htmlspecialchars($searchQuery) ?>"
-                        >
-
-                        <input
-                            type="hidden"
-                            name="search_type"
-                            value="<?= htmlspecialchars($searchType) ?>"
-                        >
-                        <!-- Condition filter -->
-                        <div class="filter-group">
-                            <fieldset class="filter-options">
-                                <legend>
-                                    Condition
-                                </legend>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="new"
-                                        <?= $conditionFilters === 'new' ? 'checked' : '' ?>
-                                    >
-                                    New
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="open_box"
-                                        <?= $conditionFilters === 'open_box' ? 'checked' : '' ?>
-                                    >
-                                    Open Box
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="like_new"
-                                        <?= $conditionFilters === 'like_new' ? 'checked' : '' ?>
-                                    >
-                                    Like New
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="excellent"
-                                        <?= $conditionFilters === 'excellent' ? 'checked' : '' ?>
-                                    >
-                                    Excellent
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="good"
-                                        <?= $conditionFilters === 'good' ? 'checked' : '' ?>
-                                    >
-                                    Good
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="fair"
-                                        <?= $conditionFilters === 'fair' ? 'checked' : '' ?>
-                                    >
-                                    Fair
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="poor"
-                                        <?= $conditionFilters === 'poor' ? 'checked' : '' ?>
-                                    >
-                                    Poor
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="refurbished"
-                                        <?= $conditionFilters === 'refurbished' ? 'checked' : '' ?>
-                                    >
-                                    Refurbished
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="condition[]"
-                                        value="for_parts"
-                                        <?= $conditionFilters === 'for_parts' ? 'checked' : '' ?>
-                                    >
-                                    For Parts
-                                </label>
-
-                            </fieldset>
-                        </div>
-
-                        <!-- Delivery filter -->
-                        <div class="filter-group">
-                            <fieldset class="filter-options">
-                                <legend>
-                                    Delivery Method
-                                </legend>
-
-                                <label>
-                                    <input
-                                        type="radio"
-                                        name="fulfillment"
-                                        value="shipping"
-                                        <?= $fulfillmentFilter === 'shipping' ? 'checked' : '' ?>
-                                    >
-                                    Shipping
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="radio"
-                                        name="fulfillment"
-                                        value="meetup"
-                                        <?= $fulfillmentFilter === 'meetup' ? 'checked' : '' ?>
-                                    >
-                                    Meetup
-                                </label>
-
-                            </fieldset>
-                        </div>
-
-                        <!-- Category filter -->
-                        <div class="filter-group">
-
-                            <label for="category-filter">
-                                Category
-                            </label>
-
-                            <select
-                                id="category-filter"
-                                name="category"
-                                disabled
+                            <input
+                                type="hidden"
+                                name="search_type"
+                                value="<?= htmlspecialchars($searchType) ?>"
                             >
-                                <option>
-                                    All Categories
-                                </option>
-                            </select>
+                            <!-- Condition filter -->
+                            <div class="filter-group">
+                                <fieldset class="filter-options">
+                                    <legend>
+                                        Condition
+                                    </legend>
 
-                            <p class="filter-group__note">
-                                Category filtering will be added later.
-                            </p>
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="new"
+                                            <?= $conditionFilters === 'new' ? 'checked' : '' ?>
+                                        >
+                                        New
+                                    </label>
 
-                        </div>
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="open_box"
+                                            <?= $conditionFilters === 'open_box' ? 'checked' : '' ?>
+                                        >
+                                        Open Box
+                                    </label>
 
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="like_new"
+                                            <?= $conditionFilters === 'like_new' ? 'checked' : '' ?>
+                                        >
+                                        Like New
+                                    </label>
 
-                        <!-- Price filter -->
-                        <div class="filter-group">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="excellent"
+                                            <?= $conditionFilters === 'excellent' ? 'checked' : '' ?>
+                                        >
+                                        Excellent
+                                    </label>
 
-                            <span class="filter-group__label">
-                                Price Range
-                            </span>
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="good"
+                                            <?= $conditionFilters === 'good' ? 'checked' : '' ?>
+                                        >
+                                        Good
+                                    </label>
 
-                            <div class="price-filter">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="fair"
+                                            <?= $conditionFilters === 'fair' ? 'checked' : '' ?>
+                                        >
+                                        Fair
+                                    </label>
 
-                                <input
-                                    type="number"
-                                    min="0"
-                                    placeholder="Min"
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="poor"
+                                            <?= $conditionFilters === 'poor' ? 'checked' : '' ?>
+                                        >
+                                        Poor
+                                    </label>
+
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="refurbished"
+                                            <?= $conditionFilters === 'refurbished' ? 'checked' : '' ?>
+                                        >
+                                        Refurbished
+                                    </label>
+
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="condition[]"
+                                            value="for_parts"
+                                            <?= $conditionFilters === 'for_parts' ? 'checked' : '' ?>
+                                        >
+                                        For Parts
+                                    </label>
+
+                                </fieldset>
+                            </div>
+
+                            <!-- Delivery filter -->
+                            <div class="filter-group">
+                                <fieldset class="filter-options">
+                                    <legend>
+                                        Delivery Method
+                                    </legend>
+
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="fulfillment"
+                                            value="shipping"
+                                            <?= $fulfillmentFilter === 'shipping' ? 'checked' : '' ?>
+                                        >
+                                        Shipping
+                                    </label>
+
+                                    <label>
+                                        <input
+                                            type="radio"
+                                            name="fulfillment"
+                                            value="meetup"
+                                            <?= $fulfillmentFilter === 'meetup' ? 'checked' : '' ?>
+                                        >
+                                        Meetup
+                                    </label>
+
+                                </fieldset>
+                            </div>
+
+                            <!-- Category filter -->
+                            <div class="filter-group">
+
+                                <label for="category-filter">
+                                    Category
+                                </label>
+
+                                <select
+                                    id="category-filter"
+                                    name="category"
                                     disabled
                                 >
+                                    <option>
+                                        All Categories
+                                    </option>
+                                </select>
 
-                                <span aria-hidden="true">
-                                    -
-                                </span>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    placeholder="Max"
-                                    disabled
-                                >
+                                <p class="filter-group__note">
+                                    Category filtering will be added later.
+                                </p>
 
                             </div>
 
-                            <p class="filter-group__note">
-                                Price filtering will be added later.
-                            </p>
 
-                        </div>
+                            <!-- Price filter -->
+                            <div class="filter-group">
 
-                        <button
-                            class="button button--primary"
-                            type="submit"
-                        >
-                            Apply Filters
-                        </button>
-                    </form>
+                                <span class="filter-group__label">
+                                    Price Range
+                                </span>
+
+                                <div class="price-filter">
+
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        placeholder="Min"
+                                        disabled
+                                    >
+
+                                    <span aria-hidden="true">
+                                        -
+                                    </span>
+
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        placeholder="Max"
+                                        disabled
+                                    >
+
+                                </div>
+
+                                <p class="filter-group__note">
+                                    Price filtering will be added later.
+                                </p>
+
+                            </div>
+
+                            <button
+                                class="button button--primary"
+                                type="submit"
+                            >
+                                Apply Filters
+                            </button>
+                        </form>
+
+                    <?php endif; ?>
                 </aside>
 
 
@@ -566,7 +695,9 @@ if (
                         <div>
 
                             <h2 id="results-heading">
-                                Listings
+                                <?= $searchType === 'seller_profiles'
+                                    ? 'Seller Profiles'
+                                    : 'Listings' ?>
                             </h2>
 
                             <p class="search-results__count">
@@ -575,85 +706,86 @@ if (
 
                         </div>
 
-
-                        <!-- Sorting placeholder -->
-                        <form
-                            class="search-results__sort"
-                            action="search.php"
-                            method="get"
-                        >
-                            <!-- Preserve current search -->
-                            <input
-                                type="hidden"
-                                name="q"
-                                value="<?= htmlspecialchars($searchQuery) ?>"
+                        <?php if ($searchType === 'items'): ?>
+                            <form
+                                class="search-results__sort"
+                                action="search.php"
+                                method="get"
                             >
 
-                            <input
-                                type="hidden"
-                                name="search_type"
-                                value="<?= htmlspecialchars($searchType) ?>"
-                            >
-
-                            <!-- Preserve active filters -->
-                            <?php foreach ($conditionFilters as $condition): ?>
+                                <!-- existing sort form -->
+                                <!-- Preserve current search -->
                                 <input
                                     type="hidden"
-                                    name="condition[]"
-                                    value="<?= htmlspecialchars($condition) ?>"
+                                    name="q"
+                                    value="<?= htmlspecialchars($searchQuery) ?>"
                                 >
-                            <?php endforeach; ?>
 
-                            <?php if ($fulfillmentFilter !== ''): ?>
                                 <input
                                     type="hidden"
-                                    name="fulfillment"
-                                    value="<?= htmlspecialchars($fulfillmentFilter) ?>"
+                                    name="search_type"
+                                    value="<?= htmlspecialchars($searchType) ?>"
                                 >
-                            <?php endif; ?>
 
-                            <!-- Preserves browse mode -->
-                            <?php if ($browseAll): ?>
-                                <input
-                                    type="hidden"
-                                    name="browse"
-                                    value="all"
+                                <!-- Preserve active filters -->
+                                <?php foreach ($conditionFilters as $condition): ?>
+                                    <input
+                                        type="hidden"
+                                        name="condition[]"
+                                        value="<?= htmlspecialchars($condition) ?>"
+                                    >
+                                <?php endforeach; ?>
+
+                                <?php if ($fulfillmentFilter !== ''): ?>
+                                    <input
+                                        type="hidden"
+                                        name="fulfillment"
+                                        value="<?= htmlspecialchars($fulfillmentFilter) ?>"
+                                    >
+                                <?php endif; ?>
+
+                                <!-- Preserves browse mode -->
+                                <?php if ($browseAll): ?>
+                                    <input
+                                        type="hidden"
+                                        name="browse"
+                                        value="all"
+                                    >
+                                <?php endif; ?>
+
+                                <label for="results-sort">
+                                    Sort by
+                                </label>
+
+                                <select
+                                    id="results-sort"
+                                    name="sort"
+                                    onchange="this.form.submit()"
                                 >
-                            <?php endif; ?>
+                                    <option
+                                        value="recent"
+                                        <?= $sortOption === 'recent' ? 'selected' : '' ?>
+                                    >
+                                        Newest
+                                    </option>
 
-                            <label for="results-sort">
-                                Sort by
-                            </label>
+                                    <option
+                                        value="price_low"
+                                        <?= $sortOption === 'price_low' ? 'selected' : '' ?>
+                                    >
+                                        Price: Low to High
+                                    </option>
 
-                            <select
-                                id="results-sort"
-                                name="sort"
-                                onchange="this.form.submit()"
-                            >
-                                <option
-                                    value="recent"
-                                    <?= $sortOption === 'recent' ? 'selected' : '' ?>
-                                >
-                                    Newest
-                                </option>
+                                    <option
+                                        value="price_high"
+                                        <?= $sortOption === 'price_high' ? 'selected' : '' ?>
+                                    >
+                                        Price: High to Low
+                                    </option>
+                                </select>
 
-                                <option
-                                    value="price_low"
-                                    <?= $sortOption === 'price_low' ? 'selected' : '' ?>
-                                >
-                                    Price: Low to High
-                                </option>
-
-                                <option
-                                    value="price_high"
-                                    <?= $sortOption === 'price_high' ? 'selected' : '' ?>
-                                >
-                                    Price: High to Low
-                                </option>
-                            </select>
-
-                        </form>
-
+                            </form>
+                        <?php endif; ?>
                     </div>
 
 
@@ -702,10 +834,14 @@ if (
                             </h3>
 
                             <p>
-                                Enter an item name or keyword to search
-                                the OmniBuy marketplace.
+                                <?php if ($searchType === 'seller_profiles'): ?>
+                                    Enter a seller name, store name, or username
+                                    to search OmniBuy sellers.
+                                <?php else: ?>
+                                    Enter an item name or keyword to search
+                                    the OmniBuy marketplace.
+                                <?php endif; ?>
                             </p>
-
                         </div>
 
 
@@ -713,7 +849,7 @@ if (
                          NO RESULTS STATE
                          ========================= -->
 
-                    <?php elseif (empty($listings)): ?>
+                    <?php elseif (empty($hasNoResults)): ?>
 
                         <div class="search-message">
 
@@ -723,7 +859,9 @@ if (
                             ></i>
 
                             <h3>
-                                No listings found
+                                <?= $searchType === 'seller_profiles'
+                                    ? 'No sellers found'
+                                    : 'No listings found' ?>
                             </h3>
 
                             <p>
@@ -739,14 +877,81 @@ if (
                          ========================= -->
 
                     <?php else: ?>
-                        <div class="listing-grid">
-                            <?php foreach ($listings as $listing): ?>
-                                <?php
-                                include __DIR__
-                                    . '/../components/listing-card-component.php';
-                                ?>
-                            <?php endforeach; ?>
-                        </div>
+                        <?php if ($searchType === 'seller_profiles'): ?>
+                            <div class="seller-grid">
+                                <?php foreach ($sellers as $seller): ?>
+                                    <article class="seller-card">
+                                        <div class="seller-card__image">
+                                            <?php if (!empty($seller['profile_image_url'])): ?>
+                                                <img
+                                                    src="<?= htmlspecialchars(
+                                                        $seller['profile_image_url']
+                                                        ) ?>"
+                                                    alt=""
+                                                    >
+                                            <?php else: ?>
+                                                <i
+                                                    class="fa-solid fa-user"
+                                                    aria-hidden="true"
+                                                ></i>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="seller-card__content">
+                                            <h3 class="seller-card__store">
+                                                <?= htmlspecialchars(
+                                                    $seller['store_name']
+                                                ) ?>
+                                                <?php if ($seller['is_verified']): ?>
+                                                    <i
+                                                        class="fa-solid fa-circle-check"
+                                                        aria-label="Verified seller"
+                                                    ></i>
+                                                <?php endif; ?>
+                                            </h3>
+
+                                            <p class="seller-card__username">
+                                                @<?= htmlspecialchars(
+                                                    $seller['username']
+                                                ) ?>
+                                            </p>
+
+                                            <p class="seller-card__name">
+                                                <?= htmlspecialchars(
+                                                    $seller['first_name']
+                                                ) ?>
+
+                                                <?php if (
+                                                    !empty($seller['last_name'])
+                                                ): ?>
+                                                    <?= htmlspecialchars(
+                                                        $seller['last_name']
+                                                    ) ?>
+                                                <?php endif; ?>
+                                            </p>
+
+                                            <?php if (!empty($seller['bio'])): ?>
+                                                <p class="seller-card__bio">
+                                                    <?= htmlspecialchars(
+                                                        $seller['bio']
+                                                    ) ?>
+                                                </p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+
+                        <?php else: ?>
+                            <div class="listing-grid">
+                                <?php foreach ($listings as $listing): ?>
+                                    <?php
+                                    include __DIR__
+                                        . '/../components/listing-card-component.php';
+                                    ?>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                 </section>
