@@ -24,6 +24,7 @@ $fulfillmentFilter = $_GET['fulfillment'] ?? '';
 $sortOption = $_GET['sort'] ?? 'recent';
 $browseAll =
     $searchType === 'items'
+    && $searchQuery === ''
     && ($_GET['browse'] ?? '') === 'all';
 
 $allowedSortOptions = [
@@ -468,6 +469,7 @@ $hasNoResults =
                                 name="search_type"
                                 value="<?= htmlspecialchars($searchType) ?>"
                             >
+                            
                             <!-- Condition filter -->
                             <div class="filter-group">
                                 <fieldset class="filter-options">
