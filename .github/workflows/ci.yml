@@ -257,6 +257,63 @@ jobs:
           echo "Listings: $LISTING_COUNT"
           echo "Active listings: $ACTIVE_LISTING_COUNT"
 
+      - name: Marketplace Discovery smoke test
+        run: |
+          echo "Running Marketplace Discovery smoke test..."
+
+          ACTIVE_LISTING_COUNT=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT COUNT(*)
+             FROM listings
+             WHERE listing_status = 'active';")
+
+          if [ "$ACTIVE_LISTING_COUNT" -lt 1 ]; then
+            echo "Smoke test failed:"
+            echo "Marketplace Discovery has no active listings."
+            exit 1
+          fi
+
+          echo "Found $ACTIVE_LISTING_COUNT active listings."
+
+          SAMPLE_LISTING=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT CONCAT(
+                 l.listing_id,
+                 ' | ',
+                 l.item_name,
+                 ' | ',
+                 COALESCE(c.category_name, 'No Category')
+             )
+             FROM listings AS l
+             LEFT JOIN categories AS c
+               ON l.category_id = c.category_id
+             WHERE l.listing_status = 'active'
+             ORDER BY l.listing_id ASC
+             LIMIT 1;")
+
+          if [ -z "$SAMPLE_LISTING" ]; then
+            echo "Smoke test failed:"
+            echo "Unable to retrieve an active Marketplace Discovery listing."
+            exit 1
+          fi
+
+          echo "Successfully retrieved active listing:"
+          echo "$SAMPLE_LISTING"
+
+          echo "Marketplace Discovery smoke test passed."
+
       - name: Run automated PHP tests
         run: |
           shopt -s nullglob
