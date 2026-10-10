@@ -700,7 +700,6 @@ if (
                                 method="get"
                             >
 
-                                <!-- existing sort form -->
                                 <!-- Preserve current search -->
                                 <input
                                     type="hidden"
