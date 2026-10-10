@@ -52,9 +52,28 @@ function navActive(string $key, string $activeNav): string
 
     <form class="site-search" action="/pages/search.php" method="get" role="search">
       <label class="sr-only" for="global-search">Search OmniBuy</label>
-      <select class="site-search__type" name="type" aria-label="Search type">
-        <option value="items">Items</option>
-        <option value="profiles">Sellers</option>
+      <select
+        class="site-search__type"
+        name="search_type"
+        aria-label="Search type"
+      >
+        <option
+          value="items"
+          <?= ($searchType ?? 'items') === 'items'
+            ? 'selected'
+            : '' ?>
+        >
+          Items
+        </option>
+
+        <option
+          value="seller_profiles"
+          <?= ($searchType ?? 'items') === 'seller_profiles'
+            ? 'selected'
+            : '' ?>
+          >
+            Sellers
+        </option>
       </select>
       <input
         id="global-search"
