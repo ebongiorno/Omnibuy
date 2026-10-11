@@ -370,6 +370,195 @@ jobs:
           echo "Web container did not respond in time"
           docker compose logs
           exit 1
+      
+      - name: Test Marketplace Discovery features
+        run: |
+          echo "Running Marketplace Discovery feature tests..."
+
+          failures=0
+
+          # =========================================
+          # Get predictable seeded test data
+          # =========================================
+
+          SAMPLE_ITEM=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT item_name
+             FROM listings
+             WHERE listing_status = 'active'
+             ORDER BY listing_id ASC
+             LIMIT 1;")
+
+          BROWSE_ITEM=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT item_name
+             FROM listings
+             WHERE listing_status = 'active'
+             ORDER BY created_at DESC, listing_id DESC
+             LIMIT 1;")
+
+          SAMPLE_SELLER=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT sp.store_name
+             FROM seller_profiles AS sp
+             INNER JOIN users AS u
+               ON sp.user_id = u.user_id
+             WHERE u.account_status = 'active'
+             ORDER BY sp.user_id ASC
+             LIMIT 1;")
+
+          if [ -z "$SAMPLE_ITEM" ]; then
+            echo "FAILED: No active seeded listing available for Item Search test."
+            exit 1
+          fi
+
+          if [ -z "$BROWSE_ITEM" ]; then
+            echo "FAILED: No active seeded listing available for Browse Feed test."
+            exit 1
+          fi
+
+          if [ -z "$SAMPLE_SELLER" ]; then
+            echo "FAILED: No active seeded seller available for Seller Search test."
+            exit 1
+          fi
+
+          echo "Using seeded item for Item Search: $SAMPLE_ITEM"
+          echo "Using seeded item for Browse Feed: $BROWSE_ITEM"
+          echo "Using seeded seller: $SAMPLE_SELLER"
+
+          # =========================================
+          # UC-16: Browse Feed
+          # =========================================
+
+          echo
+          echo "=== Testing Browse Feed ==="
+
+          BROWSE_RESPONSE=$(curl -sSf \
+            http://localhost:8080/)
+
+          if printf '%s' "$BROWSE_RESPONSE" |
+            grep -Fq "$BROWSE_ITEM"
+          then
+            echo "PASSED: Browse Feed displays an active seeded listing."
+          else
+            echo "FAILED: Browse Feed did not display expected listing: $BROWSE_ITEM"
+            failures=1
+          fi
+
+          # =========================================
+          # UC-17: Item Search - success
+          # =========================================
+
+          echo
+          echo "=== Testing Item Search ==="
+
+          ITEM_RESPONSE=$(curl -sSfG \
+            --data-urlencode "q=$SAMPLE_ITEM" \
+            --data-urlencode "search_type=items" \
+            http://localhost:8080/pages/search.php)
+
+          if printf '%s' "$ITEM_RESPONSE" |
+            grep -Fq "$SAMPLE_ITEM"
+          then
+            echo "PASSED: Item Search returned the seeded listing."
+          else
+            echo "FAILED: Item Search did not return expected listing: $SAMPLE_ITEM"
+            failures=1
+          fi
+
+          # =========================================
+          # UC-17: Item Search - no results
+          # =========================================
+
+          echo
+          echo "=== Testing Item Search empty state ==="
+
+          ITEM_EMPTY_RESPONSE=$(curl -sSfG \
+            --data-urlencode "q=ci-no-such-item-948372" \
+            --data-urlencode "search_type=items" \
+            http://localhost:8080/pages/search.php)
+
+          if printf '%s' "$ITEM_EMPTY_RESPONSE" |
+            grep -Fq "No listings found"
+          then
+            echo "PASSED: Item Search displays the no-results state."
+          else
+            echo "FAILED: Item Search no-results state was not displayed."
+            failures=1
+          fi
+
+          # =========================================
+          # UC-18: Seller Search - success
+          # =========================================
+
+          echo
+          echo "=== Testing Seller Search ==="
+
+          SELLER_RESPONSE=$(curl -sSfG \
+            --data-urlencode "q=$SAMPLE_SELLER" \
+            --data-urlencode "search_type=seller_profiles" \
+            http://localhost:8080/pages/search.php)
+
+          if printf '%s' "$SELLER_RESPONSE" |
+            grep -Fq "$SAMPLE_SELLER"
+          then
+            echo "PASSED: Seller Search returned the seeded seller."
+          else
+            echo "FAILED: Seller Search did not return expected seller: $SAMPLE_SELLER"
+            failures=1
+          fi
+
+          # =========================================
+          # UC-18: Seller Search - no results
+          # =========================================
+
+          echo
+          echo "=== Testing Seller Search empty state ==="
+
+          SELLER_EMPTY_RESPONSE=$(curl -sSfG \
+            --data-urlencode "q=ci-no-such-seller-948372" \
+            --data-urlencode "search_type=seller_profiles" \
+            http://localhost:8080/pages/search.php)
+
+          if printf '%s' "$SELLER_EMPTY_RESPONSE" |
+            grep -Fq "No sellers found"
+          then
+            echo "PASSED: Seller Search displays the no-results state."
+          else
+            echo "FAILED: Seller Search no-results state was not displayed."
+            failures=1
+          fi
+
+          # =========================================
+          # Final result
+          # =========================================
+
+          echo
+
+          if [ "$failures" -ne 0 ]; then
+            echo "One or more Marketplace Discovery feature tests failed."
+            exit 1
+          fi
+
+          echo "All Marketplace Discovery feature tests passed."
 
       - name: Diagnose failure
         if: failure()
