@@ -842,6 +842,11 @@ jobs:
 
           echo "All Marketplace Discovery feature and regression tests passed."
 
+      # Runs last: it restarts the containers and briefly stops the database.
+      - name: Docker environment tests (persistence, healthcheck, source mount, connectivity)
+        run: |
+          bash tests/environment/docker-environment-test.sh
+
       - name: Diagnose failure
         if: failure()
         run: |
