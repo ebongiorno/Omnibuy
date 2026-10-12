@@ -104,19 +104,19 @@ VALUES
         'active'
     ),
     (
-    6,
-    'Morgan',
-    'Reed',
-    'morganr',
-    'morgan.reed@example.com',
-    'DEV_ONLY_HASH_6',
-    TRUE,
-    '555-0106',
-    '1997-03-14',
-    NULL,
-    'Seller account used for inactive seller regression testing.',
-    FALSE,
-    'suspended'
+        6,
+        'Morgan',
+        'Reed',
+        'morganr',
+        'morgan.reed@example.com',
+        'DEV_ONLY_HASH_6',
+        TRUE,
+        '555-0106',
+        '1997-03-14',
+        NULL,
+        'Seller account used for inactive seller regression testing.',
+        FALSE,
+        'suspended'
     );
 
 
@@ -133,7 +133,7 @@ INSERT INTO seller_profiles (
 VALUES
     (1, 'TechNest', TRUE, 'DEV_PAYOUT_001'),
     (2, 'HomeCorner', TRUE, 'DEV_PAYOUT_002'),
-    (3, 'CampusCloset', FALSE, 'DEV_PAYOUT_003')
+    (3, 'CampusCloset', FALSE, 'DEV_PAYOUT_003'),
     (6, 'SuspendedSellerTest', FALSE, 'DEV_PAYOUT_006');
 
 
