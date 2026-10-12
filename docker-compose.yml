@@ -36,21 +36,20 @@ services:
       - ./database/init/omnibuy_database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
 
+    # Run a real query over TCP as the app user. `mysqladmin ping` over the
+    # local socket also succeeds against the temporary server MySQL runs while
+    # importing the init scripts, so the db was reported healthy before the
+    # schema and seed data were loaded.
     healthcheck:
       test:
         [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "root",
-          "-p${MYSQL_ROOT_PASSWORD}"
+          "CMD-SHELL",
+          "mysql --protocol=TCP -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" -e 'SELECT 1' \"$$MYSQL_DATABASE\""
         ]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 60s
 
 
   phpmyadmin:

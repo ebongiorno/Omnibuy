@@ -173,6 +173,16 @@ docker compose logs web
 docker compose logs db
 ```
 
+- **Automated environment check**: runs 21 checks covering database
+  persistence, the healthcheck, live source mounting, and PHP-to-MySQL
+  connectivity (it restarts containers but keeps your data):
+
+```bash
+bash tests/environment/docker-environment-test.sh
+```
+
+  Latest results: `docs/testing/docker-environment-test-results.md`.
+
 ---
 
 ## 6. Stopping everything

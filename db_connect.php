@@ -17,11 +17,20 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
+    // Log the details for developers, but never show them to visitors:
+    // they include the database host, user and driver error.
     error_log(
         'Database connection failed: ' . $e->getMessage()
     );
-    
-    die("Connection failed: " . $e->getMessage());
+
+    // Command-line scripts (tests) must exit non-zero so the failure is noticed.
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, "Database connection failed.\n");
+        exit(1);
+    }
+
+    http_response_code(503);
+    exit('OmniBuy is temporarily unavailable. Please try again in a few minutes.');
 }
 
 ?>
