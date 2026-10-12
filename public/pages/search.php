@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../includes/auth.php';
+startSession();
+
 require_once __DIR__ . '/../../db_connect.php';
 
 // =========================================
