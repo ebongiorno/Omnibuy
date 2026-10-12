@@ -371,7 +371,7 @@ jobs:
           docker compose logs
           exit 1
       
-      - name: Test Marketplace Discovery features
+      - name: Test Marketplace Discovery features and regression baseline
         run: |
           echo "Running Marketplace Discovery feature and regression tests..."
 
@@ -425,6 +425,22 @@ jobs:
              ORDER BY sp.user_id ASC
              LIMIT 1;")
 
+          SAMPLE_SELLER_USER_ID=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT sp.user_id
+             FROM seller_profiles AS sp
+             INNER JOIN users AS u
+               ON sp.user_id = u.user_id
+             WHERE u.account_status = 'active'
+             ORDER BY sp.user_id ASC
+             LIMIT 1;")
+
           INACTIVE_ITEM=$(docker exec omnibuy-db \
             mysql \
             --protocol=TCP \
@@ -455,6 +471,10 @@ jobs:
              ORDER BY sp.user_id ASC
              LIMIT 1;")
 
+          # =========================================
+          # Validate required regression fixtures
+          # =========================================
+
           if [ -z "$SAMPLE_ITEM" ]; then
             echo "FAILED: No active seeded listing available for Item Search test."
             exit 1
@@ -470,6 +490,12 @@ jobs:
             exit 1
           fi
 
+          if [ -z "$SAMPLE_SELLER_USER_ID" ]; then
+            echo "FAILED: Unable to determine seeded seller user ID."
+            exit 1
+          fi
+
+          # Build partial search values from known-good fixtures.
           PARTIAL_ITEM=$(printf '%s' "$SAMPLE_ITEM" | cut -d' ' -f1)
           PARTIAL_SELLER=$(printf '%s' "$SAMPLE_SELLER" | cut -c1-4)
 
@@ -552,7 +578,9 @@ jobs:
             http://localhost:8080/pages/search.php)
 
           if printf '%s' "$ITEM_RESPONSE" |
-            grep -Fq "$SAMPLE_ITEM"
+            grep -Fq "$SAMPLE_ITEM" &&
+            ! printf '%s' "$ITEM_RESPONSE" |
+              grep -Fq "No listings found"
           then
             echo "PASSED: Item Search returned the seeded listing."
           else
@@ -640,7 +668,9 @@ jobs:
             http://localhost:8080/pages/search.php)
 
           if printf '%s' "$SELLER_RESPONSE" |
-            grep -Fq "$SAMPLE_SELLER"
+            grep -Fq "$SAMPLE_SELLER" &&
+            ! printf '%s' "$SELLER_RESPONSE" |
+              grep -Fq "No sellers found"
           then
             echo "PASSED: Seller Search returned the seeded seller."
           else
@@ -704,12 +734,12 @@ jobs:
               http://localhost:8080/pages/search.php)
 
             if printf '%s' "$INACTIVE_SELLER_RESPONSE" |
-              grep -Fq "$INACTIVE_SELLER"
+              grep -Fq "No sellers found"
             then
-              echo "FAILED: Seller Search returned inactive seller: $INACTIVE_SELLER"
-              failures=1
+              echo "PASSED: Seller Search excludes inactive seller: $INACTIVE_SELLER"
             else
-              echo "PASSED: Seller Search excludes inactive sellers."
+              echo "FAILED: Searching for inactive seller did not produce the expected no-results state: $INACTIVE_SELLER"
+              failures=1
             fi
           else
             echo "SKIPPED: No inactive seeded seller available."
@@ -722,13 +752,80 @@ jobs:
           echo
           echo "=== Testing Seller Search privacy ==="
 
+          PRIVATE_PASSWORD_HASH=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT password_hash
+             FROM users
+             WHERE user_id = $SAMPLE_SELLER_USER_ID;")
+
+          PRIVATE_BIRTH_DATE=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT birth_date
+             FROM users
+             WHERE user_id = $SAMPLE_SELLER_USER_ID;")
+
+          PRIVATE_PAYOUT_REFERENCE=$(docker exec omnibuy-db \
+            mysql \
+            --protocol=TCP \
+            -h 127.0.0.1 \
+            -u root \
+            -p"$MYSQL_ROOT_PASSWORD" \
+            -D "$MYSQL_DATABASE" \
+            -Nse \
+            "SELECT payout_account_reference
+             FROM seller_profiles
+             WHERE user_id = $SAMPLE_SELLER_USER_ID;")
+
+          privacy_failure=0
+
+          if [ -n "$PRIVATE_PASSWORD_HASH" ] &&
+            printf '%s' "$SELLER_RESPONSE" |
+              grep -Fq "$PRIVATE_PASSWORD_HASH"
+          then
+            echo "FAILED: Seller Search exposed the seller password hash."
+            privacy_failure=1
+          fi
+
+          if [ -n "$PRIVATE_BIRTH_DATE" ] &&
+            printf '%s' "$SELLER_RESPONSE" |
+              grep -Fq "$PRIVATE_BIRTH_DATE"
+          then
+            echo "FAILED: Seller Search exposed the seller birth date."
+            privacy_failure=1
+          fi
+
+          if [ -n "$PRIVATE_PAYOUT_REFERENCE" ] &&
+            printf '%s' "$SELLER_RESPONSE" |
+              grep -Fq "$PRIVATE_PAYOUT_REFERENCE"
+          then
+            echo "FAILED: Seller Search exposed the seller payout account reference."
+            privacy_failure=1
+          fi
+
+          # Also guard against accidentally rendering internal field names.
           if printf '%s' "$SELLER_RESPONSE" |
             grep -Eqi 'password_hash|payout_account_reference|birth_date'
           then
-            echo "FAILED: Seller Search exposed a restricted account field."
+            echo "FAILED: Seller Search exposed a restricted account field name."
+            privacy_failure=1
+          fi
+
+          if [ "$privacy_failure" -ne 0 ]; then
             failures=1
           else
-            echo "PASSED: Seller Search does not expose restricted account fields."
+            echo "PASSED: Seller Search does not expose restricted seller data."
           fi
 
           # =========================================
