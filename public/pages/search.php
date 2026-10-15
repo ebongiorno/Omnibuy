@@ -375,6 +375,14 @@ if (
             $distanceParams
         );
 
+        // Add coordinates for Near to Far sorting.
+        if ($distanceSortActive) {
+
+            $params['sort_longitude'] = $buyerLongitude;
+            $params['sort_latitude'] = $buyerLatitude;
+
+        }
+
         $listings = executeWithRetry(
             $pdo,
             $sql,
