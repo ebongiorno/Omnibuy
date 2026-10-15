@@ -14,6 +14,16 @@
 
 $pageTitle = $pageTitle ?? 'OmniBuy';
 $activeNav = $activeNav ?? '';
+// Pages can pass $isLoggedIn/$currentUser; otherwise use the logged-in session.
+if (!isset($isLoggedIn) && session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['user_id'])) {
+    $isLoggedIn = true;
+    $currentUser = $currentUser ?? [
+        'username' => $_SESSION['username'] ?? 'Account',
+        'avatar_url' => $_SESSION['avatar_url'] ?? '/assets/icons/default-avatar.png',
+        'is_seller' => $_SESSION['is_seller'] ?? false,
+    ];
+}
+
 $isLoggedIn = $isLoggedIn ?? false;
 $currentUser = $currentUser ?? null;
 $cartCount = $cartCount ?? 0;
@@ -32,8 +42,8 @@ function navActive(string $key, string $activeNav): string
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle) ?></title>
 
-  <link rel="stylesheet" href="../css/omnibuy-design-tokens.css">
-  <link rel="stylesheet" href="../css/shared-navigation.css">
+  <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
+  <link rel="stylesheet" href="/assets/css/shared-navigation.css">
 
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -45,7 +55,7 @@ function navActive(string $key, string $activeNav): string
   <div class="site-header__top shell">
     <a class="brand" href="../index.php" aria-label="OmniBuy home">
       <span class="brand__name">
-        OmniBuy 
+        OmniBuy
         <i class="fa-solid fa-box-open"></i>
       </span>
     </a>
@@ -113,7 +123,7 @@ function navActive(string $key, string $activeNav): string
           <button class="account-menu__trigger" type="button" aria-expanded="false" aria-controls="account-menu-panel">
             <img
               class="account-menu__avatar"
-              src="<?= htmlspecialchars($currentUser['avatar_url'] ?? '/assets/img/default-avatar.png') ?>"
+              src="<?= htmlspecialchars($currentUser['avatar_url'] ?? '/assets/icons/default-avatar.png') ?>"
               alt=""
             >
             <span><?= htmlspecialchars($currentUser['username'] ?? 'Account') ?></span>
@@ -121,20 +131,20 @@ function navActive(string $key, string $activeNav): string
           </button>
 
           <div class="account-menu__panel" id="account-menu-panel" hidden>
-            <a href="/account.php">Manage My Account</a>
+            <a href="/pages/account.php">Manage My Account</a>
             <a href="/orders.php">My Orders</a>
             <?php if (!empty($currentUser['is_seller'])): ?>
               <a href="../pages/my-listings.php">My Listings</a>
             <?php endif; ?>
             <a href="/reviews.php">My Reviews</a>
-            <form action="/logout.php" method="post">
+            <form action="/pages/logout.php" method="post">
               <button type="submit">Log out</button>
             </form>
           </div>
         </div>
       <?php else: ?>
-        <a class="text-link" href="/login.php">Log in</a>
-        <a class="button button--primary button--small" href="/signup.php">Sign up</a>
+        <a class="text-link" href="/pages/login.php">Log in</a>
+        <a class="button button--primary button--small" href="/pages/signup.php">Sign up</a>
       <?php endif; ?>
 
       <button class="mobile-nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-mobile-nav-toggle>
@@ -168,6 +178,19 @@ function navActive(string $key, string $activeNav): string
           $activeNav,
       ) ?>" href="/category.php?category=sporting-goods">Sporting Goods</a>
       <a class="primary-nav__link" href="/categories.php">More</a>
+
+      <!-- Phones: the header hides the account links, so the menu shows them instead. -->
+      <div class="primary-nav__account">
+        <?php if ($isLoggedIn && $currentUser): ?>
+          <a class="primary-nav__link" href="/pages/account.php">Manage My Account</a>
+          <form action="/pages/logout.php" method="post">
+            <button class="primary-nav__link" type="submit">Log out</button>
+          </form>
+        <?php else: ?>
+          <a class="primary-nav__link" href="/pages/login.php">Log in</a>
+          <a class="primary-nav__link" href="/pages/signup.php">Sign up</a>
+        <?php endif; ?>
+      </div>
     </nav>
   </div>
 </header>

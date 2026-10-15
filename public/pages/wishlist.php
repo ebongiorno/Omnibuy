@@ -16,6 +16,8 @@ $currentUser = [
     'is_seller' => true,
 ];
 $itemCount = 2;
+
+
 $header = '../components/header.php';
 include $header;
 ?>
