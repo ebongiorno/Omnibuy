@@ -1114,7 +1114,54 @@ $hasNoResults =
             );
 
         });
+        
+        // =========================================
+        // MEETUP DISTANCE FILTER VISIBILITY
+        // =========================================
 
+        const deliveryOptions = document.querySelectorAll(
+            'input[name="fulfillment"]'
+        );
+
+        const meetupDistanceFilter = document.getElementById(
+            'meetup-distance-filter'
+        );
+
+        function updateMeetupDistanceVisibility() {
+
+            const selectedDelivery = document.querySelector(
+                'input[name="fulfillment"]:checked'
+            );
+
+            // No selection means both shipping and meetup.
+            const isShipping =
+                selectedDelivery?.value === 'shipping';
+
+            if (!meetupDistanceFilter) {
+                return;
+            }
+
+            // Hide only when Shipping is selected.
+            meetupDistanceFilter.hidden = isShipping;
+
+            // Disable location controls for shipping-only searches.
+            meetupDistanceFilter
+                .querySelectorAll('input, select')
+                .forEach(control => {
+                    control.disabled = isShipping;
+                });
+        }
+
+        // Update immediately when the delivery selection changes.
+        deliveryOptions.forEach(option => {
+            option.addEventListener(
+                'change',
+                updateMeetupDistanceVisibility
+            );
+        });
+
+        // Set the correct state when the page loads.
+        updateMeetupDistanceVisibility();
     </script>
 
 </body>
