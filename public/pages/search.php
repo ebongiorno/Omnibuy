@@ -667,6 +667,68 @@ $hasNoResults =
                                 </fieldset>
                             </div>
 
+                            <!-- Meetup distance filter -->
+                            <div
+                                class="filter-group"
+                                id="meetup-distance-filter"
+                                <?= $fulfillmentFilter === 'shipping' ? 'hidden' : '' ?>
+                            >
+                                <fieldset class="filter-options">
+
+                                    <legend>
+                                        Meetup Distance
+                                    </legend>
+
+                                    <!-- Buyer ZIP code -->
+                                    <label for="buyer-zip">
+                                        Your ZIP Code
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="buyer-zip"
+                                        name="zip"
+                                        inputmode="numeric"
+                                        pattern="[0-9]{5}"
+                                        maxlength="5"
+                                        placeholder="Enter ZIP code"
+                                        value="<?= htmlspecialchars($buyerZip, ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+
+                                    <!-- Distance selection -->
+                                    <label for="radius-filter">
+                                        Distance Range
+                                    </label>
+
+                                    <select
+                                        id="radius-filter"
+                                        name="radius"
+                                    >
+                                        <option value="">
+                                            Any Distance
+                                        </option>
+
+                                        <?php foreach ([5, 10, 25, 50] as $distance): ?>
+                                            <option
+                                                value="<?= $distance ?>"
+                                                <?= $radiusMiles === $distance
+                                                    ? 'selected'
+                                                    : '' ?>
+                                            >
+                                                Within <?= $distance ?> miles
+                                            </option>
+                                        <?php endforeach; ?>
+
+                                    </select>
+
+                                    <p class="filter-group__note">
+                                        Distance filtering applies only to
+                                        meetup listings.
+                                    </p>
+
+                                </fieldset>
+                            </div>
+
                             <!-- Category filter -->
                             <div class="filter-group">
 
