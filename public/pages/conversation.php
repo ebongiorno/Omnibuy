@@ -1,5 +1,12 @@
 <?php
-$header = '../components/header.php';
+// Require authentication before loading a conversation.
+require_once __DIR__ . '/../components/require-login.php';
+
+// Conversation retrieval and authorization will go here.
+// Verify that $currentUserId is a participant in the
+// requested conversation before showing any messages.
+
+$header = '/components/header.php';
 include $header;
 ?>
 
