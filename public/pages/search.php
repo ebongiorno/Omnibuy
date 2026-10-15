@@ -31,7 +31,30 @@ $allowedSortOptions = [
     'recent' => 'l.created_at DESC, l.listing_id DESC',
     'oldest' => 'l.created_at ASC, l.listing_id ASC',
     'price_low' => 'l.price ASC, l.listing_id DESC',
-    'price_high' => 'l.price DESC, l.listing_id DESC'
+    'price_high' => 'l.price DESC, l.listing_id DESC',
+    'distance_near' => "
+        CASE
+            WHEN l.fulfillment_type = 'meetup'
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+            THEN 0
+            ELSE 1
+        END ASC,
+
+        CASE
+            WHEN l.fulfillment_type = 'meetup'
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+            THEN ST_Distance_Sphere(
+                POINT(l.longitude, l.latitude),
+                POINT(:sort_longitude, :sort_latitude)
+            )
+            ELSE NULL
+        END ASC,
+
+        l.created_at DESC,
+        l.listing_id DESC
+    "
 ];
 
 if (!array_key_exists($sortOption, $allowedSortOptions)) {
