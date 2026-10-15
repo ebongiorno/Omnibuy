@@ -34,7 +34,30 @@ $allowedSortOptions = [
     'recent' => 'l.created_at DESC, l.listing_id DESC',
     'oldest' => 'l.created_at ASC, l.listing_id ASC',
     'price_low' => 'l.price ASC, l.listing_id DESC',
-    'price_high' => 'l.price DESC, l.listing_id DESC'
+    'price_high' => 'l.price DESC, l.listing_id DESC',
+    'distance_near' => "
+        CASE
+            WHEN l.fulfillment_type = 'meetup'
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+            THEN 0
+            ELSE 1
+        END ASC,
+
+        CASE
+            WHEN l.fulfillment_type = 'meetup'
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+            THEN ST_Distance_Sphere(
+                POINT(l.longitude, l.latitude),
+                POINT(:sort_longitude, :sort_latitude)
+            )
+            ELSE NULL
+        END ASC,
+
+        l.created_at DESC,
+        l.listing_id DESC
+    "
 ];
 
 if (!array_key_exists($sortOption, $allowedSortOptions)) {
@@ -81,6 +104,41 @@ if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillme
     $fulfillmentFilter = '';
 }
 
+// =========================================
+// DISTANCE SORTING VALIDATION
+// =========================================
+
+// Shipping-only listings cannot be sorted
+// by meetup distance.
+if (
+    $fulfillmentFilter === 'shipping'
+    && $sortOption === 'distance_near'
+) {
+    $sortOption = 'recent';
+    $orderBySql = $allowedSortOptions[$sortOption];
+}
+// =========================================
+// MEETUP LOCATION INPUT
+// =========================================
+
+$zipInput = $_GET['zip'] ?? '';
+$buyerZip = is_string($zipInput)
+    ? trim($zipInput)
+    : '';
+
+$radiusInput = $_GET['radius'] ?? '';
+$radiusMiles = (
+    is_string($radiusInput)
+    && in_array($radiusInput, ['5', '10', '25', '50'], true)
+)
+    ? (int)$radiusInput
+    : null;
+// Shipping-only searches do not use distance.
+if ($fulfillmentFilter === 'shipping') {
+    $buyerZip = '';
+    $radiusMiles = null;
+}
+
 $fulfillmentSql = '';
 if ($fulfillmentFilter !== '') {
     $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
@@ -90,6 +148,110 @@ $listings = [];
 $sellers = [];
 $searchError = false;
 $resultCount = 0;
+
+// =========================================
+// MEETUP DISTANCE LOOKUP
+// =========================================
+
+$locationError = '';
+$distanceSql = '';
+$distanceParams = [];
+
+// Apply distance only when a radius is selected
+// and Shipping-only is not selected.
+$radiusFilterActive =
+    $searchType === 'items'
+    && $fulfillmentFilter !== 'shipping'
+    && $radiusMiles !== null;
+
+// Distance sorting can work without a radius.
+$distanceSortActive =
+    $searchType === 'items'
+    && $fulfillmentFilter !== 'shipping'
+    && $sortOption === 'distance_near';
+
+if ($radiusFilterActive || $distanceSortActive) {
+    // Require a valid five-digit ZIP code.
+    if (!preg_match('/^[0-9]{5}$/', $buyerZip)) {
+
+        $locationError =
+            'Enter a valid 5-digit ZIP code to filter or sort by distance.';
+
+    } else {
+
+        try {
+
+            // Find the buyer's coordinates.
+            $zipStmt = $pdo->prepare("
+                SELECT latitude, longitude
+                FROM zip_code_locations
+                WHERE zip_code = :zip
+                LIMIT 1
+            ");
+
+            $zipStmt->execute([
+                'zip' => $buyerZip
+            ]);
+
+            $zipLocation = $zipStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$zipLocation) {
+
+                $locationError =
+                    'ZIP code not found. Please enter another ZIP code.';
+
+            } else {
+
+                $buyerLatitude = $zipLocation['latitude'];
+                $buyerLongitude = $zipLocation['longitude'];
+
+            }
+
+        } catch (PDOException $e) {
+
+            $searchError = true;
+
+            error_log(
+                'OmniBuy ZIP lookup failed: '
+                . $e->getMessage()
+            );
+        }
+    }
+}
+// =========================================
+// BUILD DISTANCE FILTER
+// =========================================
+
+if (
+    $radiusFilterActive
+    && $locationError === ''
+    && !$searchError
+) {
+
+    $distanceSql = "
+        AND (
+            l.fulfillment_type = 'shipping'
+
+            OR (
+                l.fulfillment_type = 'meetup'
+
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+
+                AND ST_Distance_Sphere(
+                    POINT(l.longitude, l.latitude),
+                    POINT(:buyer_longitude, :buyer_latitude)
+                ) <= :radius_meters
+            )
+        )
+    ";
+
+    $distanceParams = [
+        'buyer_longitude' => $buyerLongitude,
+        'buyer_latitude' => $buyerLatitude,
+        'radius_meters' => $radiusMiles * 1609.344
+    ];
+}
 
 $keywordSql = '';
 
@@ -154,6 +316,8 @@ function escapeLike(string $value): string
 if (
     $searchType === 'items'
     && ($searchQuery !== '' || $browseAll)
+    && !$searchError
+    && $locationError === ''
 ) {
 
     $sql = "
@@ -181,7 +345,7 @@ if (
             $keywordSql
             $conditionSql
             $fulfillmentSql
-            
+            $distanceSql
 
         ORDER BY $orderBySql
     ";
@@ -207,6 +371,19 @@ if (
 
         if ($fulfillmentFilter !== '') {
             $params['fulfillment'] = $fulfillmentFilter;
+        }
+        // Add buyer coordinates and radius when needed.
+        $params = array_merge(
+            $params,
+            $distanceParams
+        );
+
+        // Add coordinates for Near to Far sorting.
+        if ($distanceSortActive) {
+
+            $params['sort_longitude'] = $buyerLongitude;
+            $params['sort_latitude'] = $buyerLatitude;
+
         }
 
         $listings = executeWithRetry(
@@ -486,11 +663,6 @@ $hasNoResults =
                             </button>
 
                         </div>
-                        <form
-                            class="search-filters__form"
-                            action="search.php"
-                            method="get"
-                    </div>
                     <form
                         class="search-filters__form"
                         action="search.php"
@@ -653,6 +825,68 @@ $hasNoResults =
                                 </fieldset>
                             </div>
 
+                            <!-- Meetup distance filter -->
+                            <div
+                                class="filter-group"
+                                id="meetup-distance-filter"
+                                <?= $fulfillmentFilter === 'shipping' ? 'hidden' : '' ?>
+                            >
+                                <fieldset class="filter-options">
+
+                                    <legend>
+                                        Meetup Distance
+                                    </legend>
+
+                                    <!-- Buyer ZIP code -->
+                                    <label for="buyer-zip">
+                                        Your ZIP Code
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="buyer-zip"
+                                        name="zip"
+                                        inputmode="numeric"
+                                        pattern="[0-9]{5}"
+                                        maxlength="5"
+                                        placeholder="Enter ZIP code"
+                                        value="<?= htmlspecialchars($buyerZip, ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+
+                                    <!-- Distance selection -->
+                                    <label for="radius-filter">
+                                        Distance Range
+                                    </label>
+
+                                    <select
+                                        id="radius-filter"
+                                        name="radius"
+                                    >
+                                        <option value="">
+                                            Any Distance
+                                        </option>
+
+                                        <?php foreach ([5, 10, 25, 50] as $distance): ?>
+                                            <option
+                                                value="<?= $distance ?>"
+                                                <?= $radiusMiles === $distance
+                                                    ? 'selected'
+                                                    : '' ?>
+                                            >
+                                                Within <?= $distance ?> miles
+                                            </option>
+                                        <?php endforeach; ?>
+
+                                    </select>
+
+                                    <p class="filter-group__note">
+                                        Distance filtering applies only to
+                                        meetup listings.
+                                    </p>
+
+                                </fieldset>
+                            </div>
+
                             <!-- Category filter -->
                             <div class="filter-group">
 
@@ -786,6 +1020,25 @@ $hasNoResults =
                                     >
                                 <?php endif; ?>
 
+                                <!-- Preserve meetup distance settings -->
+                                <?php if ($fulfillmentFilter !== 'shipping'): ?>
+
+                                    <input
+                                        type="hidden"
+                                        name="zip"
+                                        value="<?= htmlspecialchars($buyerZip, ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+
+                                    <?php if ($radiusMiles !== null): ?>
+                                        <input
+                                            type="hidden"
+                                            name="radius"
+                                            value="<?= $radiusMiles ?>"
+                                        >
+                                    <?php endif; ?>
+
+                                <?php endif; ?>
+                                    
                                 <!-- Preserves browse mode -->
                                 <?php if ($browseAll): ?>
                                     <input
@@ -831,6 +1084,15 @@ $hasNoResults =
                                     >
                                         Price: High to Low
                                     </option>
+
+                                    <?php if ($fulfillmentFilter !== 'shipping'): ?>
+                                        <option
+                                            value="distance_near"
+                                            <?= $sortOption === 'distance_near' ? 'selected' : '' ?>
+                                        >
+                                            Distance: Near to Far (Meetup First)
+                                        </option>
+                                    <?php endif; ?>
                                 </select>
 
                             </form>
@@ -864,6 +1126,31 @@ $hasNoResults =
 
                         </div>
 
+                    <?php elseif ($locationError !== ''): ?>
+
+                        <div
+                            class="search-message search-message--error"
+                            role="alert"
+                        >
+
+                            <i
+                                class="fa-solid fa-circle-exclamation"
+                                aria-hidden="true"
+                            ></i>
+
+                            <h3>
+                                Invalid Meetup Location
+                            </h3>
+
+                            <p>
+                                <?= htmlspecialchars(
+                                    $locationError,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </p>
+
+                        </div>
 
                     <!-- =========================
                          EMPTY / INITIAL STATE
@@ -1038,7 +1325,115 @@ $hasNoResults =
             );
 
         });
+        
+        // =========================================
+        // MEETUP DISTANCE FILTER VISIBILITY
+        // =========================================
 
+        const deliveryOptions = document.querySelectorAll(
+            'input[name="fulfillment"]'
+        );
+
+        const meetupDistanceFilter = document.getElementById(
+            'meetup-distance-filter'
+        );
+
+        function updateMeetupDistanceVisibility() {
+
+            const selectedDelivery = document.querySelector(
+                'input[name="fulfillment"]:checked'
+            );
+
+            // No selection means both shipping and meetup.
+            const isShipping =
+                selectedDelivery?.value === 'shipping';
+
+            if (!meetupDistanceFilter) {
+                return;
+            }
+
+            // Hide only when Shipping is selected.
+            meetupDistanceFilter.hidden = isShipping;
+
+            // Disable location controls for shipping-only searches.
+            meetupDistanceFilter
+                .querySelectorAll('input, select')
+                .forEach(control => {
+                    control.disabled = isShipping;
+                });
+        }
+
+        // Update immediately when the delivery selection changes.
+        deliveryOptions.forEach(option => {
+            option.addEventListener(
+                'change',
+                updateMeetupDistanceVisibility
+            );
+        });
+
+        // Set the correct state when the page loads.
+        updateMeetupDistanceVisibility();
+
+        // =========================================
+        // CLEAR SEARCH FILTERS
+        // =========================================
+
+        const clearFiltersButton = document.querySelector(
+            '.search-filters__clear'
+        );
+
+        const filterForm = document.querySelector(
+            '.search-filters__form'
+        );
+
+        clearFiltersButton?.addEventListener('click', () => {
+
+            if (!filterForm) {
+                return;
+            }
+
+            // Clear condition and delivery selections.
+            filterForm
+                .querySelectorAll(
+                    'input[type="checkbox"], input[type="radio"]'
+                )
+                .forEach(input => {
+                    input.checked = false;
+                });
+
+            // Clear ZIP code.
+            const zipField = filterForm.querySelector(
+                'input[name="zip"]'
+            );
+
+            if (zipField) {
+                zipField.value = '';
+            }
+
+            // Clear radius.
+            const radiusField = filterForm.querySelector(
+                'select[name="radius"]'
+            );
+
+            if (radiusField) {
+                radiusField.value = '';
+            }
+
+            // Restore default filter visibility.
+            updateMeetupDistanceVisibility();
+
+            // Reset distance sorting if location is cleared.
+            const sortField = filterForm.querySelector(
+                'input[name="sort"]'
+            );
+
+            if (sortField?.value === 'distance_near') {
+                sortField.value = 'recent';
+            }
+
+            // Apply the cleared filters.
+            filterForm.requestSubmit();
+        });
     </script>
 
 </body>
