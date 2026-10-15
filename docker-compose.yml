@@ -34,7 +34,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/init/omnibuy_database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-        - ./database/init/zip_code_locations.sql:/docker-entrypoint-initdb.d/02-zip-locations.sql:ro
+      - ./database/init/zip_code_locations.sql:/docker-entrypoint-initdb.d/02-zip-locations.sql:ro
       - ./seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
 
     healthcheck:
