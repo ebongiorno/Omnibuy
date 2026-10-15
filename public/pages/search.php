@@ -1181,6 +1181,58 @@ $hasNoResults =
 
         // Set the correct state when the page loads.
         updateMeetupDistanceVisibility();
+
+        // =========================================
+        // CLEAR SEARCH FILTERS
+        // =========================================
+
+        const clearFiltersButton = document.querySelector(
+            '.search-filters__clear'
+        );
+
+        const filterForm = document.querySelector(
+            '.search-filters__form'
+        );
+
+        clearFiltersButton?.addEventListener('click', () => {
+
+            if (!filterForm) {
+                return;
+            }
+
+            // Clear condition and delivery selections.
+            filterForm
+                .querySelectorAll(
+                    'input[type="checkbox"], input[type="radio"]'
+                )
+                .forEach(input => {
+                    input.checked = false;
+                });
+
+            // Clear ZIP code.
+            const zipField = filterForm.querySelector(
+                'input[name="zip"]'
+            );
+
+            if (zipField) {
+                zipField.value = '';
+            }
+
+            // Clear radius.
+            const radiusField = filterForm.querySelector(
+                'select[name="radius"]'
+            );
+
+            if (radiusField) {
+                radiusField.value = '';
+            }
+
+            // Restore default filter visibility.
+            updateMeetupDistanceVisibility();
+
+            // Apply the cleared filters.
+            filterForm.requestSubmit();
+        });
     </script>
 
 </body>
