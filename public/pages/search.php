@@ -110,6 +110,105 @@ $sellers = [];
 $searchError = false;
 $resultCount = 0;
 
+// =========================================
+// MEETUP DISTANCE LOOKUP
+// =========================================
+
+$locationError = '';
+$distanceSql = '';
+$distanceParams = [];
+
+// Apply distance only when a radius is selected
+// and Shipping-only is not selected.
+$radiusFilterActive =
+    $searchType === 'items'
+    && $fulfillmentFilter !== 'shipping'
+    && $radiusMiles !== null;
+
+if ($radiusFilterActive) {
+
+    // Require a valid five-digit ZIP code.
+    if (!preg_match('/^[0-9]{5}$/', $buyerZip)) {
+
+        $locationError =
+            'Enter a valid 5-digit ZIP code to filter by distance.';
+
+    } else {
+
+        try {
+
+            // Find the buyer's coordinates.
+            $zipStmt = $pdo->prepare("
+                SELECT latitude, longitude
+                FROM zip_code_locations
+                WHERE zip_code = :zip
+                LIMIT 1
+            ");
+
+            $zipStmt->execute([
+                'zip' => $buyerZip
+            ]);
+
+            $zipLocation = $zipStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$zipLocation) {
+
+                $locationError =
+                    'ZIP code not found. Please enter another ZIP code.';
+
+            } else {
+
+                $buyerLatitude = $zipLocation['latitude'];
+                $buyerLongitude = $zipLocation['longitude'];
+
+            }
+
+        } catch (PDOException $e) {
+
+            $searchError = true;
+
+            error_log(
+                'OmniBuy ZIP lookup failed: '
+                . $e->getMessage()
+            );
+        }
+    }
+}
+// =========================================
+// BUILD DISTANCE FILTER
+// =========================================
+
+if (
+    $radiusFilterActive
+    && $locationError === ''
+    && !$searchError
+) {
+
+    $distanceSql = "
+        AND (
+            l.fulfillment_type = 'shipping'
+
+            OR (
+                l.fulfillment_type = 'meetup'
+
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+
+                AND ST_Distance_Sphere(
+                    POINT(l.longitude, l.latitude),
+                    POINT(:buyer_longitude, :buyer_latitude)
+                ) <= :radius_meters
+            )
+        )
+    ";
+
+    $distanceParams = [
+        'buyer_longitude' => $buyerLongitude,
+        'buyer_latitude' => $buyerLatitude,
+        'radius_meters' => $radiusMiles * 1609.344
+    ];
+}
+
 $keywordSql = '';
 
 if ($searchQuery !== '') {
