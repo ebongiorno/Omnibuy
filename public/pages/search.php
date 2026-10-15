@@ -78,6 +78,28 @@ if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillme
     $fulfillmentFilter = '';
 }
 
+// =========================================
+// MEETUP LOCATION INPUT
+// =========================================
+
+$zipInput = $_GET['zip'] ?? '';
+$buyerZip = is_string($zipInput)
+    ? trim($zipInput)
+    : '';
+
+$radiusInput = $_GET['radius'] ?? '';
+$radiusMiles = (
+    is_string($radiusInput)
+    && in_array($radiusInput, ['5', '10', '25', '50'], true)
+)
+    ? (int)$radiusInput
+    : null;
+// Shipping-only searches do not use distance.
+if ($fulfillmentFilter === 'shipping') {
+    $buyerZip = '';
+    $radiusMiles = null;
+}
+
 $fulfillmentSql = '';
 if ($fulfillmentFilter !== '') {
     $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
@@ -483,11 +505,6 @@ $hasNoResults =
                             </button>
 
                         </div>
-                        <form
-                            class="search-filters__form"
-                            action="search.php"
-                            method="get"
-                    </div>
                     <form
                         class="search-filters__form"
                         action="search.php"
