@@ -136,8 +136,9 @@ Check everything is running:
 docker compose ps
 ```
 
-You should see three services: `omnibuy-web` (PHP/Apache), `omnibuy-db`
-(MySQL 8.0), and `omnibuy-phpmyadmin`.
+You should see four services: `omnibuy-web` (PHP/Apache), `omnibuy-db`
+(MySQL 8.0), `omnibuy-phpmyadmin`, and `omnibuy-mailpit` (catches the
+emails the site sends, such as password reset links).
 
 The database container mounts two files into `/docker-entrypoint-initdb.d`:
 `database/init/omnibuy_database.sql` as `01-schema.sql` and `seed_data.sql` as
@@ -154,6 +155,13 @@ docker compose up -d
 (`-v` deletes the database volume — only do this if you're OK losing local
 data in it.)
 
+To add a new table without losing your data, run its file from
+`database/migrations/` instead, for example:
+
+```bash
+docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < database/migrations/2026-10-15-password-resets.sql
+```
+
 ---
 
 ## 5. Verify the app works
@@ -166,6 +174,8 @@ data in it.)
 - **phpMyAdmin**: http://localhost:8081 — log in with the `MYSQL_USER` /
   `MYSQL_PASSWORD` (or `root` / `MYSQL_ROOT_PASSWORD`) from `.env`, and
   confirm the `omnibuy` database and its tables exist.
+- **Mailpit**: http://localhost:8025 — every email the site sends (for
+  example from "Forgot password?") shows up here instead of a real inbox.
 - **Logs**, if something looks wrong:
 
 ```bash

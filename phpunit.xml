@@ -28,5 +28,7 @@
     <php>
         <!-- Base URL of the web server as seen from inside the web container -->
         <env name="APP_URL" value="http://localhost" force="false"/>
+        <!-- Mailpit's API, where functional tests read the emails the site sends -->
+        <env name="MAILPIT_URL" value="http://mailpit:8025" force="false"/>
     </php>
 </phpunit>

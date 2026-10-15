@@ -8,6 +8,9 @@ services:
 
     volumes:
       - ./:/var/www/html
+      # Uploaded profile photos (UC-04). A named volume so the web server
+      # can write to it and the photos stay out of git.
+      - profile_uploads:/var/www/html/public/uploads
 
     environment:
       DB_HOST: db
@@ -15,10 +18,27 @@ services:
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
+      # Address used in links inside emails (UC-03 password reset)
+      SITE_URL: http://localhost:8080
+      # Outgoing email goes to Mailpit; read it at http://localhost:8025
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM: no-reply@omnibuy.local
 
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+
+  # Catches every email the site sends, so nothing reaches real inboxes.
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: omnibuy-mailpit
+
+    ports:
+      - "8025:8025"
 
 
   db:
@@ -71,3 +91,4 @@ services:
 
 volumes:
   mysql_data:
+  profile_uploads:
