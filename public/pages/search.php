@@ -1419,6 +1419,15 @@ $hasNoResults =
             // Restore default filter visibility.
             updateMeetupDistanceVisibility();
 
+            // Reset distance sorting if location is cleared.
+            const sortField = filterForm.querySelector(
+                'input[name="sort"]'
+            );
+
+            if (sortField?.value === 'distance_near') {
+                sortField.value = 'recent';
+            }
+
             // Apply the cleared filters.
             filterForm.requestSubmit();
         });
