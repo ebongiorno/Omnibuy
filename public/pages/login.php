@@ -41,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $notice = null;
 if (isset($_GET['logged_out'])) {
     $notice = 'You have been logged out.';
+} elseif (isset($_GET['reset'])) {
+    $notice = 'Your password has been changed. Log in with your new password.';
 } elseif (isset($_GET['redirect']) && $error === null) {
     $notice = 'Please log in to continue.';
 }
@@ -80,6 +82,7 @@ include __DIR__ . '/../components/header.php';
       <div class="auth-field">
         <label for="password">Password</label>
         <input type="password" id="password" name="password" autocomplete="current-password" required>
+        <a class="auth-field__link" href="/pages/forgot-password.php">Forgot password?</a>
       </div>
 
       <button class="button button--primary auth-form__submit" type="submit">Log in</button>

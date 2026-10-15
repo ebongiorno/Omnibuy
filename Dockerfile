@@ -19,4 +19,9 @@ WORKDIR /var/www/html
 
 COPY . /var/www/html
 
+# Profile photo uploads (UC-04). docker-compose.yml mounts a volume here;
+# a new volume copies this folder's owner, so Apache can write to it.
+RUN mkdir -p /var/www/html/public/uploads/avatars \
+    && chown -R www-data:www-data /var/www/html/public/uploads
+
 EXPOSE 80

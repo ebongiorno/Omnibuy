@@ -34,11 +34,12 @@ final class HttpClient
     }
 
     /**
+     * @param array<string, string> $files form field => local file path, sent as a file upload
      * @return array{status: int, location: ?string, body: string}
      */
-    public function post(string $path, array $fields): array
+    public function post(string $path, array $fields, array $files = []): array
     {
-        return $this->request('POST', $path, $fields);
+        return $this->request('POST', $path, $fields, $files);
     }
 
     public function cookie(string $name): ?string
@@ -61,7 +62,7 @@ final class HttpClient
     /**
      * @return array{status: int, location: ?string, body: string}
      */
-    private function request(string $method, string $path, array $fields = []): array
+    private function request(string $method, string $path, array $fields = [], array $files = []): array
     {
         $headers = [];
         $handle = curl_init($this->baseUrl . $path);
@@ -88,7 +89,14 @@ final class HttpClient
             curl_setopt($handle, CURLOPT_COOKIE, implode('; ', $pairs));
         }
 
-        if ($method === 'POST') {
+        if ($method === 'POST' && $files !== []) {
+            // An array body makes curl send multipart/form-data, like a form with a file input.
+            foreach ($files as $name => $filePath) {
+                $fields[$name] = new \CURLFile($filePath);
+            }
+            curl_setopt($handle, CURLOPT_POST, true);
+            curl_setopt($handle, CURLOPT_POSTFIELDS, $fields);
+        } elseif ($method === 'POST') {
             curl_setopt($handle, CURLOPT_POST, true);
             curl_setopt($handle, CURLOPT_POSTFIELDS, http_build_query($fields));
         }

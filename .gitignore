@@ -91,3 +91,6 @@ build-info/
 ### PHPUnit ###
 .phpunit.cache/
 build/
+
+### User uploads (Docker volume, see docker-compose.yml) ###
+public/uploads/

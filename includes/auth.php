@@ -171,6 +171,31 @@ function isValidCsrfToken(?string $token): bool
 }
 
 // =========================================
+// FORM HELPERS (sign-up and account pages)
+// =========================================
+
+/**
+ * The error message under a form field, or '' when the field is valid.
+ */
+function fieldError(array $errors, string $field): string
+{
+    if (!isset($errors[$field])) {
+        return '';
+    }
+
+    return '<p class="auth-field__error" id="' . $field . '-error">'
+        . htmlspecialchars($errors[$field]) . '</p>';
+}
+
+/**
+ * Marks an invalid field for screen readers and links it to its message.
+ */
+function invalidAttributes(array $errors, string $field): string
+{
+    return isset($errors[$field]) ? ' aria-invalid="true" aria-describedby="' . $field . '-error"' : '';
+}
+
+// =========================================
 // UC-01 REGISTRATION
 // =========================================
 
@@ -201,6 +226,27 @@ function normalizeRegistrationInput(array $post): array
 function validateRegistration(array $input, ?DateTimeImmutable $today = null): array
 {
     $today ??= new DateTimeImmutable('today');
+    $errors = validateAccountFields($input);
+
+    $birthDate = DateTimeImmutable::createFromFormat('!Y-m-d', $input['birth_date']);
+    if ($input['birth_date'] === '') {
+        $errors['birth_date'] = 'Birth date is required.';
+    } elseif ($birthDate === false || $birthDate->format('Y-m-d') !== $input['birth_date']) {
+        $errors['birth_date'] = 'Enter a valid birth date.';
+    } elseif ($birthDate > $today) {
+        $errors['birth_date'] = 'Birth date cannot be in the future.';
+    }
+
+    return $errors + validateNewPassword($input['password'], $input['password_confirm']);
+}
+
+/**
+ * Name, username, email and phone rules shared by sign-up and profile editing.
+ *
+ * @return array<string, string> field name => error message
+ */
+function validateAccountFields(array $input): array
+{
     $errors = [];
 
     foreach (['first_name' => 'First name', 'last_name' => 'Last name'] as $name => $label) {
@@ -229,16 +275,18 @@ function validateRegistration(array $input, ?DateTimeImmutable $today = null): a
         $errors['phone_number'] = 'Enter a valid phone number.';
     }
 
-    $birthDate = DateTimeImmutable::createFromFormat('!Y-m-d', $input['birth_date']);
-    if ($input['birth_date'] === '') {
-        $errors['birth_date'] = 'Birth date is required.';
-    } elseif ($birthDate === false || $birthDate->format('Y-m-d') !== $input['birth_date']) {
-        $errors['birth_date'] = 'Enter a valid birth date.';
-    } elseif ($birthDate > $today) {
-        $errors['birth_date'] = 'Birth date cannot be in the future.';
-    }
+    return $errors;
+}
 
-    $password = $input['password'];
+/**
+ * Password rules shared by sign-up, password reset and password change.
+ *
+ * @return array<string, string> 'password' / 'password_confirm' => error message
+ */
+function validateNewPassword(string $password, string $confirm): array
+{
+    $errors = [];
+
     if ($password === '') {
         $errors['password'] = 'Password is required.';
     } elseif (mb_strlen($password) < AUTH_PASSWORD_MIN_LENGTH) {
@@ -249,7 +297,7 @@ function validateRegistration(array $input, ?DateTimeImmutable $today = null): a
         $errors['password'] = 'Password must include at least one letter and one number.';
     }
 
-    if (!isset($errors['password']) && $input['password_confirm'] !== $password) {
+    if (!isset($errors['password']) && $confirm !== $password) {
         $errors['password_confirm'] = 'Passwords do not match.';
     }
 
@@ -257,24 +305,27 @@ function validateRegistration(array $input, ?DateTimeImmutable $today = null): a
 }
 
 /**
- * Checks whether the email or username is already registered.
+ * Checks whether the email or username is already registered. Profile
+ * editing passes the user's own ID so their current values don't count.
  *
  * @return array<string, string> field name => error message
  */
-function findTakenAccountFields(PDO $pdo, string $email, string $username): array
+function findTakenAccountFields(PDO $pdo, string $email, string $username, ?int $exceptUserId = null): array
 {
     $stmt = $pdo->prepare('
         SELECT
             SUM(email = :email) AS email_taken,
             SUM(username = :username) AS username_taken
         FROM users
-        WHERE email = :email2 OR username = :username2
+        WHERE (email = :email2 OR username = :username2)
+            AND user_id <> :except_id
     ');
     $stmt->execute([
         'email' => $email,
         'username' => $username,
         'email2' => $email,
         'username2' => $username,
+        'except_id' => $exceptUserId ?? 0,
     ]);
     $row = $stmt->fetch();
 

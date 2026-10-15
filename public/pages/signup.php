@@ -38,21 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-function fieldError(array $errors, string $field): string
-{
-    if (!isset($errors[$field])) {
-        return '';
-    }
-
-    return '<p class="auth-field__error" id="' . $field . '-error">'
-        . htmlspecialchars($errors[$field]) . '</p>';
-}
-
-function invalidAttributes(array $errors, string $field): string
-{
-    return isset($errors[$field]) ? ' aria-invalid="true" aria-describedby="' . $field . '-error"' : '';
-}
-
 $pageTitle = 'Sign Up | OmniBuy';
 $isLoggedIn = false;
 $currentUser = null;
