@@ -25,6 +25,27 @@ if (!is_array($conditionFilters)) {
 }
 $fulfillmentFilter = $_GET['fulfillment'] ?? '';
 $sortOption = $_GET['sort'] ?? 'recent';
+
+// =========================================
+// CATEGORY FILTER INPUT
+// =========================================
+
+$categoryInput = $_GET['category'] ?? '';
+$selectedCategoryId = null;
+
+if (
+    is_string($categoryInput)
+    && $categoryInput !== ''
+    && ctype_digit($categoryInput)
+) {
+    $selectedCategoryId = (int)$categoryInput;
+}
+
+$listings = [];
+$sellers = [];
+$searchError = false;
+$resultCount = 0;
+
 $browseAll =
     $searchType === 'items'
     && $searchQuery === ''
@@ -144,10 +165,70 @@ if ($fulfillmentFilter !== '') {
     $fulfillmentSql = 'AND l.fulfillment_type = :fulfillment';
 }
 
-$listings = [];
-$sellers = [];
-$searchError = false;
-$resultCount = 0;
+// =========================================
+// CATEGORY LOOKUP / VALIDATION
+// =========================================
+
+$categories = [];
+$selectedCategoryName = '';
+
+try {
+    $categoryStmt = $pdo->prepare("
+        SELECT
+            category_id,
+            parent_category_id,
+            category_name
+        FROM categories
+        ORDER BY
+            COALESCE(parent_category_id, category_id),
+            parent_category_id IS NOT NULL,
+            category_name ASC
+    ");
+
+    $categoryStmt->execute();
+    $categories = $categoryStmt->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (PDOException $e) {
+    $searchError = true;
+
+    error_log(
+        'OmniBuy category lookup failed: '
+        . $e->getMessage()
+    );
+}
+
+// Validate the requested category exists
+$validCategoryIds = array_map(
+    static fn(array $category): int =>
+        (int)$category['category_id'],
+    $categories
+);
+
+if (
+    $selectedCategoryId !== null
+    && !in_array($selectedCategoryId, $validCategoryIds, true)
+) {
+    $selectedCategoryId = null;
+}
+
+if ($selectedCategoryId !== null) {
+    foreach ($categories as $category) {
+        if ((int)$category['category_id'] === $selectedCategoryId) {
+            $selectedCategoryName = $category['category_name'];
+            break;
+        }
+    }
+}
+
+$categorySql = '';
+if ($selectedCategoryId !== null) {
+    $categorySql = "
+        AND (
+            l.category_id = :category_id
+            OR c.parent_category_id = :parent_category_id
+        )
+    ";
+}
 
 // =========================================
 // MEETUP DISTANCE LOOKUP
@@ -315,7 +396,11 @@ function escapeLike(string $value): string
 
 if (
     $searchType === 'items'
-    && ($searchQuery !== '' || $browseAll)
+    && (
+        $searchQuery !== ''
+        || $browseAll
+        || $selectedCategoryId !== null
+    )
     && !$searchError
     && $locationError === ''
 ) {
@@ -343,6 +428,7 @@ if (
 
         WHERE l.listing_status = 'active'
             $keywordSql
+            $categorySql
             $conditionSql
             $fulfillmentSql
             $distanceSql
@@ -362,6 +448,11 @@ if (
                 'description' => $searchValue,
                 'category' => $searchValue
             ];
+        }
+
+        if ($selectedCategoryId !== null) {
+            $params['category_id'] = $selectedCategoryId;
+            $params['parent_category_id'] = $selectedCategoryId;
         }
 
         $params = array_merge(
@@ -579,10 +670,39 @@ $hasNoResults =
                         <?php endif; ?>
                     </h1>
 
-                    <?php if ($browseAll): ?>
+                    <?php if ($browseAll && $selectedCategoryId !== null): ?>
+
+                        <p class="search-page__summary">
+                            Browsing available listings in
+                            <strong>
+                                <?= htmlspecialchars(
+                                    $selectedCategoryName,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </strong>.
+                        </p>
+
+                    <?php elseif ($browseAll): ?>
 
                         <p class="search-page__summary">
                             Browse all available marketplace listings.
+                        </p>
+
+                    <?php elseif (
+                        $selectedCategoryId !== null
+                        && $searchQuery === ''
+                    ): ?>
+
+                        <p class="search-page__summary">
+                            Browsing listings in
+                            <strong>
+                                <?= htmlspecialchars(
+                                    $selectedCategoryName,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </strong>.
                         </p>
 
                     <?php elseif ($searchQuery !== ''): ?>
@@ -897,15 +1017,34 @@ $hasNoResults =
                                 <select
                                     id="category-filter"
                                     name="category"
-                                    disabled
                                 >
-                                    <option>
+                                    <option value="">
                                         All Categories
                                     </option>
+
+                                    <?php foreach ($categories as $category): ?>
+                                        <option
+                                            value="<?= (int)$category['category_id'] ?>"
+                                            <?= $selectedCategoryId ===
+                                                (int)$category['category_id']
+                                                ? 'selected'
+                                                : '' ?>
+                                        >
+                                            <?= $category['parent_category_id'] !== null
+                                                ? '— '
+                                                : '' ?>
+                                            <?= htmlspecialchars(
+                                                $category['category_name'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+
                                 </select>
 
                                 <p class="filter-group__note">
-                                    Category filtering will be added later.
+                                    Select a category to narrow marketplace listings.
                                 </p>
 
                             </div>
@@ -1017,6 +1156,14 @@ $hasNoResults =
                                         type="hidden"
                                         name="fulfillment"
                                         value="<?= htmlspecialchars($fulfillmentFilter) ?>"
+                                    >
+                                <?php endif; ?>
+
+                                <?php if ($selectedCategoryId !== null): ?>
+                                    <input
+                                        type="hidden"
+                                        name="category"
+                                        value="<?= $selectedCategoryId ?>"
                                     >
                                 <?php endif; ?>
 
@@ -1156,7 +1303,11 @@ $hasNoResults =
                          EMPTY / INITIAL STATE
                          ========================= -->
 
-                    <?php elseif ($searchQuery === '' && !$browseAll): ?>
+                    <?php elseif (
+                        $searchQuery === ''
+                        && !$browseAll
+                        && $selectedCategoryId === null
+                    ): ?>
 
                         <div class="search-message">
 
@@ -1417,6 +1568,15 @@ $hasNoResults =
 
             if (radiusField) {
                 radiusField.value = '';
+            }
+
+            // Clear category filter.
+            const categoryField = filterForm.querySelector(
+                'select[name="category"]'
+            );
+
+            if (categoryField) {
+                categoryField.value = '';
             }
 
             // Restore default filter visibility.
