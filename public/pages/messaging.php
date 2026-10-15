@@ -1,6 +1,12 @@
 <?php
-
 declare(strict_types=1);
+// Require authentication before loading messages.
+require_once __DIR__ . '/../components/require-login.php';
+
+// Messaging backend logic will go here.
+// Only retrieve conversations associated with $currentUserId.
+
+
 
 session_start();
 
@@ -15,13 +21,6 @@ session_start();
  * - Sort by conversations.updated_at DESC.
  * - Use prepared SQL and derive identity from the session only.
  */
-
-// Production auth guard:
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: /login.php');
-//     exit;
-// }
-
 $currentUserId = (int) ($_SESSION['user_id'] ?? 1); // Temporary layout fixture.
 
 // Variables consumed by the existing reusable header.php.
