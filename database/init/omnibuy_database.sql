@@ -397,6 +397,15 @@ CREATE TABLE addresses (
         REFERENCES users(user_id)
 );
 
+CREATE TABLE zip_code_locations (
+    zip_code CHAR(5) NOT NULL PRIMARY KEY,
+    latitude DECIMAL(9, 6) NOT NULL,
+    longitude DECIMAL(9, 6) NOT NULL
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
 -- =========================================
 -- ORDERS AND FULFILLMENT
 -- =========================================
