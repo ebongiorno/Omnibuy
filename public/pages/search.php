@@ -1081,6 +1081,15 @@ $hasNoResults =
                                     >
                                         Price: High to Low
                                     </option>
+
+                                    <?php if ($fulfillmentFilter !== 'shipping'): ?>
+                                        <option
+                                            value="distance_near"
+                                            <?= $sortOption === 'distance_near' ? 'selected' : '' ?>
+                                        >
+                                            Distance: Near to Far (Meetup First)
+                                        </option>
+                                    <?php endif; ?>
                                 </select>
 
                             </form>
