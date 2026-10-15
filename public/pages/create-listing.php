@@ -1,16 +1,10 @@
 <?php
 
-session_start();
+// Require authentication before creating a listing.
+require_once __DIR__ . '/../components/require-login.php';
 
 $pageTitle = 'Create Listing | OmniBuy';
 $activeNav = 'sell';
-$isLoggedIn = true;
-
-$currentUser = [
-    'username' => 'MisterRoger68',
-    'avatar_url' => '/public/assets/icons/default-avatar.png',
-    'is_seller' => true,
-];
 
 $cartCount = 2;
 $unreadCount = 3;

@@ -1,13 +1,14 @@
 <?php
+    require_once __DIR__ . '/../components/require-login.php';
+
+    // Wishlist backend logic will go here.
+    // $currentUserId identifies the logged-in user.
+?>
+
+<?php
 
 $pageTitle = 'Wishlist | OmniBuy';
 $activeNav = 'wishlist';
-$isLoggedIn = true;
-$currentUser = [
-    'username' => 'MisterRoger68',
-    'avatar_url' => '/public/assets/default-avatar.png',
-    'is_seller' => true,
-];
 $itemCount = 2;
 
 

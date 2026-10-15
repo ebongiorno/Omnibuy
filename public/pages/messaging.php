@@ -1,38 +1,25 @@
 <?php
-
 declare(strict_types=1);
+// Require authentication before loading messages.
+require_once __DIR__ . '/../components/require-login.php';
 
-session_start();
+// Messaging backend logic will go here.
+// Only retrieve conversations associated with $currentUserId.
 
 /*
  * messaging.php
  * OmniBuy conversation hub / inbox skeleton.
  *
  * Production wiring TODO:
- * - Require an authenticated user before loading the inbox.
  * - Query only conversations where the session user is buyer or seller.
  * - Join the other participant, listing context, latest message, and unread count.
  * - Sort by conversations.updated_at DESC.
  * - Use prepared SQL and derive identity from the session only.
  */
-
-// Production auth guard:
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: /login.php');
-//     exit;
-// }
-
-$currentUserId = (int) ($_SESSION['user_id'] ?? 1); // Temporary layout fixture.
-
 // Variables consumed by the existing reusable header.php.
+// $isLoggedIn and $currentUser come from require-login.php.
 $pageTitle = 'Messages | OmniBuy';
 $activeNav = '';
-$isLoggedIn = isset($_SESSION['user_id']);
-$currentUser = $isLoggedIn ? [
-    'username' => (string) ($_SESSION['username'] ?? 'Account'),
-    'avatar_url' => (string) ($_SESSION['avatar_url'] ?? '/assets/img/default-avatar.png'),
-    'is_seller' => (bool) ($_SESSION['is_seller'] ?? false),
-] : null;
 $cartCount = (int) ($_SESSION['cart_count'] ?? 0);
 $unreadCount = 2; // TODO: Replace with unread message query.
 
