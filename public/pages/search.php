@@ -161,13 +161,18 @@ $radiusFilterActive =
     && $fulfillmentFilter !== 'shipping'
     && $radiusMiles !== null;
 
-if ($radiusFilterActive) {
+// Distance sorting can work without a radius.
+$distanceSortActive =
+    $searchType === 'items'
+    && $fulfillmentFilter !== 'shipping'
+    && $sortOption === 'distance_near';
 
+if ($radiusFilterActive || $distanceSortActive) {
     // Require a valid five-digit ZIP code.
     if (!preg_match('/^[0-9]{5}$/', $buyerZip)) {
 
         $locationError =
-            'Enter a valid 5-digit ZIP code to filter by distance.';
+            'Enter a valid 5-digit ZIP code to filter or sort by distance.';
 
     } else {
 
