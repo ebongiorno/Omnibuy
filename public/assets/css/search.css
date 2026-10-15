@@ -148,6 +148,11 @@
     cursor: pointer;
 }
 
+/* Hide meetup distance filter when needed (ensures hidden attribute means hidden)*/
+#meetup-distance-filter[hidden] {
+    display: none !important;
+}
+
 .filter-group__note {
     margin: var(--space-2) 0 0;
     color: var(--color-text-muted);
