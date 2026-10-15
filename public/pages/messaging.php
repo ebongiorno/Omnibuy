@@ -66,7 +66,11 @@ function e(string $value): string
 
 require_once __DIR__ . '/../components/header.php';
 ?>
-<link rel="stylesheet" href="../assets/css/messaging.css">
+<head>
+    <link rel="stylesheet" href="../assets/css/omnibuy-design-tokens.css">
+    <link rel="stylesheet" href="../assets/css/shared-navigation.css">
+    <link rel="stylesheet" href="../assets/css/messaging.css"
+</head>
 
 <section class="messages-page shell" aria-labelledby="messages-title">
   <div class="messages-page__heading">
