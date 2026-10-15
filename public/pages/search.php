@@ -862,6 +862,25 @@ $hasNoResults =
                                     >
                                 <?php endif; ?>
 
+                                <!-- Preserve meetup distance settings -->
+                                <?php if ($fulfillmentFilter !== 'shipping'): ?>
+
+                                    <input
+                                        type="hidden"
+                                        name="zip"
+                                        value="<?= htmlspecialchars($buyerZip, ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+
+                                    <?php if ($radiusMiles !== null): ?>
+                                        <input
+                                            type="hidden"
+                                            name="radius"
+                                            value="<?= $radiusMiles ?>"
+                                        >
+                                    <?php endif; ?>
+
+                                <?php endif; ?>
+                                    
                                 <!-- Preserves browse mode -->
                                 <?php if ($browseAll): ?>
                                     <input
