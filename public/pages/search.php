@@ -1065,6 +1065,31 @@ $hasNoResults =
 
                         </div>
 
+                    <?php elseif ($locationError !== ''): ?>
+
+                        <div
+                            class="search-message search-message--error"
+                            role="alert"
+                        >
+
+                            <i
+                                class="fa-solid fa-circle-exclamation"
+                                aria-hidden="true"
+                            ></i>
+
+                            <h3>
+                                Invalid Meetup Location
+                            </h3>
+
+                            <p>
+                                <?= htmlspecialchars(
+                                    $locationError,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </p>
+
+                        </div>
 
                     <!-- =========================
                          EMPTY / INITIAL STATE
