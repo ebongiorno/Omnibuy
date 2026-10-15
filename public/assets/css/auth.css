@@ -1,0 +1,116 @@
+/* Sign up and log in pages */
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--space-8);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  padding: var(--space-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.auth-card h1 {
+  margin: 0 0 var(--space-2);
+}
+
+.auth-card__subtitle {
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-secondary);
+}
+
+.auth-card__subtitle a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.auth-alert {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-primary-light);
+  color: var(--color-navy);
+}
+
+.auth-alert--error {
+  background: #FDECEC;
+  color: var(--color-danger);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.auth-field label {
+  font-weight: 600;
+}
+
+.auth-field input {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  font: inherit;
+}
+
+.auth-field input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.auth-field input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.auth-field__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.auth-field__error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-danger);
+}
+
+.account-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-3) var(--space-6);
+  margin: 0 0 var(--space-6);
+}
+
+.account-details dt {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.account-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.auth-form__submit {
+  width: 100%;
+  margin-top: var(--space-2);
+}
