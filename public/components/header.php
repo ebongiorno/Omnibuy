@@ -42,8 +42,8 @@ function navActive(string $key, string $activeNav): string
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle) ?></title>
 
-  <link rel="stylesheet" href="../css/omnibuy-design-tokens.css">
-  <link rel="stylesheet" href="../css/shared-navigation.css">
+  <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
+  <link rel="stylesheet" href="/assets/css/shared-navigation.css">
 
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -123,7 +123,7 @@ function navActive(string $key, string $activeNav): string
           <button class="account-menu__trigger" type="button" aria-expanded="false" aria-controls="account-menu-panel">
             <img
               class="account-menu__avatar"
-              src="<?= htmlspecialchars($currentUser['avatar_url'] ?? '/assets/img/default-avatar.png') ?>"
+              src="<?= htmlspecialchars($currentUser['avatar_url'] ?? '/assets/icons/default-avatar.png') ?>"
               alt=""
             >
             <span><?= htmlspecialchars($currentUser['username'] ?? 'Account') ?></span>
@@ -178,6 +178,19 @@ function navActive(string $key, string $activeNav): string
           $activeNav,
       ) ?>" href="/category.php?category=sporting-goods">Sporting Goods</a>
       <a class="primary-nav__link" href="/categories.php">More</a>
+
+      <!-- Phones: the header hides the account links, so the menu shows them instead. -->
+      <div class="primary-nav__account">
+        <?php if ($isLoggedIn && $currentUser): ?>
+          <a class="primary-nav__link" href="/pages/account.php">Manage My Account</a>
+          <form action="/pages/logout.php" method="post">
+            <button class="primary-nav__link" type="submit">Log out</button>
+          </form>
+        <?php else: ?>
+          <a class="primary-nav__link" href="/pages/login.php">Log in</a>
+          <a class="primary-nav__link" href="/pages/signup.php">Sign up</a>
+        <?php endif; ?>
+      </div>
     </nav>
   </div>
 </header>

@@ -60,8 +60,6 @@ $currentUser = null;
 include __DIR__ . '/../components/header.php';
 ?>
 
-<link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-<link rel="stylesheet" href="/assets/css/shared-navigation.css">
 <link rel="stylesheet" href="/assets/css/auth.css">
 
 <section class="shell auth-page">
