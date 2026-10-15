@@ -1,11 +1,17 @@
-FROM php:8.2-apache
+FROM php:8.3-apache
 
-RUN docker-php-ext-install pdo pdo_mysql
-
-# Composer (and unzip, which it needs to install packages) for running PHPUnit
+# Install PHP extensions and tools needed by OmniBuy and PHPUnit
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip \
+    && apt-get install -y --no-install-recommends \
+        unzip \
+        libonig-dev \
+#combines the previous instructures to install pdo, pdo_mysql, and mbstring at the same time
+    && docker-php-ext-install \ 
+        pdo \
+        pdo_mysql \
+        mbstring \
     && rm -rf /var/lib/apt/lists/*
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN a2enmod rewrite
