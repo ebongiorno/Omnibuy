@@ -107,8 +107,9 @@ echo "  ... docker compose down (volume kept), then up"
 docker compose down >/dev/null 2>&1
 up_output=$(docker compose up -d 2>&1)
 
-db_healthy_line=$(echo "$up_output" | grep -n "$DB_CONTAINER Healthy" | head -1 | cut -d: -f1)
-web_started_line=$(echo "$up_output" | grep -n "$WEB_CONTAINER Started" | head -1 | cut -d: -f1)
+# Newer Compose versions pad names with two spaces ("omnibuy-db  Healthy"), so match one or more.
+db_healthy_line=$(echo "$up_output" | grep -nE "$DB_CONTAINER +Healthy" | head -1 | cut -d: -f1)
+web_started_line=$(echo "$up_output" | grep -nE "$WEB_CONTAINER +Started" | head -1 | cut -d: -f1)
 if [ -n "$db_healthy_line" ] && [ -n "$web_started_line" ] && [ "$db_healthy_line" -lt "$web_started_line" ]; then
     pass "on startup, web starts only after the database is healthy"
 else
