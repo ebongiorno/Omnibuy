@@ -156,6 +156,7 @@ jobs:
 
           REQUIRED_TABLES="
           users
+          password_resets
           seller_profiles
           categories
           listings

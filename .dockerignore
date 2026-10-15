@@ -8,3 +8,4 @@
 vendor
 .phpunit.cache
 build
+public/uploads
