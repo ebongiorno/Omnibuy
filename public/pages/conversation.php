@@ -6,7 +6,7 @@ require_once __DIR__ . '/../components/require-login.php';
 // Verify that $currentUserId is a participant in the
 // requested conversation before showing any messages.
 
-$header = '/components/header.php';
+$header = '../components/header.php';
 include $header;
 ?>
 <head>

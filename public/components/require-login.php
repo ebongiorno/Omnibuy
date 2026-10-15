@@ -1,16 +1,11 @@
 <?php
-// Start the session if one has not already been started.
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Include at the top of any page that needs a logged-in user.
+// Logged-out visitors go to the login page and come back here afterwards.
+require_once __DIR__ . '/../../includes/auth.php';
 
-// Check if the user is logged in.
-if (empty($_SESSION['user_id'])) {
-    // Redirect unauthenticated users to the login page.
-    header("Location: /login.php");
-    exit();
-}
+requireLogin();
 
-// Store the authenticated user ID for use on the page.
-$currentUserId = $_SESSION['user_id'];
-?>
+// Store the authenticated user for use on the page and in the shared header.
+$currentUser = currentUser();
+$currentUserId = $currentUser['user_id'];
+$isLoggedIn = true;

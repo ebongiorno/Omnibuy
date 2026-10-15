@@ -9,12 +9,6 @@
 
 $pageTitle = 'Wishlist | OmniBuy';
 $activeNav = 'wishlist';
-$isLoggedIn = true;
-$currentUser = [
-    'username' => 'MisterRoger68',
-    'avatar_url' => '/public/assets/default-avatar.png',
-    'is_seller' => true,
-];
 $itemCount = 2;
 
 
