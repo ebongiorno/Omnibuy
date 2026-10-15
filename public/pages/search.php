@@ -102,6 +102,19 @@ if ($fulfillmentFilter !== '' && !in_array($fulfillmentFilter, $allowedFulfillme
 }
 
 // =========================================
+// DISTANCE SORTING VALIDATION
+// =========================================
+
+// Shipping-only listings cannot be sorted
+// by meetup distance.
+if (
+    $fulfillmentFilter === 'shipping'
+    && $sortOption === 'distance_near'
+) {
+    $sortOption = 'recent';
+    $orderBySql = $allowedSortOptions[$sortOption];
+}
+// =========================================
 // MEETUP LOCATION INPUT
 // =========================================
 
