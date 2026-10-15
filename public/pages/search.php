@@ -272,6 +272,8 @@ function escapeLike(string $value): string
 if (
     $searchType === 'items'
     && ($searchQuery !== '' || $browseAll)
+    && !$searchError
+    && $locationError === ''
 ) {
 
     $sql = "
@@ -299,7 +301,7 @@ if (
             $keywordSql
             $conditionSql
             $fulfillmentSql
-            
+            $distanceSql
 
         ORDER BY $orderBySql
     ";
@@ -326,6 +328,11 @@ if (
         if ($fulfillmentFilter !== '') {
             $params['fulfillment'] = $fulfillmentFilter;
         }
+        // Add buyer coordinates and radius when needed.
+        $params = array_merge(
+            $params,
+            $distanceParams
+        );
 
         $listings = executeWithRetry(
             $pdo,
