@@ -41,6 +41,61 @@ if (
     $selectedCategoryId = (int)$categoryInput;
 }
 
+// =========================================
+// PRICE RANGE FILTER INPUT / VALIDATION
+// =========================================
+
+$minPriceRaw = $_GET['min_price'] ?? '';
+$maxPriceRaw = $_GET['max_price'] ?? '';
+
+$minPriceInput = is_string($minPriceRaw)
+    ? trim($minPriceRaw)
+    : '';
+
+$maxPriceInput = is_string($maxPriceRaw)
+    ? trim($maxPriceRaw)
+    : '';
+
+$minPrice = null;
+$maxPrice = null;
+$priceError = '';
+
+$validPricePattern = '/^\d+(?:\.\d{1,2})?$/';
+
+if ($minPriceInput !== '') {
+    if (!preg_match($validPricePattern, $minPriceInput)) {
+        $priceError =
+            'Enter a valid minimum price using up to two decimal places.';
+    } else {
+        $minPrice = (float)$minPriceInput;
+    }
+}
+
+if ($maxPriceInput !== '') {
+    if (!preg_match($validPricePattern, $maxPriceInput)) {
+        if ($priceError === '') {
+            $priceError =
+                'Enter a valid maximum price using up to two decimal places.';
+        }
+    } else {
+        $maxPrice = (float)$maxPriceInput;
+    }
+}
+
+if (
+    $priceError === ''
+    && $minPrice !== null
+    && $maxPrice !== null
+    && $minPrice > $maxPrice
+) {
+    $priceError =
+        'Minimum price cannot be greater than maximum price.';
+}
+
+$priceFilterActive =
+    $searchType === 'items'
+    && ($minPrice !== null || $maxPrice !== null);
+
 $listings = [];
 $sellers = [];
 $searchError = false;
@@ -231,6 +286,20 @@ if ($selectedCategoryId !== null) {
 }
 
 // =========================================
+// PRICE RANGE FILTER SQL
+// =========================================
+
+$priceSql = '';
+
+if ($minPrice !== null) {
+    $priceSql .= ' AND l.price >= :min_price';
+}
+
+if ($maxPrice !== null) {
+    $priceSql .= ' AND l.price <= :max_price';
+}
+
+// =========================================
 // MEETUP DISTANCE LOOKUP
 // =========================================
 
@@ -400,9 +469,11 @@ if (
         $searchQuery !== ''
         || $browseAll
         || $selectedCategoryId !== null
+        || $priceFilterActive
     )
     && !$searchError
     && $locationError === ''
+    && $priceError === ''
 ) {
 
     $sql = "
@@ -429,6 +500,7 @@ if (
         WHERE l.listing_status = 'active'
             $keywordSql
             $categorySql
+            $priceSql
             $conditionSql
             $fulfillmentSql
             $distanceSql
@@ -453,6 +525,14 @@ if (
         if ($selectedCategoryId !== null) {
             $params['category_id'] = $selectedCategoryId;
             $params['parent_category_id'] = $selectedCategoryId;
+        }
+
+        if ($minPrice !== null) {
+            $params['min_price'] = $minPrice;
+        }
+
+        if ($maxPrice !== null) {
+            $params['max_price'] = $maxPrice;
         }
 
         $params = array_merge(
@@ -1059,28 +1139,50 @@ $hasNoResults =
 
                                 <div class="price-filter">
 
+                                    <label for="min-price" class="sr-only">
+                                        Minimum price
+                                    </label>
+
                                     <input
                                         type="number"
+                                        id="min-price"
+                                        name="min_price"
                                         min="0"
+                                        step="0.01"
                                         placeholder="Min"
-                                        disabled
+                                        value="<?= htmlspecialchars(
+                                            $minPriceInput,
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
                                     >
 
                                     <span aria-hidden="true">
                                         -
                                     </span>
 
+                                    <label for="max-price" class="sr-only">
+                                        Maximum price
+                                    </label>
+
                                     <input
                                         type="number"
+                                        id="max-price"
+                                        name="max_price"
                                         min="0"
+                                        step="0.01"
                                         placeholder="Max"
-                                        disabled
+                                        value="<?= htmlspecialchars(
+                                            $maxPriceInput,
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
                                     >
 
                                 </div>
 
                                 <p class="filter-group__note">
-                                    Price filtering will be added later.
+                                    Enter a minimum price, maximum price, or both.
                                 </p>
 
                             </div>
@@ -1164,6 +1266,30 @@ $hasNoResults =
                                         type="hidden"
                                         name="category"
                                         value="<?= $selectedCategoryId ?>"
+                                    >
+                                <?php endif; ?>
+
+                                <?php if ($minPrice !== null): ?>
+                                    <input
+                                        type="hidden"
+                                        name="min_price"
+                                        value="<?= htmlspecialchars(
+                                            $minPriceInput,
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
+                                    >
+                                <?php endif; ?>
+
+                                <?php if ($maxPrice !== null): ?>
+                                    <input
+                                        type="hidden"
+                                        name="max_price"
+                                        value="<?= htmlspecialchars(
+                                            $maxPriceInput,
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
                                     >
                                 <?php endif; ?>
 
@@ -1299,6 +1425,32 @@ $hasNoResults =
 
                         </div>
 
+                    <?php elseif ($priceError !== ''): ?>
+
+                        <div
+                            class="search-message search-message--error"
+                            role="alert"
+                        >
+
+                            <i
+                                class="fa-solid fa-circle-exclamation"
+                                aria-hidden="true"
+                            ></i>
+
+                            <h3>
+                                Invalid Price Range
+                            </h3>
+
+                            <p>
+                                <?= htmlspecialchars(
+                                    $priceError,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </p>
+
+                        </div>
+
                     <!-- =========================
                          EMPTY / INITIAL STATE
                          ========================= -->
@@ -1307,6 +1459,7 @@ $hasNoResults =
                         $searchQuery === ''
                         && !$browseAll
                         && $selectedCategoryId === null
+                        && !$priceFilterActive
                     ): ?>
 
                         <div class="search-message">
@@ -1577,6 +1730,23 @@ $hasNoResults =
 
             if (categoryField) {
                 categoryField.value = '';
+            }
+
+            // Clear price range.
+            const minPriceField = filterForm.querySelector(
+                'input[name="min_price"]'
+            );
+
+            const maxPriceField = filterForm.querySelector(
+                'input[name="max_price"]'
+            );
+
+            if (minPriceField) {
+                minPriceField.value = '';
+            }
+
+            if (maxPriceField) {
+                maxPriceField.value = '';
             }
 
             // Restore default filter visibility.
