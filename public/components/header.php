@@ -132,7 +132,7 @@ function navActive(string $key, string $activeNav): string
 
           <div class="account-menu__panel" id="account-menu-panel" hidden>
             <a href="/pages/account.php">Manage My Account</a>
-            <a href="/orders.php">My Orders</a>
+            <a href="/pages/orders.php">My Orders</a>
             <?php if (!empty($currentUser['is_seller'])): ?>
               <a href="../pages/my-listings.php">My Listings</a>
             <?php endif; ?>
