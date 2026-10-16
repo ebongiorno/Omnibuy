@@ -14,6 +14,15 @@ const PROFILE_BIO_MAX_LENGTH = 500;
 const PROFILE_CITY_MAX_LENGTH = 100;
 // Letters (any language), spaces, periods, apostrophes and hyphens: "St. John's", "Winston-Salem".
 const PROFILE_CITY_PATTERN = "/^\\p{L}[\\p{L} .'-]*$/u";
+// UC-05 privacy settings: form/setting name => users column (TRUE = hidden
+// from other users). Column names come only from this list, never from input.
+const PRIVACY_SETTINGS = [
+    'last_name' => 'is_last_name_hidden',
+    'city' => 'is_city_hidden',
+    'email' => 'is_email_hidden',
+    'phone' => 'is_phone_hidden',
+    'bio' => 'is_bio_hidden',
+];
 const PROFILE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = [
     'image/jpeg' => 'jpg',
@@ -32,7 +41,8 @@ function loadAccount(PDO $pdo, int $userId): ?array
     $stmt = $pdo->prepare('
         SELECT
             user_id, first_name, last_name, username, email, phone_number,
-            birth_date, profile_image_url, bio, city, is_last_name_hidden, created_at
+            birth_date, profile_image_url, bio, city, created_at,
+            ' . implode(', ', PRIVACY_SETTINGS) . '
         FROM users
         WHERE user_id = :id
     ');
@@ -44,7 +54,9 @@ function loadAccount(PDO $pdo, int $userId): ?array
     }
 
     $account['user_id'] = (int) $account['user_id'];
-    $account['is_last_name_hidden'] = (bool) $account['is_last_name_hidden'];
+    foreach (PRIVACY_SETTINGS as $column) {
+        $account[$column] = (bool) $account[$column];
+    }
 
     return $account;
 }
@@ -296,12 +308,43 @@ function deleteProfileImage(?string $url): void
 // UC-05 PRIVACY SETTINGS
 // =========================================
 
-function updatePrivacySettings(PDO $pdo, int $userId, bool $hideLastName): void
+/**
+ * Reads the privacy form. Each setting is a "Show my ..." checkbox, so an
+ * unchecked (missing) box means hidden.
+ *
+ * @return array<string, bool> setting => true when hidden
+ */
+function privacyInputFromPost(array $post): array
 {
-    $pdo->prepare('UPDATE users SET is_last_name_hidden = :hidden WHERE user_id = :id')->execute([
-        'hidden' => (int) $hideLastName,
-        'id' => $userId,
-    ]);
+    $hidden = [];
+    foreach (array_keys(PRIVACY_SETTINGS) as $setting) {
+        $hidden[$setting] = ($post["show_$setting"] ?? '') !== '1';
+    }
+
+    return $hidden;
+}
+
+/**
+ * Saves the privacy settings. Settings left out of $hidden are unchanged.
+ *
+ * @param array<string, bool> $hidden setting => true to hide it, e.g. ['email' => true]
+ */
+function updatePrivacySettings(PDO $pdo, int $userId, array $hidden): void
+{
+    $assignments = [];
+    $params = ['id' => $userId];
+    foreach (PRIVACY_SETTINGS as $setting => $column) {
+        if (array_key_exists($setting, $hidden)) {
+            $assignments[] = "$column = :$setting";
+            $params[$setting] = (int) $hidden[$setting];
+        }
+    }
+
+    if ($assignments === []) {
+        return;
+    }
+
+    $pdo->prepare('UPDATE users SET ' . implode(', ', $assignments) . ' WHERE user_id = :id')->execute($params);
 }
 
 // =========================================

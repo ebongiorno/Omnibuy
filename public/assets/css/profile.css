@@ -206,3 +206,21 @@
     height: 88px;
   }
 }
+
+/* Shown only on your own profile when privacy settings hide something */
+.profile-card__privacy {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-input);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.profile-card__privacy i {
+  margin-right: var(--space-1);
+}
+
+.profile-card__privacy a {
+  color: var(--color-primary);
+}

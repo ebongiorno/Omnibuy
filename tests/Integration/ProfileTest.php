@@ -99,6 +99,39 @@ final class ProfileTest extends DatabaseTestCase
         $this->assertSame('Pat', loadPublicProfile($this->pdo, $this->seller, true)['display_name']);
     }
 
+    public function testHiddenFieldsAreLeftOut(): void
+    {
+        updatePrivacySettings($this->pdo, $this->seller, ['city' => true, 'bio' => true, 'email' => true]);
+
+        $profile = loadPublicProfile($this->pdo, $this->seller, true);
+
+        $this->assertNull($profile['city']);
+        $this->assertNull($profile['bio']);
+        $this->assertNull($profile['email']);
+        $this->assertSame('559-555-0100', $profile['phone_number'], 'Phone is still shown');
+        $this->assertFalse($profile['contact_hidden']);
+        $this->assertSame(['city', 'email', 'bio'], $profile['hidden']);
+    }
+
+    public function testContactHiddenWhenEmailAndPhoneAreBothHidden(): void
+    {
+        updatePrivacySettings($this->pdo, $this->seller, ['email' => true, 'phone' => true]);
+
+        $profile = loadPublicProfile($this->pdo, $this->seller, true);
+
+        $this->assertTrue($profile['contact_hidden']);
+        $this->assertNull($profile['email']);
+        $this->assertNull($profile['phone_number']);
+    }
+
+    public function testNothingHiddenByDefault(): void
+    {
+        $profile = loadPublicProfile($this->pdo, $this->seller, true);
+
+        $this->assertSame([], $profile['hidden']);
+        $this->assertFalse($profile['contact_hidden']);
+    }
+
     public function testUserWithoutStoreOrCityHasNulls(): void
     {
         $profile = loadPublicProfile($this->pdo, $this->createUser('profile_buyer'), false);
