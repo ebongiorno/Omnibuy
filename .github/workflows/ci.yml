@@ -347,7 +347,7 @@ jobs:
 
             echo
           done < <(
-            find tests/Functional               -type f               -name "*-test.php"               | sort
+            find tests/Functional               -type f               -name "*Test.php"               | sort
           )
 
           if [ "$test_count" -eq 0 ]; then
