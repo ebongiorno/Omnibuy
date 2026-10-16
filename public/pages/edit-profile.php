@@ -114,6 +114,14 @@ include __DIR__ . '/../components/header.php';
       </div>
 
       <div class="auth-field">
+        <label for="city">City <span class="auth-field__optional">(optional)</span></label>
+        <input type="text" id="city" name="city" maxlength="<?= PROFILE_CITY_MAX_LENGTH ?>" autocomplete="address-level2"
+          value="<?= htmlspecialchars($input['city']) ?>"<?= invalidAttributes($errors, 'city') ?>>
+        <p class="auth-field__hint">Shown on your public profile.</p>
+        <?= fieldError($errors, 'city') ?>
+      </div>
+
+      <div class="auth-field">
         <label for="bio">Bio <span class="auth-field__optional">(optional)</span></label>
         <textarea id="bio" name="bio" rows="4" maxlength="<?= PROFILE_BIO_MAX_LENGTH ?>"
           <?= invalidAttributes($errors, 'bio') ?>><?= htmlspecialchars($input['bio']) ?></textarea>
