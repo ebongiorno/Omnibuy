@@ -601,7 +601,12 @@ if (
             END AS last_name,
 
             u.profile_image_url,
-            u.bio
+
+            CASE
+                WHEN u.is_bio_hidden = FALSE
+                THEN u.bio
+                ELSE NULL
+            END AS bio
 
         FROM seller_profiles AS sp
 

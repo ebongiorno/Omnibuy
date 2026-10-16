@@ -160,11 +160,51 @@ final class AccountManagementTest extends DatabaseTestCase
     {
         $userId = $this->createUser('privacy');
 
-        updatePrivacySettings($this->pdo, $userId, true);
+        updatePrivacySettings($this->pdo, $userId, ['last_name' => true]);
         $this->assertTrue($this->account($userId)['is_last_name_hidden']);
 
-        updatePrivacySettings($this->pdo, $userId, false);
+        updatePrivacySettings($this->pdo, $userId, ['last_name' => false]);
         $this->assertFalse($this->account($userId)['is_last_name_hidden']);
+    }
+
+    public function testEverythingIsShownByDefault(): void
+    {
+        $account = $this->account($this->createUser('privacy'));
+
+        foreach (PRIVACY_SETTINGS as $column) {
+            $this->assertFalse($account[$column], $column);
+        }
+    }
+
+    public function testEachPrivacySettingIsSavedSeparately(): void
+    {
+        $userId = $this->createUser('privacy');
+
+        updatePrivacySettings($this->pdo, $userId, ['city' => true, 'email' => true, 'phone' => false, 'bio' => true]);
+
+        $account = $this->account($userId);
+        $this->assertTrue($account['is_city_hidden']);
+        $this->assertTrue($account['is_email_hidden']);
+        $this->assertFalse($account['is_phone_hidden']);
+        $this->assertTrue($account['is_bio_hidden']);
+        $this->assertFalse($account['is_last_name_hidden'], 'Settings left out are unchanged');
+    }
+
+    public function testUnknownPrivacySettingsAreIgnored(): void
+    {
+        $userId = $this->createUser('privacy');
+
+        updatePrivacySettings($this->pdo, $userId, ['password_hash' => true, 'user_id = 1; --' => true]);
+
+        $this->assertFalse($this->account($userId)['is_email_hidden']);
+    }
+
+    public function testPrivacyFormTreatsUncheckedSwitchesAsHidden(): void
+    {
+        $this->assertSame(
+            ['last_name' => false, 'city' => true, 'email' => false, 'phone' => true, 'bio' => true],
+            privacyInputFromPost(['show_last_name' => '1', 'show_email' => '1', 'show_city' => 'yes', 'show_bio' => ['1']])
+        );
     }
 
     // ---------- Change password ----------

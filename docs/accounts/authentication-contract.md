@@ -35,7 +35,7 @@ startSession();          // start the session with secure cookie settings (safe 
 - **Header:** if a page includes `components/header.php` without setting `$isLoggedIn` / `$currentUser`, the header now fills them in from the session. Pages must start the session first (`startSession()` or `requireLogin()`).
 - **Log out:** POST to `/pages/logout.php` (the header's account menu already does this). GET requests do not log out.
 - **Showing a user's name to someone else** (seller cards, messages, reviews): use `publicDisplayName($firstName, $lastName, $isLastNameHidden)` from `includes/account.php`. It returns only the first name when the user hid their last name (UC-05). Seller search already follows this rule in its SQL.
-- **Linking to a user's profile:** `/pages/profile.php?id={user_id}`. Anyone can see the name, photo, city, bio and active/sold listings. Phone and email are only shown to logged-in users. Deleted, suspended and restricted accounts return 404.
+- **Linking to a user's profile:** `/pages/profile.php?id={user_id}`. Anyone can see the name, photo, city, bio and active/sold listings, minus whatever the user hid in Privacy Settings. Email and phone are only shown to logged-in users, and only if the user hasn't hidden them. Deleted, suspended and restricted accounts return 404. If you show a user's city, bio or contact details anywhere else, check the matching `is_*_hidden` column first.
 - **Profile photo:** `users.profile_image_url` is either `null` (show `/assets/icons/default-avatar.png`) or a path such as `/uploads/avatars/<random>.png`. Uploaded photos are stored in the `profile_uploads` Docker volume.
 
 ## 2a. Email (UC-03)
@@ -57,6 +57,7 @@ startSession();          // start the session with secure cookie settings (safe 
 | `bio` | Optional, ≤ 500 characters, may contain line breaks (UC-04). Escape it when showing it. |
 | `city` | Optional, ≤ 100 characters: letters, spaces, periods, apostrophes and hyphens. `NULL` when not set. Shown on the public profile. |
 | `is_last_name_hidden` | `TRUE` = show only the first name to other users, and don't match searches on the last name (UC-05) |
+| `is_city_hidden`, `is_email_hidden`, `is_phone_hidden`, `is_bio_hidden` | `TRUE` = left off the user's public profile (UC-05). All default to `FALSE` (shown). `is_bio_hidden` also hides the bio on seller cards in search. Read them through `loadPublicProfile()`, which already applies them. |
 | `is_email_verified` | Reset to `FALSE` when the user changes their email |
 | `account_status` | `active` (default), `suspended`, `restricted`, `deleted`. Only `active` accounts can log in. A `deleted` account has its personal details erased (name "Deleted User", placeholder username/email) but the row stays, so other users' orders, reviews and messages still point at it. When showing users to others, skip or label `deleted` accounts. |
 

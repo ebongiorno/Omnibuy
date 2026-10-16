@@ -270,11 +270,7 @@ final class AccountManagementFlowTest extends TestCase
 
         $this->assertStringContainsString($user['last_name'], $this->browser->get($searchUrl)['body']);
 
-        $page = $this->browser->get('/pages/privacy-settings.php');
-        $saved = $this->browser->post('/pages/privacy-settings.php', [
-            'csrf_token' => HttpClient::csrfToken($page['body']),
-            'hide_last_name' => '1',
-        ]);
+        $saved = $this->savePrivacy(['last_name']);
         $this->assertSame('/pages/account.php?updated=privacy', $saved['location']);
 
         $results = $this->browser->get($searchUrl)['body'];
@@ -288,14 +284,66 @@ final class AccountManagementFlowTest extends TestCase
     public function testPrivacySettingCanBeTurnedOff(): void
     {
         $this->signUp();
-        $page = $this->browser->get('/pages/privacy-settings.php');
-        $this->browser->post('/pages/privacy-settings.php', ['csrf_token' => HttpClient::csrfToken($page['body']), 'hide_last_name' => '1']);
+        $this->assertSame(['bio', 'city', 'email', 'last_name', 'phone'], $this->shownSettings(), 'Everything is shown by default');
 
-        $page = $this->browser->get('/pages/privacy-settings.php');
-        $this->assertStringContainsString(' checked', $page['body']);
-        $this->browser->post('/pages/privacy-settings.php', ['csrf_token' => HttpClient::csrfToken($page['body'])]);
+        $this->savePrivacy(['last_name']);
+        $this->assertSame(['bio', 'city', 'email', 'phone'], $this->shownSettings());
 
-        $this->assertStringNotContainsString(' checked', $this->browser->get('/pages/privacy-settings.php')['body']);
+        $this->savePrivacy([]);
+        $this->assertSame(['bio', 'city', 'email', 'last_name', 'phone'], $this->shownSettings());
+    }
+
+    public function testHiddenContactDetailsAreLeftOffTheProfile(): void
+    {
+        $user = $this->signUp();
+        $profileUrl = '/pages/profile.php?id=' . $this->userId($user['username']);
+
+        $before = $this->browser->get($profileUrl)['body'];
+        $this->assertStringContainsString($user['email'], $before);
+
+        $this->savePrivacy(['email', 'phone']);
+
+        $after = $this->browser->get($profileUrl)['body'];
+        $this->assertStringNotContainsString($user['email'], $after);
+        $this->assertStringNotContainsString('tel:', $after);
+        $this->assertStringContainsString('keeps their contact details private', $after);
+        $this->assertStringContainsString('Hidden from other users: email, phone number', $after, 'Own profile says what is hidden');
+    }
+
+    private function userId(string $username): int
+    {
+        $stmt = $this->pdo->prepare('SELECT user_id FROM users WHERE username = ?');
+        $stmt->execute([$username]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Submits the privacy form with every setting shown except $hide.
+     */
+    private function savePrivacy(array $hide): array
+    {
+        $page = $this->browser->get('/pages/privacy-settings.php');
+        $fields = ['csrf_token' => HttpClient::csrfToken($page['body'])];
+        foreach (['last_name', 'city', 'email', 'phone', 'bio'] as $setting) {
+            if (!in_array($setting, $hide, true)) {
+                $fields["show_$setting"] = '1';
+            }
+        }
+
+        return $this->browser->post('/pages/privacy-settings.php', $fields);
+    }
+
+    /**
+     * The settings whose switch is on, sorted.
+     */
+    private function shownSettings(): array
+    {
+        $html = $this->browser->get('/pages/privacy-settings.php')['body'];
+        preg_match_all('/id="show_([a-z_]+)"[^>]*\schecked>/', $html, $matches);
+        sort($matches[1]);
+
+        return $matches[1];
     }
 
     // ---------- Change password ----------
