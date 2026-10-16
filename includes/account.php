@@ -11,6 +11,9 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/password-reset.php';
 
 const PROFILE_BIO_MAX_LENGTH = 500;
+const PROFILE_CITY_MAX_LENGTH = 100;
+// Letters (any language), spaces, periods, apostrophes and hyphens: "St. John's", "Winston-Salem".
+const PROFILE_CITY_PATTERN = "/^\\p{L}[\\p{L} .'-]*$/u";
 const PROFILE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = [
     'image/jpeg' => 'jpg',
@@ -29,7 +32,7 @@ function loadAccount(PDO $pdo, int $userId): ?array
     $stmt = $pdo->prepare('
         SELECT
             user_id, first_name, last_name, username, email, phone_number,
-            birth_date, profile_image_url, bio, is_last_name_hidden, created_at
+            birth_date, profile_image_url, bio, city, is_last_name_hidden, created_at
         FROM users
         WHERE user_id = :id
     ');
@@ -80,6 +83,8 @@ function normalizeProfileInput(array $post): array
         'email' => strtolower($field('email')),
         'phone_number' => $field('phone_number'),
         'bio' => str_replace(["\r\n", "\r"], "\n", $field('bio')),
+        // Collapse repeated spaces so "San   Jose" is stored as "San Jose".
+        'city' => preg_replace('/\s+/u', ' ', $field('city')) ?? '',
         'remove_photo' => ($post['remove_photo'] ?? '') === '1',
         'current_password' => is_string($post['current_password'] ?? null) ? $post['current_password'] : '',
     ];
@@ -97,6 +102,7 @@ function profileInputFromAccount(array $account): array
         'email' => $account['email'],
         'phone_number' => $account['phone_number'],
         'bio' => (string) ($account['bio'] ?? ''),
+        'city' => (string) ($account['city'] ?? ''),
         'remove_photo' => false,
         'current_password' => '',
     ];
@@ -111,6 +117,12 @@ function validateProfile(array $input): array
 
     if (mb_strlen($input['bio']) > PROFILE_BIO_MAX_LENGTH) {
         $errors['bio'] = 'Bio must be ' . PROFILE_BIO_MAX_LENGTH . ' characters or fewer.';
+    }
+
+    if (mb_strlen($input['city']) > PROFILE_CITY_MAX_LENGTH) {
+        $errors['city'] = 'City must be ' . PROFILE_CITY_MAX_LENGTH . ' characters or fewer.';
+    } elseif ($input['city'] !== '' && !preg_match(PROFILE_CITY_PATTERN, $input['city'])) {
+        $errors['city'] = 'City can only contain letters, spaces, periods, apostrophes and hyphens.';
     }
 
     return $errors;
@@ -205,6 +217,7 @@ function updateProfile(PDO $pdo, array $account, array $input, ?array $photo = n
                 email = :email,
                 phone_number = :phone_number,
                 bio = :bio,
+                city = :city,
                 profile_image_url = :profile_image_url,
                 is_email_verified = is_email_verified AND NOT :email_changed
             WHERE user_id = :id
@@ -215,6 +228,7 @@ function updateProfile(PDO $pdo, array $account, array $input, ?array $photo = n
             'email' => $input['email'],
             'phone_number' => $input['phone_number'],
             'bio' => $input['bio'] === '' ? null : $input['bio'],
+            'city' => $input['city'] === '' ? null : $input['city'],
             'profile_image_url' => $imageUrl,
             'email_changed' => (int) $emailChanged,
             'id' => $userId,
@@ -447,6 +461,7 @@ function deleteAccount(PDO $pdo, int $userId, string $password, string $confirma
                 birth_date = '1900-01-01',
                 profile_image_url = NULL,
                 bio = NULL,
+                city = NULL,
                 is_last_name_hidden = FALSE,
                 account_status = 'deleted'
             WHERE user_id = :id

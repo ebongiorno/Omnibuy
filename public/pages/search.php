@@ -1542,9 +1542,12 @@ $hasNoResults =
 
                                         <div class="seller-card__content">
                                             <h3 class="seller-card__store">
-                                                <?= htmlspecialchars(
+                                                <a
+                                                    class="seller-card__link"
+                                                    href="/pages/profile.php?id=<?= (int) $seller['user_id'] ?>"
+                                                ><?= htmlspecialchars(
                                                     $seller['store_name']
-                                                ) ?>
+                                                ) ?></a>
                                                 <?php if ($seller['is_verified']): ?>
                                                     <i
                                                         class="fa-solid fa-circle-check"

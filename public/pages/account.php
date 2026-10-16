@@ -69,6 +69,11 @@ include __DIR__ . '/../components/header.php';
       <dt>Phone</dt>
       <dd><?= htmlspecialchars($account['phone_number']) ?></dd>
 
+      <dt>City</dt>
+      <dd><?= $account['city'] !== null
+          ? htmlspecialchars($account['city'])
+          : '<span class="account-details__empty">Not set</span>' ?></dd>
+
       <dt>Bio</dt>
       <dd class="account-details__bio"><?= $account['bio'] !== null
           ? htmlspecialchars($account['bio'])
@@ -76,9 +81,13 @@ include __DIR__ . '/../components/header.php';
     </dl>
 
     <nav class="account-actions" aria-label="Account settings">
+      <a class="account-actions__link" href="/pages/profile.php?id=<?= $account['user_id'] ?>">
+        <span>View my public profile</span>
+        <span class="account-actions__hint">See your profile the way other users do</span>
+      </a>
       <a class="account-actions__link" href="/pages/edit-profile.php">
         <span>Edit profile</span>
-        <span class="account-actions__hint">Name, username, email, phone, bio and photo</span>
+        <span class="account-actions__hint">Name, username, email, phone, city, bio and photo</span>
       </a>
       <a class="account-actions__link" href="/pages/privacy-settings.php">
         <span>Privacy settings</span>
