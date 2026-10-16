@@ -1070,23 +1070,25 @@ only listings matching that condition.
 - Active listings with multiple conditions exist.
 
 **Test Data:**
-- Selected condition: New
-- Active listings with New and other conditions
+- Selected condition: Good
+- Active listings with Good and other conditions
 
 **Test Steps:**
 1. Open Browse All Listings.
-2. Select the New condition checkbox.
+2. Select the Good condition checkbox.
 3. Click Apply Filters.
 4. Examine the returned listings.
 
 **Expected Result:**
-Only active listings with the New condition
+Only active listings with the Good condition
 should be displayed.
 
 **Actual Result:**
-Not yet recorded.
+Automated test passed. The number of active good-condition
+listings returned by the search page matched the
+database count.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1122,9 +1124,11 @@ matching any of the selected conditions.
 - Both condition checkboxes should remain selected.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that the search result count
+matched the database count when two condition filters
+were applied simultaneously.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1164,9 +1168,13 @@ with the delivery method filter.
 - Both filter selections should remain selected.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that applying condition and
+delivery method filters together returned the expected
+number of active listings.
 
-**Status:** Not Run
+The result count matched the corresponding MySQL query.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1205,9 +1213,14 @@ without condition restrictions.
 - The search should not produce an error.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that removing the condition
+filter restores the full active listing result count.
 
-**Status:** Not Run
+The manual test confirmed that clicking Clear removes
+the selected condition checkboxes and updates the
+search results.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1247,9 +1260,12 @@ that produce no matching listings.
 - No database or PHP errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that a search with no matching
+listings displayed 0 results and the No listings found message.
 
-**Status:** Not Run
+The Poor condition checkbox remained selected.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 ## UC-23: Radius Filter for Meetup
