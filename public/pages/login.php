@@ -41,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $notice = null;
 if (isset($_GET['logged_out'])) {
     $notice = 'You have been logged out.';
+} elseif (isset($_GET['deleted'])) {
+    $notice = 'Your account has been deleted.';
 } elseif (isset($_GET['reset'])) {
     $notice = 'Your password has been changed. Log in with your new password.';
 } elseif (isset($_GET['redirect']) && $error === null) {

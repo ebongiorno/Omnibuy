@@ -88,6 +88,10 @@ include __DIR__ . '/../components/header.php';
         <span>Change password</span>
         <span class="account-actions__hint">Update the password you log in with</span>
       </a>
+      <a class="account-actions__link account-actions__link--danger" href="/pages/delete-account.php">
+        <span>Delete account</span>
+        <span class="account-actions__hint">Permanently erase your account and personal details</span>
+      </a>
     </nav>
 
     <form action="/pages/logout.php" method="post">

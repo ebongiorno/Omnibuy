@@ -332,3 +332,141 @@ function changePassword(PDO $pdo, int $userId, string $currentPassword, string $
 
     return [];
 }
+
+// =========================================
+// DELETE ACCOUNT
+// =========================================
+
+const ACCOUNT_DELETE_CONFIRMATION = 'DELETE';
+
+/**
+ * Orders the user still has to finish, as a buyer or as a seller. An
+ * account with any of these can't be deleted, so the other side of the
+ * sale isn't left without anyone to deal with.
+ */
+function countOpenOrders(PDO $pdo, int $userId): int
+{
+    $stmt = $pdo->prepare("
+        SELECT
+            (SELECT COUNT(*) FROM orders
+             WHERE buyer_user_id = :buyer_id
+               AND order_status IN ('pending', 'in_progress'))
+          + (SELECT COUNT(DISTINCT oi.order_id)
+             FROM order_items oi
+             JOIN listings l ON l.listing_id = oi.listing_id
+             WHERE l.seller_user_id = :seller_id
+               AND oi.item_status NOT IN ('completed', 'cancelled'))
+    ");
+    $stmt->execute(['buyer_id' => $userId, 'seller_id' => $userId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+/**
+ * Deletes the user's account after checking their password and the typed
+ * confirmation.
+ *
+ * Orders, reviews and messages also belong to the other users involved, so
+ * the users row is kept for them but every personal detail on it is erased
+ * and its status becomes 'deleted' (shown to others as "Deleted User").
+ * Data only this user needs (cart, wishlist, saved addresses, search
+ * history, blocks, reset links) is removed and their listings are archived.
+ *
+ * @return array<string, string> errors keyed 'password', 'confirm' or 'form'
+ */
+function deleteAccount(PDO $pdo, int $userId, string $password, string $confirmation): array
+{
+    if (!verifyCurrentPassword($pdo, $userId, $password)) {
+        return ['password' => $password === ''
+            ? 'Enter your password.'
+            : 'Your password is incorrect.'];
+    }
+
+    if (trim($confirmation) !== ACCOUNT_DELETE_CONFIRMATION) {
+        return ['confirm' => 'Type ' . ACCOUNT_DELETE_CONFIRMATION . ' to confirm.'];
+    }
+
+    $openOrders = countOpenOrders($pdo, $userId);
+    if ($openOrders > 0) {
+        return ['form' => sprintf(
+            'You have %d open %s. Finish or cancel %s before deleting your account.',
+            $openOrders,
+            $openOrders === 1 ? 'order' : 'orders',
+            $openOrders === 1 ? 'it' : 'them'
+        )];
+    }
+
+    $stmt = $pdo->prepare('SELECT profile_image_url FROM users WHERE user_id = :id');
+    $stmt->execute(['id' => $userId]);
+    $photo = $stmt->fetchColumn() ?: null;
+
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $byUser = ['id' => $userId];
+        $statements = [
+            'DELETE FROM password_resets WHERE user_id = :id',
+            'DELETE FROM search_history WHERE user_id = :id',
+            'DELETE FROM wishlist_items WHERE user_id = :id',
+            'DELETE ci FROM cart_items ci JOIN carts c ON c.cart_id = ci.cart_id WHERE c.user_id = :id',
+            'DELETE FROM carts WHERE user_id = :id',
+            'DELETE FROM user_blocks WHERE blocker_user_id = :id',
+            // Addresses on past orders stay with the order.
+            'DELETE a FROM addresses a
+             WHERE a.user_id = :id
+               AND NOT EXISTS (
+                   SELECT 1 FROM orders o
+                   WHERE o.shipping_address_id = a.address_id OR o.billing_address_id = a.address_id
+               )',
+            "UPDATE listings SET listing_status = 'archived'
+             WHERE seller_user_id = :id AND listing_status IN ('draft', 'active', 'hidden')",
+            "UPDATE seller_profiles
+             SET store_name = CONCAT('Deleted store ', user_id),
+                 payout_account_reference = CONCAT('deleted-', user_id)
+             WHERE user_id = :id",
+        ];
+        foreach ($statements as $sql) {
+            $pdo->prepare($sql)->execute($byUser);
+        }
+
+        // Unique placeholders keep the username/email constraints happy and
+        // free the real ones for a new signup. The random password can't be
+        // guessed, so nobody can log in to the account again.
+        $pdo->prepare("
+            UPDATE users
+            SET first_name = 'Deleted',
+                last_name = 'User',
+                username = CONCAT('deleted_user_', user_id),
+                email = CONCAT('deleted-', user_id, '@deleted.invalid'),
+                password_hash = :hash,
+                is_email_verified = FALSE,
+                phone_number = '',
+                birth_date = '1900-01-01',
+                profile_image_url = NULL,
+                bio = NULL,
+                is_last_name_hidden = FALSE,
+                account_status = 'deleted'
+            WHERE user_id = :id
+        ")->execute([
+            'hash' => password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT),
+            'id' => $userId,
+        ]);
+
+        if ($ownsTransaction) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($ownsTransaction) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    // Only remove the file once the database no longer points at it.
+    deleteProfileImage($photo);
+
+    return [];
+}
