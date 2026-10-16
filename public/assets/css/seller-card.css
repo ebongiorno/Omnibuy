@@ -99,3 +99,32 @@
     font-size: 12px;
     line-height: 1.5;
 }
+
+/* =========================================
+   LINK TO THE SELLER'S PROFILE
+   The store name's link covers the whole card.
+   ========================================= */
+
+.seller-card {
+    position: relative;
+}
+
+.seller-card__link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.seller-card__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.seller-card__link:focus-visible {
+    outline: none;
+}
+
+.seller-card:has(.seller-card__link:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}

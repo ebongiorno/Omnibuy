@@ -62,6 +62,40 @@ final class AccountValidationTest extends TestCase
         $this->assertArrayHasKey('bio', validateProfile($this->profileInput(['bio' => str_repeat('é', PROFILE_BIO_MAX_LENGTH + 1)])));
     }
 
+    public function testCityIsOptional(): void
+    {
+        $this->assertSame([], validateProfile($this->profileInput(['city' => ''])));
+    }
+
+    public function testRealCityNamesAreAccepted(): void
+    {
+        foreach (['Fresno', 'San Luis Obispo', "St. John's", 'Winston-Salem', 'Zürich', 'São Paulo'] as $city) {
+            $this->assertSame([], validateProfile($this->profileInput(['city' => $city])), $city);
+        }
+    }
+
+    public function testCityWithDigitsOrSymbolsIsRejected(): void
+    {
+        foreach (['93740', 'Fresno!', '<b>Fresno</b>', '-Fresno'] as $city) {
+            $this->assertArrayHasKey('city', validateProfile($this->profileInput(['city' => $city])), $city);
+        }
+    }
+
+    public function testCityLengthBoundary(): void
+    {
+        $this->assertSame([], validateProfile($this->profileInput(['city' => str_repeat('é', PROFILE_CITY_MAX_LENGTH)])));
+        $this->assertSame(
+            'City must be ' . PROFILE_CITY_MAX_LENGTH . ' characters or fewer.',
+            validateProfile($this->profileInput(['city' => str_repeat('é', PROFILE_CITY_MAX_LENGTH + 1)]))['city']
+        );
+    }
+
+    public function testNormalizeProfileTidiesCitySpaces(): void
+    {
+        $this->assertSame('San Jose', normalizeProfileInput(['city' => "  San \t  Jose "])['city']);
+        $this->assertSame('', normalizeProfileInput(['city' => ['Fresno']])['city']);
+    }
+
     public function testNormalizeProfileTrimsAndLowercasesEmail(): void
     {
         $input = normalizeProfileInput([
@@ -247,6 +281,7 @@ final class AccountValidationTest extends TestCase
             'email' => 'kenny@example.com',
             'phone_number' => '657-555-0123',
             'bio' => 'I sell vintage keyboards.',
+            'city' => 'Fresno',
             'remove_photo' => false,
             'current_password' => '',
         ], $overrides);

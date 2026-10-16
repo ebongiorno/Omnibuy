@@ -27,13 +27,14 @@ final class AccountManagementTest extends DatabaseTestCase
             'username' => 'upd_' . $this->uniqueSuffix(),
             'phone_number' => '714-555-0100',
             'bio' => "Collector of\nvintage cameras",
+            'city' => 'Fresno',
         ]);
 
         $result = updateProfile($this->pdo, $account, $input);
 
         $this->assertSame([], $result['errors']);
         $saved = $this->account($account['user_id']);
-        foreach (['first_name', 'last_name', 'username', 'phone_number', 'bio'] as $field) {
+        foreach (['first_name', 'last_name', 'username', 'phone_number', 'bio', 'city'] as $field) {
             $this->assertSame($input[$field], $saved[$field], $field);
         }
         $this->assertSame($saved, $result['account']);
@@ -53,6 +54,15 @@ final class AccountManagementTest extends DatabaseTestCase
         updateProfile($this->pdo, $account, $this->inputFrom($account, ['bio' => '']));
 
         $this->assertNull($this->account($account['user_id'])['bio']);
+    }
+
+    public function testEmptyCityIsStoredAsNull(): void
+    {
+        $account = $this->account($this->createUserWith(['city' => 'Fresno']));
+
+        updateProfile($this->pdo, $account, $this->inputFrom($account, ['city' => '']));
+
+        $this->assertNull($this->account($account['user_id'])['city']);
     }
 
     public function testUsernameTakenByAnotherUserIsRejected(): void

@@ -1,8 +1,8 @@
 # Accounts & Authentication Contract
 
 **Owner:** Kenneth Ly (UC-01 Register, UC-02 Login / Log Out, UC-03 Reset Password, UC-04 Edit Profile, UC-05 Privacy Settings)
-**Code:** `includes/auth.php` (UC-01/02), `includes/password-reset.php` + `includes/mailer.php` (UC-03), `includes/account.php` (UC-04/05, change password, delete account)
-**Pages** (`public/pages/`): `signup.php`, `login.php`, `logout.php`, `forgot-password.php`, `reset-password.php`, `account.php`, `edit-profile.php`, `privacy-settings.php`, `change-password.php`, `delete-account.php`
+**Code:** `includes/auth.php` (UC-01/02), `includes/password-reset.php` + `includes/mailer.php` (UC-03), `includes/account.php` (UC-04/05, change password, delete account), `includes/profile.php` (View User Profile)
+**Pages** (`public/pages/`): `signup.php`, `login.php`, `logout.php`, `forgot-password.php`, `reset-password.php`, `account.php`, `edit-profile.php`, `privacy-settings.php`, `change-password.php`, `delete-account.php`, `profile.php`
 **Tests:** `tests/Unit/AuthValidationTest.php`, `tests/Unit/AccountValidationTest.php`, `tests/Integration/AuthenticationTest.php`, `tests/Integration/PasswordResetTest.php`, `tests/Integration/AccountManagementTest.php`, `tests/Functional/AuthenticationFlowTest.php`, `tests/Functional/AccountManagementFlowTest.php`
 
 This is what other features can rely on from the accounts subsystem.
@@ -35,6 +35,7 @@ startSession();          // start the session with secure cookie settings (safe 
 - **Header:** if a page includes `components/header.php` without setting `$isLoggedIn` / `$currentUser`, the header now fills them in from the session. Pages must start the session first (`startSession()` or `requireLogin()`).
 - **Log out:** POST to `/pages/logout.php` (the header's account menu already does this). GET requests do not log out.
 - **Showing a user's name to someone else** (seller cards, messages, reviews): use `publicDisplayName($firstName, $lastName, $isLastNameHidden)` from `includes/account.php`. It returns only the first name when the user hid their last name (UC-05). Seller search already follows this rule in its SQL.
+- **Linking to a user's profile:** `/pages/profile.php?id={user_id}`. Anyone can see the name, photo, city, bio and active/sold listings. Phone and email are only shown to logged-in users. Deleted, suspended and restricted accounts return 404.
 - **Profile photo:** `users.profile_image_url` is either `null` (show `/assets/icons/default-avatar.png`) or a path such as `/uploads/avatars/<random>.png`. Uploaded photos are stored in the `profile_uploads` Docker volume.
 
 ## 2a. Email (UC-03)
@@ -54,6 +55,7 @@ startSession();          // start the session with secure cookie settings (safe 
 | `birth_date` | Required, not in the future (database trigger) |
 | `profile_image_url` | `null` or an uploaded photo path (UC-04) |
 | `bio` | Optional, ≤ 500 characters, may contain line breaks (UC-04). Escape it when showing it. |
+| `city` | Optional, ≤ 100 characters: letters, spaces, periods, apostrophes and hyphens. `NULL` when not set. Shown on the public profile. |
 | `is_last_name_hidden` | `TRUE` = show only the first name to other users, and don't match searches on the last name (UC-05) |
 | `is_email_verified` | Reset to `FALSE` when the user changes their email |
 | `account_status` | `active` (default), `suspended`, `restricted`, `deleted`. Only `active` accounts can log in. A `deleted` account has its personal details erased (name "Deleted User", placeholder username/email) but the row stays, so other users' orders, reviews and messages still point at it. When showing users to others, skip or label `deleted` accounts. |

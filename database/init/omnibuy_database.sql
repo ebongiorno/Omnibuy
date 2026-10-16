@@ -17,6 +17,8 @@ CREATE TABLE users (
     birth_date DATE NOT NULL,
     profile_image_url VARCHAR(2000) NULL,
     bio TEXT NULL DEFAULT NULL,
+    -- Shown on the user's public profile; optional
+    city VARCHAR(100) NULL DEFAULT NULL,
     is_last_name_hidden BOOLEAN NOT NULL DEFAULT FALSE,
     account_status ENUM(
         'active',
