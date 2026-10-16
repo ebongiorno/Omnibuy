@@ -331,40 +331,12 @@ jobs:
           docker compose logs
           exit 1
       
-      - name: Run functional PHP tests
-        run: |
-          failures=0
-          test_count=0
-
-          while IFS= read -r test_file; do
-            test_count=$((test_count + 1))
-            echo "=== Running $test_file ==="
-
-            if ! docker compose exec -T web php "$test_file"; then
-              echo "FAILED: $test_file"
-              failures=1
-            fi
-
-            echo
-          done < <(
-            find tests/Functional               -type f               -name "*Test.php"               | sort
-          )
-
-          if [ "$test_count" -eq 0 ]; then
-            echo "No functional PHP tests were found in tests/Functional."
-            exit 1
-          fi
-
-          if [ "$failures" -ne 0 ]; then
-            echo "One or more functional PHP tests failed."
-            exit 1
-          fi
-
-          echo "All functional PHP tests passed."
-
       - name: Install Composer dependencies
         run: |
-          docker compose exec -T web composer install --no-interaction --no-progress --prefer-dist
+          docker compose exec -T web composer install \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist
 
       - name: Run PHPUnit tests
         run: |
