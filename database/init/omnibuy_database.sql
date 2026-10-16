@@ -21,7 +21,9 @@ CREATE TABLE users (
     account_status ENUM(
         'active',
         'suspended',
-        'restricted'
+        'restricted',
+        -- The user deleted their account; personal details were erased
+        'deleted'
     ) NOT NULL
         DEFAULT 'active',
     

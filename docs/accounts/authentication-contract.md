@@ -1,8 +1,8 @@
 # Accounts & Authentication Contract
 
 **Owner:** Kenneth Ly (UC-01 Register, UC-02 Login / Log Out, UC-03 Reset Password, UC-04 Edit Profile, UC-05 Privacy Settings)
-**Code:** `includes/auth.php` (UC-01/02), `includes/password-reset.php` + `includes/mailer.php` (UC-03), `includes/account.php` (UC-04/05, change password)
-**Pages** (`public/pages/`): `signup.php`, `login.php`, `logout.php`, `forgot-password.php`, `reset-password.php`, `account.php`, `edit-profile.php`, `privacy-settings.php`, `change-password.php`
+**Code:** `includes/auth.php` (UC-01/02), `includes/password-reset.php` + `includes/mailer.php` (UC-03), `includes/account.php` (UC-04/05, change password, delete account)
+**Pages** (`public/pages/`): `signup.php`, `login.php`, `logout.php`, `forgot-password.php`, `reset-password.php`, `account.php`, `edit-profile.php`, `privacy-settings.php`, `change-password.php`, `delete-account.php`
 **Tests:** `tests/Unit/AuthValidationTest.php`, `tests/Unit/AccountValidationTest.php`, `tests/Integration/AuthenticationTest.php`, `tests/Integration/PasswordResetTest.php`, `tests/Integration/AccountManagementTest.php`, `tests/Functional/AuthenticationFlowTest.php`, `tests/Functional/AccountManagementFlowTest.php`
 
 This is what other features can rely on from the accounts subsystem.
@@ -56,7 +56,7 @@ startSession();          // start the session with secure cookie settings (safe 
 | `bio` | Optional, ≤ 500 characters, may contain line breaks (UC-04). Escape it when showing it. |
 | `is_last_name_hidden` | `TRUE` = show only the first name to other users, and don't match searches on the last name (UC-05) |
 | `is_email_verified` | Reset to `FALSE` when the user changes their email |
-| `account_status` | `active` (default), `suspended`, `restricted`. Only `active` accounts can log in. |
+| `account_status` | `active` (default), `suspended`, `restricted`, `deleted`. Only `active` accounts can log in. A `deleted` account has its personal details erased (name "Deleted User", placeholder username/email) but the row stays, so other users' orders, reviews and messages still point at it. When showing users to others, skip or label `deleted` accounts. |
 
 **Tables that reference `users.user_id`** (verified in the database, 2026-10-12):
 
