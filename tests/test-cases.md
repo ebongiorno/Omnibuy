@@ -885,9 +885,17 @@ that support shipping.
 - The Meetup Distance filter should be hidden.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that the number of active
+shipping listings returned by the search page matched
+the corresponding MySQL count.
 
-**Status:** Not Run
+The Shipping radio button remained selected, and the
+Meetup Distance filter was hidden.
+
+Manual testing confirmed that only shipping listings
+appeared in the search results.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -923,7 +931,15 @@ that support meetup delivery.
 - The Meetup Distance filter should remain visible.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that the number of active
+meetup listings returned by the search page matched
+the corresponding MySQL count.
+
+The Meetup radio button remained selected, and the
+Meetup Distance filter was visible.
+
+Manual testing confirmed that only meetup listings
+appeared in the search results.
 
 **Status:** Not Run
 
@@ -963,9 +979,19 @@ allows shipping and meetup listings to appear together.
 - No delivery method restrictions should be applied.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that leaving both delivery
+methods unselected returned the full active listing count.
 
-**Status:** Not Run
+The result count matched the combined shipping and meetup
+listing counts in MySQL.
+
+Neither radio button was selected, and the Meetup Distance
+filter remained visible.
+
+Manual testing confirmed that both shipping and meetup
+listings appeared together.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1007,9 +1033,19 @@ when combined with a condition filter.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that applying Shipping and
+Good condition together returned the expected number
+of active listings.
 
-**Status:** Not Run
+The result count matched the corresponding MySQL query.
+
+Both the Shipping radio button and Good condition
+checkbox remained selected.
+
+Manual testing confirmed that only listings meeting
+both filter requirements appeared.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1049,9 +1085,17 @@ restores results without delivery restrictions.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that removing the Shipping
+filter restored the full active listing count.
 
-**Status:** Not Run
+Both delivery method radio buttons were unselected,
+and the Meetup Distance filter was visible.
+
+Manual testing confirmed that clicking Clear removed
+the delivery restriction and restored both shipping
+and meetup listings.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 ## UC-22: Filter by Condition
@@ -1070,23 +1114,25 @@ only listings matching that condition.
 - Active listings with multiple conditions exist.
 
 **Test Data:**
-- Selected condition: New
-- Active listings with New and other conditions
+- Selected condition: Good
+- Active listings with Good and other conditions
 
 **Test Steps:**
 1. Open Browse All Listings.
-2. Select the New condition checkbox.
+2. Select the Good condition checkbox.
 3. Click Apply Filters.
 4. Examine the returned listings.
 
 **Expected Result:**
-Only active listings with the New condition
+Only active listings with the Good condition
 should be displayed.
 
 **Actual Result:**
-Not yet recorded.
+Automated test passed. The number of active good-condition
+listings returned by the search page matched the
+database count.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1122,9 +1168,11 @@ matching any of the selected conditions.
 - Both condition checkboxes should remain selected.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that the search result count
+matched the database count when two condition filters
+were applied simultaneously.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1164,9 +1212,13 @@ with the delivery method filter.
 - Both filter selections should remain selected.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that applying condition and
+delivery method filters together returned the expected
+number of active listings.
 
-**Status:** Not Run
+The result count matched the corresponding MySQL query.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1205,9 +1257,14 @@ without condition restrictions.
 - The search should not produce an error.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that removing the condition
+filter restores the full active listing result count.
 
-**Status:** Not Run
+The manual test confirmed that clicking Clear removes
+the selected condition checkboxes and updates the
+search results.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1247,9 +1304,12 @@ that produce no matching listings.
 - No database or PHP errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that a search with no matching
+listings displayed 0 results and the No listings found message.
 
-**Status:** Not Run
+The Poor condition checkbox remained selected.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 ## UC-23: Radius Filter for Meetup
