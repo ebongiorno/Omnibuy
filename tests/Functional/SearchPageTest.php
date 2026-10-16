@@ -579,118 +579,672 @@ final class SearchPageTest extends TestCase
         );
     }
     // =========================================
-// TC-21-01: FILTER BY SHIPPING
-// =========================================
+    // TC-21-01: FILTER BY SHIPPING
+    // =========================================
 
-public function testShippingFilterMatchesDatabase(): void
-{
-    // Connect to MySQL.
-    $dsn = sprintf(
-        'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
-        getenv('DB_HOST') ?: 'db',
-        (int)(getenv('DB_PORT') ?: 3306),
-        getenv('DB_NAME') ?: 'omnibuy'
-    );
+    public function testShippingFilterMatchesDatabase(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
 
-    $pdo = new \PDO(
-        $dsn,
-        getenv('DB_USER') ?: '',
-        getenv('DB_PASSWORD') ?: '',
-        [
-            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
-        ]
-    );
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
 
-    // Count active shipping listings.
-    $stmt = $pdo->query("
-        SELECT COUNT(*)
-        FROM listings
-        WHERE listing_status = 'active'
-            AND fulfillment_type = 'shipping'
-    ");
+        // Count active shipping listings.
+        $stmt = $pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+        ");
 
-    $expectedCount = (int)$stmt->fetchColumn();
+        $expectedCount = (int)$stmt->fetchColumn();
 
-    // Make sure shipping test data exists.
-    $this->assertGreaterThan(
-        0,
-        $expectedCount,
-        'Test data needs active shipping listings.'
-    );
+        // Make sure shipping test data exists.
+        $this->assertGreaterThan(
+            0,
+            $expectedCount,
+            'Test data needs active shipping listings.'
+        );
 
-    // Ensure meetup listings also exist so the
-    // delivery filter has something to exclude.
-    $meetupCount = (int)$pdo->query("
-        SELECT COUNT(*)
-        FROM listings
-        WHERE listing_status = 'active'
-            AND fulfillment_type = 'meetup'
-    ")->fetchColumn();
+        // Ensure meetup listings also exist so the
+        // delivery filter has something to exclude.
+        $meetupCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'meetup'
+        ")->fetchColumn();
 
-    $this->assertGreaterThan(
-        0,
-        $meetupCount,
-        'Test data needs active meetup listings.'
-    );
+        $this->assertGreaterThan(
+            0,
+            $meetupCount,
+            'Test data needs active meetup listings.'
+        );
 
-    // Request Browse All with Shipping selected.
-    [$status, $body] = $this->get(
-        '/pages/search.php',
-        [
-            'browse' => 'all',
-            'fulfillment' => 'shipping'
-        ]
-    );
+        // Request Browse All with Shipping selected.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'shipping'
+            ]
+        );
 
-    // Verify the page loads.
-    $this->assertSame(200, $status);
+        // Verify the page loads.
+        $this->assertSame(200, $status);
 
-    // Verify no database error occurred.
-    $this->assertStringNotContainsString(
-        'Unable to retrieve search results',
-        $body
-    );
+        // Verify no database error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
 
-    // Extract the displayed result count.
-    $matched = preg_match(
-        '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
-        $body,
-        $matches
-    );
+        // Extract the displayed result count.
+        $matched = preg_match(
+            '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+            $body,
+            $matches
+        );
 
-    $this->assertSame(
-        1,
-        $matched,
-        'Could not find the search result count.'
-    );
+        $this->assertSame(
+            1,
+            $matched,
+            'Could not find the search result count.'
+        );
 
-    $actualCount = (int)$matches[1];
+        $actualCount = (int)$matches[1];
 
-    // Compare website results with MySQL.
-    $this->assertSame(
-        $expectedCount,
-        $actualCount,
-        'Shipping filter count does not match the database.'
-    );
+        // Compare website results with MySQL.
+        $this->assertSame(
+            $expectedCount,
+            $actualCount,
+            'Shipping filter count does not match the database.'
+        );
 
-    // Verify Shipping remains selected.
-    $checked = preg_match(
-        '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="shipping")(?=[^>]*\bchecked\b)[^>]*>/s',
-        $body
-    );
+        // Verify Shipping remains selected.
+        $checked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="shipping")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $body
+        );
 
-    $this->assertSame(
-        1,
-        $checked,
-        'The Shipping radio button should remain selected.'
-    );
+        $this->assertSame(
+            1,
+            $checked,
+            'The Shipping radio button should remain selected.'
+        );
 
-    // Verify the Meetup Distance controls are hidden.
-    $this->assertMatchesRegularExpression(
-        '/<div\b(?=[^>]*id="meetup-distance-filter")(?=[^>]*\bhidden\b)[^>]*>/s',
-        $body
-    );
-}
+        // Verify the Meetup Distance controls are hidden.
+        $this->assertMatchesRegularExpression(
+            '/<div\b(?=[^>]*id="meetup-distance-filter")(?=[^>]*\bhidden\b)[^>]*>/s',
+            $body
+        );
+    }
+
+    // =========================================
+    // TC-21-02: FILTER BY MEETUP
+    // =========================================
+
+    public function testMeetupFilterMatchesDatabase(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Count active meetup listings.
+        $stmt = $pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'meetup'
+        ");
+
+        $expectedCount = (int)$stmt->fetchColumn();
+
+        // Make sure meetup test data exists.
+        $this->assertGreaterThan(
+            0,
+            $expectedCount,
+            'Test data needs active meetup listings.'
+        );
+
+        // Verify shipping listings also exist.
+        // This ensures there are listings the filter should exclude.
+        $shippingCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+        ")->fetchColumn();
+
+        $this->assertGreaterThan(
+            0,
+            $shippingCount,
+            'Test data needs active shipping listings.'
+        );
+
+        // Request Browse All with Meetup selected.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'meetup'
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no database error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Extract the displayed result count.
+        $matched = preg_match(
+            '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+            $body,
+            $matches
+        );
+
+        $this->assertSame(
+            1,
+            $matched,
+            'Could not find the search result count.'
+        );
+
+        $actualCount = (int)$matches[1];
+
+        // Compare website results with MySQL.
+        $this->assertSame(
+            $expectedCount,
+            $actualCount,
+            'Meetup filter count does not match the database.'
+        );
+
+        // Verify Meetup remains selected.
+        $checked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="meetup")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $body
+        );
+
+        $this->assertSame(
+            1,
+            $checked,
+            'The Meetup radio button should remain selected.'
+        );
+
+        // Locate the Meetup Distance filter.
+        $distanceFilterFound = preg_match(
+            '/<div\b[^>]*\bid="meetup-distance-filter"[^>]*>/s',
+            $body,
+            $distanceMatches
+        );
+
+        $this->assertSame(
+            1,
+            $distanceFilterFound,
+            'Could not find the Meetup Distance filter.'
+        );
+
+        // Verify the Meetup Distance filter is not hidden.
+        $this->assertDoesNotMatchRegularExpression(
+            '/\shidden(?:\s|=|>)/',
+            $distanceMatches[0],
+            'Meetup Distance should be visible when Meetup is selected.'
+        );
+    }
+
+    // =========================================
+    // TC-21-03: NO DELIVERY METHOD SELECTED
+    // =========================================
+
+    public function testNoDeliveryFilterShowsAllListings(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Count all active listings.
+        $expectedCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+        ")->fetchColumn();
+
+        // Count active shipping listings.
+        $shippingCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+        ")->fetchColumn();
+
+        // Count active meetup listings.
+        $meetupCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'meetup'
+        ")->fetchColumn();
+
+        // Make sure both delivery types exist.
+        $this->assertGreaterThan(
+            0,
+            $shippingCount,
+            'Test data needs active shipping listings.'
+        );
+
+        $this->assertGreaterThan(
+            0,
+            $meetupCount,
+            'Test data needs active meetup listings.'
+        );
+
+        // Verify the total consists of both delivery types.
+        $this->assertSame(
+            $expectedCount,
+            $shippingCount + $meetupCount
+        );
+
+        // Request Browse All without a delivery filter.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all'
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no database error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Extract the displayed result count.
+        $matched = preg_match(
+            '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+            $body,
+            $matches
+        );
+
+        $this->assertSame(
+            1,
+            $matched,
+            'Could not find the search result count.'
+        );
+
+        // Verify all active listings are included.
+        $this->assertSame(
+            $expectedCount,
+            (int)$matches[1],
+            'Unfiltered search should show all active listings.'
+        );
+
+        // Verify Shipping is NOT selected.
+        $shippingChecked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="shipping")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $body
+        );
+
+        $this->assertSame(
+            0,
+            $shippingChecked,
+            'Shipping should not be selected.'
+        );
+
+        // Verify Meetup is NOT selected.
+        $meetupChecked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="meetup")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $body
+        );
+
+        $this->assertSame(
+            0,
+            $meetupChecked,
+            'Meetup should not be selected.'
+        );
+
+        // Verify the Meetup Distance section exists
+        // and is not hidden.
+        $distanceFilterFound = preg_match(
+            '/<div\b[^>]*\bid="meetup-distance-filter"[^>]*>/s',
+            $body,
+            $distanceMatches
+        );
+
+        $this->assertSame(
+            1,
+            $distanceFilterFound,
+            'Could not find the Meetup Distance filter.'
+        );
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/\shidden(?:\s|=|>)/',
+            $distanceMatches[0],
+            'Meetup Distance should be visible.'
+        );
+    }
+
+    // =========================================
+    // TC-21-04: COMBINE DELIVERY AND CONDITION
+    // =========================================
+
+    public function testShippingAndGoodConditionFiltersTogether(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Count active listings that are BOTH
+        // Shipping and Good condition.
+        $stmt = $pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+                AND `condition` = 'good'
+        ");
+
+        $expectedCount = (int)$stmt->fetchColumn();
+
+        // Make sure matching test data exists.
+        $this->assertGreaterThan(
+            0,
+            $expectedCount,
+            'Test data needs active Good-condition shipping listings.'
+        );
+
+        // Make sure other shipping conditions exist,
+        // so the condition filter excludes something.
+        $shippingTotal = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+        ")->fetchColumn();
+
+        $this->assertGreaterThan(
+            $expectedCount,
+            $shippingTotal,
+            'Test data needs shipping listings with other conditions.'
+        );
+
+        // Request Browse All with both filters.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'shipping',
+                'condition' => ['good']
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no database error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Extract the displayed result count.
+        $matched = preg_match(
+            '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+            $body,
+            $matches
+        );
+
+        $this->assertSame(
+            1,
+            $matched,
+            'Could not find the search result count.'
+        );
+
+        // Compare website results with MySQL.
+        $this->assertSame(
+            $expectedCount,
+            (int)$matches[1],
+            'Combined filters returned an incorrect result count.'
+        );
+
+        // Verify Shipping remains selected.
+        $shippingChecked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="shipping")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $body
+        );
+
+        $this->assertSame(
+            1,
+            $shippingChecked,
+            'Shipping should remain selected.'
+        );
+
+        // Verify Good remains selected.
+        $goodChecked = preg_match(
+            '/<input\b(?=[^>]*name="condition\[\]")(?=[^>]*value="good")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $body
+        );
+
+        $this->assertSame(
+            1,
+            $goodChecked,
+            'Good condition should remain selected.'
+        );
+    }
+
+    // =========================================
+    // TC-21-05: CLEAR DELIVERY METHOD FILTER
+    // =========================================
+
+    public function testRemovingDeliveryFilterRestoresAllListings(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Count all active listings.
+        $totalCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+        ")->fetchColumn();
+
+        // Count active shipping listings.
+        $shippingCount = (int)$pdo->query("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+        ")->fetchColumn();
+
+        // Ensure there are shipping listings to filter.
+        $this->assertGreaterThan(
+            0,
+            $shippingCount,
+            'Test data needs active shipping listings.'
+        );
+
+        // Ensure there are other listings to restore.
+        $this->assertGreaterThan(
+            $shippingCount,
+            $totalCount,
+            'Test data needs active meetup listings.'
+        );
+
+        // Request Browse All with Shipping selected.
+        [$filteredStatus, $filteredBody] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'shipping'
+            ]
+        );
+
+        $this->assertSame(200, $filteredStatus);
+
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $filteredBody
+        );
+
+        // Verify filtered result count.
+        $this->assertSame(
+            1,
+            preg_match(
+                '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+                $filteredBody,
+                $filteredMatches
+            )
+        );
+
+        $this->assertSame(
+            $shippingCount,
+            (int)$filteredMatches[1]
+        );
+
+        // Simulate the GET request after clearing
+        // the delivery filter.
+        [$clearedStatus, $clearedBody] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all'
+            ]
+        );
+
+        $this->assertSame(200, $clearedStatus);
+
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $clearedBody
+        );
+
+        // Verify the full active listing count is restored.
+        $this->assertSame(
+            1,
+            preg_match(
+                '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+                $clearedBody,
+                $clearedMatches
+            )
+        );
+
+        $this->assertSame(
+            $totalCount,
+            (int)$clearedMatches[1],
+            'Clearing delivery should restore all active listings.'
+        );
+
+        // Verify Shipping is no longer selected.
+        $shippingChecked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="shipping")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $clearedBody
+        );
+
+        $this->assertSame(
+            0,
+            $shippingChecked,
+            'Shipping should be unselected.'
+        );
+
+        // Verify Meetup is also unselected.
+        $meetupChecked = preg_match(
+            '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="meetup")(?=[^>]*\bchecked\b)[^>]*>/s',
+            $clearedBody
+        );
+
+        $this->assertSame(
+            0,
+            $meetupChecked,
+            'Meetup should be unselected.'
+        );
+
+        // Verify Meetup Distance is visible again.
+        $this->assertSame(
+            1,
+            preg_match(
+                '/<div\b(?=[^>]*id="meetup-distance-filter")[^>]*>/s',
+                $clearedBody,
+                $distanceMatches
+            ),
+            'Could not find the Meetup Distance filter.'
+        );
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/\shidden(?:\s|=|>)/',
+            $distanceMatches[0],
+            'Meetup Distance should be visible after clearing.'
+        );
+    }
+
     /**
      * @return array{int, string} HTTP status code and response body
      */
