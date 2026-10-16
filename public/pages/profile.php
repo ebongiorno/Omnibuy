@@ -75,21 +75,37 @@ include __DIR__ . '/../components/header.php';
         <?php endif; ?>
 
         <?php if ($isOwnProfile): ?>
+          <?php if ($profile['hidden'] !== []): ?>
+            <p class="profile-card__privacy">
+              <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+              Hidden from other users: <?= htmlspecialchars(implode(', ', array_map(
+                  static fn (string $setting): string => PROFILE_PRIVACY_LABELS[$setting],
+                  $profile['hidden']
+              ))) ?>.
+              <a href="/pages/privacy-settings.php">Change</a>
+            </p>
+          <?php endif; ?>
           <a class="button profile-card__edit" href="/pages/edit-profile.php">Edit profile</a>
         <?php endif; ?>
       </div>
 
       <aside class="profile-contact" aria-label="Contact">
         <h2>Contact</h2>
-        <?php if ($viewer === null): ?>
+        <?php if ($profile['contact_hidden']): ?>
+          <p class="profile-contact__locked">This user keeps their contact details private.</p>
+        <?php elseif ($viewer === null): ?>
           <p class="profile-contact__locked">
             <a href="/pages/login.php?redirect=<?= urlencode('/pages/profile.php?id=' . $profile['user_id']) ?>">Log in</a>
-            to see this user's phone number and email.
+            to see this user's contact details.
           </p>
+        <?php elseif ($profile['email'] === null && $profile['phone_number'] === null): ?>
+          <p class="profile-contact__locked">This user keeps their contact details private.</p>
         <?php else: ?>
           <dl>
-            <dt>Email</dt>
-            <dd><a href="mailto:<?= htmlspecialchars($profile['email']) ?>"><?= htmlspecialchars($profile['email']) ?></a></dd>
+            <?php if ($profile['email'] !== null): ?>
+              <dt>Email</dt>
+              <dd><a href="mailto:<?= htmlspecialchars($profile['email']) ?>"><?= htmlspecialchars($profile['email']) ?></a></dd>
+            <?php endif; ?>
             <?php if ($profile['phone_number'] !== null): ?>
               <dt>Phone</dt>
               <dd><a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $profile['phone_number'])) ?>"><?= htmlspecialchars($profile['phone_number']) ?></a></dd>

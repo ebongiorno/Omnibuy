@@ -20,6 +20,11 @@ CREATE TABLE users (
     -- Shown on the user's public profile; optional
     city VARCHAR(100) NULL DEFAULT NULL,
     is_last_name_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Privacy settings: TRUE = left off the user's public profile
+    is_city_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    is_email_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    is_phone_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    is_bio_hidden BOOLEAN NOT NULL DEFAULT FALSE,
     account_status ENUM(
         'active',
         'suspended',
