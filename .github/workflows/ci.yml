@@ -347,11 +347,11 @@ jobs:
 
             echo
           done < <(
-            find tests/functional               -type f               -name "*-test.php"               | sort
+            find tests/Functional               -type f               -name "*-test.php"               | sort
           )
 
           if [ "$test_count" -eq 0 ]; then
-            echo "No functional PHP tests were found in tests/functional."
+            echo "No functional PHP tests were found in tests/Functional."
             exit 1
           fi
 
