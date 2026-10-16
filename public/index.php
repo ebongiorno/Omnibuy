@@ -344,22 +344,11 @@ try {
     </main>
 
     <!-- =========================================
-         MOBILE NAVIGATION
+         MOBILE NAVIGATION AND ACCOUNT MENU
+         Same script the shared footer loads on every other page.
          ========================================= -->
 
-    <script>
-        const navToggle = document.querySelector('.mobile-nav-toggle');
-        const primaryNav = document.querySelector('.primary-nav');
-
-        navToggle?.addEventListener('click', () => {
-            const isOpen = primaryNav.classList.toggle('is-open');
-
-            navToggle.setAttribute(
-                'aria-expanded',
-                String(isOpen)
-            );
-        });
-    </script>
+    <script src="/assets/js/shared-navigation.js" defer></script>
 
 </body>
 </html>
