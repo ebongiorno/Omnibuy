@@ -315,12 +315,29 @@ jobs:
 
           echo "Marketplace Discovery smoke test passed."
 
-      - name: Run automated PHP tests
+      - name: Smoke test web container
         run: |
-          shopt -s nullglob
-          failures=0
+          for i in $(seq 1 10); do
+            if curl -sSf http://localhost:8080/ -o /dev/null; then
+              echo "Web container responded successfully"
+              exit 0
+            fi
 
-          for test_file in tests/*-test.php; do
+            echo "Waiting for web container..."
+            sleep 3
+          done
+
+          echo "Web container did not respond in time"
+          docker compose logs
+          exit 1
+      
+      - name: Run functional PHP tests
+        run: |
+          failures=0
+          test_count=0
+
+          while IFS= read -r test_file; do
+            test_count=$((test_count + 1))
             echo "=== Running $test_file ==="
 
             if ! docker compose exec -T web php "$test_file"; then
@@ -329,14 +346,21 @@ jobs:
             fi
 
             echo
-          done
+          done < <(
+            find tests/functional               -type f               -name "*-test.php"               | sort
+          )
 
-          if [ "$failures" -ne 0 ]; then
-            echo "One or more PHP tests failed."
+          if [ "$test_count" -eq 0 ]; then
+            echo "No functional PHP tests were found in tests/functional."
             exit 1
           fi
 
-          echo "All PHP tests passed."
+          if [ "$failures" -ne 0 ]; then
+            echo "One or more functional PHP tests failed."
+            exit 1
+          fi
+
+          echo "All functional PHP tests passed."
 
       - name: Install Composer dependencies
         run: |
@@ -355,492 +379,6 @@ jobs:
           name: phpunit-results
           path: build/phpunit-junit.xml
           if-no-files-found: ignore
-
-      - name: Smoke test web container
-        run: |
-          for i in $(seq 1 10); do
-            if curl -sSf http://localhost:8080/ -o /dev/null; then
-              echo "Web container responded successfully"
-              exit 0
-            fi
-
-            echo "Waiting for web container..."
-            sleep 3
-          done
-
-          echo "Web container did not respond in time"
-          docker compose logs
-          exit 1
-      
-      - name: Test Marketplace Discovery features and regression baseline
-        run: |
-          echo "Running Marketplace Discovery feature and regression tests..."
-
-          failures=0
-
-          # =========================================
-          # Get predictable seeded test data
-          # =========================================
-
-          SAMPLE_ITEM=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT item_name
-             FROM listings
-             WHERE listing_status = 'active'
-             ORDER BY listing_id ASC
-             LIMIT 1;")
-
-          BROWSE_ITEM=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT item_name
-             FROM listings
-             WHERE listing_status = 'active'
-             ORDER BY created_at DESC, listing_id DESC
-             LIMIT 1;")
-
-          SAMPLE_SELLER=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT sp.store_name
-             FROM seller_profiles AS sp
-             INNER JOIN users AS u
-               ON sp.user_id = u.user_id
-             WHERE u.account_status = 'active'
-             ORDER BY sp.user_id ASC
-             LIMIT 1;")
-
-          SAMPLE_SELLER_USER_ID=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT sp.user_id
-             FROM seller_profiles AS sp
-             INNER JOIN users AS u
-               ON sp.user_id = u.user_id
-             WHERE u.account_status = 'active'
-             ORDER BY sp.user_id ASC
-             LIMIT 1;")
-
-          INACTIVE_ITEM=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT item_name
-             FROM listings
-             WHERE listing_status <> 'active'
-             ORDER BY listing_id ASC
-             LIMIT 1;")
-
-          INACTIVE_SELLER=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT sp.store_name
-             FROM seller_profiles AS sp
-             INNER JOIN users AS u
-               ON sp.user_id = u.user_id
-             WHERE u.account_status <> 'active'
-             ORDER BY sp.user_id ASC
-             LIMIT 1;")
-
-          # =========================================
-          # Validate required regression fixtures
-          # =========================================
-
-          if [ -z "$SAMPLE_ITEM" ]; then
-            echo "FAILED: No active seeded listing available for Item Search test."
-            exit 1
-          fi
-
-          if [ -z "$BROWSE_ITEM" ]; then
-            echo "FAILED: No active seeded listing available for Browse Feed test."
-            exit 1
-          fi
-
-          if [ -z "$SAMPLE_SELLER" ]; then
-            echo "FAILED: No active seeded seller available for Seller Search test."
-            exit 1
-          fi
-
-          if [ -z "$SAMPLE_SELLER_USER_ID" ]; then
-            echo "FAILED: Unable to determine seeded seller user ID."
-            exit 1
-          fi
-
-          # Build partial search values from known-good fixtures.
-          PARTIAL_ITEM=$(printf '%s' "$SAMPLE_ITEM" | cut -d' ' -f1)
-          PARTIAL_SELLER=$(printf '%s' "$SAMPLE_SELLER" | cut -c1-4)
-
-          echo "Using seeded item for Item Search: $SAMPLE_ITEM"
-          echo "Using seeded item for Browse Feed: $BROWSE_ITEM"
-          echo "Using seeded seller: $SAMPLE_SELLER"
-          echo "Using partial item query: $PARTIAL_ITEM"
-          echo "Using partial seller query: $PARTIAL_SELLER"
-
-          # =========================================
-          # UC-16: Browse Feed
-          # =========================================
-
-          echo
-          echo "=== Testing Browse Feed ==="
-
-          BROWSE_RESPONSE=$(curl -sSf \
-            http://localhost:8080/)
-
-          if printf '%s' "$BROWSE_RESPONSE" |
-            grep -Fq "$BROWSE_ITEM"
-          then
-            echo "PASSED: Browse Feed displays an active seeded listing."
-          else
-            echo "FAILED: Browse Feed did not display expected listing: $BROWSE_ITEM"
-            failures=1
-          fi
-
-          # =========================================
-          # UC-16: Inactive listings excluded
-          # =========================================
-
-          echo
-          echo "=== Testing inactive listing exclusion ==="
-
-          if [ -n "$INACTIVE_ITEM" ]; then
-            if printf '%s' "$BROWSE_RESPONSE" |
-              grep -Fq "$INACTIVE_ITEM"
-            then
-              echo "FAILED: Browse Feed displayed inactive listing: $INACTIVE_ITEM"
-              failures=1
-            else
-              echo "PASSED: Browse Feed excludes inactive listings."
-            fi
-          else
-            echo "SKIPPED: No inactive seeded listing available."
-          fi
-
-          # =========================================
-          # UC-16: Browse All
-          # =========================================
-
-          echo
-          echo "=== Testing Browse All ==="
-
-          BROWSE_ALL_RESPONSE=$(curl -sSfG \
-            --data-urlencode "browse=all" \
-            --data-urlencode "search_type=items" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$BROWSE_ALL_RESPONSE" |
-            grep -Fq "$SAMPLE_ITEM"
-          then
-            echo "PASSED: Browse All displays an active seeded listing."
-          else
-            echo "FAILED: Browse All did not display expected listing: $SAMPLE_ITEM"
-            failures=1
-          fi
-
-          # =========================================
-          # UC-17: Item Search - success
-          # =========================================
-
-          echo
-          echo "=== Testing Item Search ==="
-
-          ITEM_RESPONSE=$(curl -sSfG \
-            --data-urlencode "q=$SAMPLE_ITEM" \
-            --data-urlencode "search_type=items" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$ITEM_RESPONSE" |
-            grep -Fq "$SAMPLE_ITEM" &&
-            ! printf '%s' "$ITEM_RESPONSE" |
-              grep -Fq "No listings found"
-          then
-            echo "PASSED: Item Search returned the seeded listing."
-          else
-            echo "FAILED: Item Search did not return expected listing: $SAMPLE_ITEM"
-            failures=1
-          fi
-
-          # =========================================
-          # UC-17: Item Search - partial match
-          # =========================================
-
-          echo
-          echo "=== Testing partial Item Search ==="
-
-          PARTIAL_ITEM_RESPONSE=$(curl -sSfG \
-            --data-urlencode "q=$PARTIAL_ITEM" \
-            --data-urlencode "search_type=items" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$PARTIAL_ITEM_RESPONSE" |
-            grep -Fq "$SAMPLE_ITEM"
-          then
-            echo "PASSED: Partial Item Search returned the expected listing."
-          else
-            echo "FAILED: Partial Item Search did not return expected listing: $SAMPLE_ITEM"
-            failures=1
-          fi
-
-          # =========================================
-          # UC-17: Item Search - no results
-          # =========================================
-
-          echo
-          echo "=== Testing Item Search empty state ==="
-
-          ITEM_EMPTY_RESPONSE=$(curl -sSfG \
-            --data-urlencode "q=ci-no-such-item-948372" \
-            --data-urlencode "search_type=items" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$ITEM_EMPTY_RESPONSE" |
-            grep -Fq "No listings found"
-          then
-            echo "PASSED: Item Search displays the no-results state."
-          else
-            echo "FAILED: Item Search no-results state was not displayed."
-            failures=1
-          fi
-
-          # =========================================
-          # UC-17: Item Search - inactive item excluded
-          # =========================================
-
-          echo
-          echo "=== Testing inactive item search exclusion ==="
-
-          if [ -n "$INACTIVE_ITEM" ]; then
-            INACTIVE_ITEM_RESPONSE=$(curl -sSfG \
-              --data-urlencode "q=$INACTIVE_ITEM" \
-              --data-urlencode "search_type=items" \
-              http://localhost:8080/pages/search.php)
-
-            if printf '%s' "$INACTIVE_ITEM_RESPONSE" |
-              grep -Fq "No listings found"
-            then
-              echo "PASSED: Item Search excludes inactive listing: $INACTIVE_ITEM"
-            else
-              echo "FAILED: Searching for inactive listing did not produce the expected no-results state: $INACTIVE_ITEM"
-              failures=1
-            fi
-          else
-            echo "SKIPPED: No inactive seeded listing available."
-          fi
-
-          # =========================================
-          # UC-18: Seller Search - success
-          # =========================================
-
-          echo
-          echo "=== Testing Seller Search ==="
-
-          SELLER_RESPONSE=$(curl -sSfG \
-            --data-urlencode "q=$SAMPLE_SELLER" \
-            --data-urlencode "search_type=seller_profiles" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$SELLER_RESPONSE" |
-            grep -Fq "$SAMPLE_SELLER" &&
-            ! printf '%s' "$SELLER_RESPONSE" |
-              grep -Fq "No sellers found"
-          then
-            echo "PASSED: Seller Search returned the seeded seller."
-          else
-            echo "FAILED: Seller Search did not return expected seller: $SAMPLE_SELLER"
-            failures=1
-          fi
-
-          # =========================================
-          # UC-18: Seller Search - partial match
-          # =========================================
-
-          echo
-          echo "=== Testing partial Seller Search ==="
-
-          PARTIAL_SELLER_RESPONSE=$(curl -sSfG \
-            --data-urlencode "q=$PARTIAL_SELLER" \
-            --data-urlencode "search_type=seller_profiles" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$PARTIAL_SELLER_RESPONSE" |
-            grep -Fq "$SAMPLE_SELLER"
-          then
-            echo "PASSED: Partial Seller Search returned the expected seller."
-          else
-            echo "FAILED: Partial Seller Search did not return expected seller: $SAMPLE_SELLER"
-            failures=1
-          fi
-
-          # =========================================
-          # UC-18: Seller Search - no results
-          # =========================================
-
-          echo
-          echo "=== Testing Seller Search empty state ==="
-
-          SELLER_EMPTY_RESPONSE=$(curl -sSfG \
-            --data-urlencode "q=ci-no-such-seller-948372" \
-            --data-urlencode "search_type=seller_profiles" \
-            http://localhost:8080/pages/search.php)
-
-          if printf '%s' "$SELLER_EMPTY_RESPONSE" |
-            grep -Fq "No sellers found"
-          then
-            echo "PASSED: Seller Search displays the no-results state."
-          else
-            echo "FAILED: Seller Search no-results state was not displayed."
-            failures=1
-          fi
-
-          # =========================================
-          # UC-18: Inactive seller excluded
-          # =========================================
-
-          echo
-          echo "=== Testing inactive seller exclusion ==="
-
-          if [ -n "$INACTIVE_SELLER" ]; then
-            INACTIVE_SELLER_RESPONSE=$(curl -sSfG \
-              --data-urlencode "q=$INACTIVE_SELLER" \
-              --data-urlencode "search_type=seller_profiles" \
-              http://localhost:8080/pages/search.php)
-
-            if printf '%s' "$INACTIVE_SELLER_RESPONSE" |
-              grep -Fq "No sellers found"
-            then
-              echo "PASSED: Seller Search excludes inactive seller: $INACTIVE_SELLER"
-            else
-              echo "FAILED: Searching for inactive seller did not produce the expected no-results state: $INACTIVE_SELLER"
-              failures=1
-            fi
-          else
-            echo "SKIPPED: No inactive seeded seller available."
-          fi
-
-          # =========================================
-          # UC-18: Seller Search privacy regression
-          # =========================================
-
-          echo
-          echo "=== Testing Seller Search privacy ==="
-
-          PRIVATE_PASSWORD_HASH=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT password_hash
-             FROM users
-             WHERE user_id = $SAMPLE_SELLER_USER_ID;")
-
-          PRIVATE_BIRTH_DATE=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT birth_date
-             FROM users
-             WHERE user_id = $SAMPLE_SELLER_USER_ID;")
-
-          PRIVATE_PAYOUT_REFERENCE=$(docker exec omnibuy-db \
-            mysql \
-            --protocol=TCP \
-            -h 127.0.0.1 \
-            -u root \
-            -p"$MYSQL_ROOT_PASSWORD" \
-            -D "$MYSQL_DATABASE" \
-            -Nse \
-            "SELECT payout_account_reference
-             FROM seller_profiles
-             WHERE user_id = $SAMPLE_SELLER_USER_ID;")
-
-          privacy_failure=0
-
-          if [ -n "$PRIVATE_PASSWORD_HASH" ] &&
-            printf '%s' "$SELLER_RESPONSE" |
-              grep -Fq "$PRIVATE_PASSWORD_HASH"
-          then
-            echo "FAILED: Seller Search exposed the seller password hash."
-            privacy_failure=1
-          fi
-
-          if [ -n "$PRIVATE_BIRTH_DATE" ] &&
-            printf '%s' "$SELLER_RESPONSE" |
-              grep -Fq "$PRIVATE_BIRTH_DATE"
-          then
-            echo "FAILED: Seller Search exposed the seller birth date."
-            privacy_failure=1
-          fi
-
-          if [ -n "$PRIVATE_PAYOUT_REFERENCE" ] &&
-            printf '%s' "$SELLER_RESPONSE" |
-              grep -Fq "$PRIVATE_PAYOUT_REFERENCE"
-          then
-            echo "FAILED: Seller Search exposed the seller payout account reference."
-            privacy_failure=1
-          fi
-
-          # Also guard against accidentally rendering internal field names.
-          if printf '%s' "$SELLER_RESPONSE" |
-            grep -Eqi 'password_hash|payout_account_reference|birth_date'
-          then
-            echo "FAILED: Seller Search exposed a restricted account field name."
-            privacy_failure=1
-          fi
-
-          if [ "$privacy_failure" -ne 0 ]; then
-            failures=1
-          else
-            echo "PASSED: Seller Search does not expose restricted seller data."
-          fi
-
-          # =========================================
-          # Final result
-          # =========================================
-
-          echo
-
-          if [ "$failures" -ne 0 ]; then
-            echo "One or more Marketplace Discovery feature or regression tests failed."
-            exit 1
-          fi
-
-          echo "All Marketplace Discovery feature and regression tests passed."
 
       # Runs last: it restarts the containers and briefly stops the database.
       - name: Docker environment tests (persistence, healthcheck, source mount, connectivity)
