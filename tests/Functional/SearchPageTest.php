@@ -1245,6 +1245,1009 @@ final class SearchPageTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-24-01: PRICE LOW TO HIGH
+    // =========================================
+
+    public function testPriceLowToHighSorting(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Retrieve active listings with unique item names.
+        // Unique names let us identify listings in the HTML.
+        $stmt = $pdo->query("
+            SELECT
+                l.item_name,
+                l.price
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+        ");
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Require enough test data.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($expectedListings),
+            'Test data needs at least two uniquely named active listings.'
+        );
+
+        $distinctPrices = array_unique(
+            array_column($expectedListings, 'price')
+        );
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($distinctPrices),
+            'Test data needs at least two different prices.'
+        );
+
+        // Request the search page with ascending price sort.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'sort' => 'price_low'
+            ]
+        );
+
+        // Verify the page loads without errors.
+        $this->assertSame(200, $status);
+
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify the correct sorting option is selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="price_low")(?=[^>]*\bselected\b)[^>]*>/s',
+            $body
+        );
+
+        // Find where each listing name appears in the HTML.
+        $displayedListings = [];
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $position = strpos($body, $itemName);
+
+            $this->assertNotFalse(
+                $position,
+                'Listing not found in search results: ' . $itemName
+            );
+
+            $displayedListings[] = [
+                'price' => (float)$listing['price'],
+                'position' => $position
+            ];
+        }
+
+        // Order records by their position on the page.
+        usort(
+            $displayedListings,
+            fn($a, $b) => $a['position'] <=> $b['position']
+        );
+
+        // Verify prices never decrease as we move down.
+        for ($i = 1; $i < count($displayedListings); $i++) {
+
+            $previousPrice = $displayedListings[$i - 1]['price'];
+            $currentPrice = $displayedListings[$i]['price'];
+
+            $this->assertGreaterThanOrEqual(
+                $previousPrice,
+                $currentPrice,
+                'Listings are not sorted from lowest to highest price.'
+            );
+        }
+    }
+
+    // =========================================
+    // TC-24-02: PRICE HIGH TO LOW
+    // =========================================
+
+    public function testPriceHighToLowSorting(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Retrieve active listings with unique item names.
+        $stmt = $pdo->query("
+            SELECT
+                l.item_name,
+                l.price
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+        ");
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Require enough test data.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($expectedListings),
+            'Test data needs at least two uniquely named active listings.'
+        );
+
+        $distinctPrices = array_unique(
+            array_column($expectedListings, 'price')
+        );
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($distinctPrices),
+            'Test data needs at least two different prices.'
+        );
+
+        // Request the search page with descending price sorting.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'sort' => 'price_high'
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no search error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify Price High to Low remains selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="price_high")(?=[^>]*\bselected\b)[^>]*>/s',
+            $body
+        );
+
+        // Find each listing's position in the HTML.
+        $displayedListings = [];
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $position = strpos($body, $itemName);
+
+            $this->assertNotFalse(
+                $position,
+                'Listing not found in search results: ' . $itemName
+            );
+
+            $displayedListings[] = [
+                'price' => (float)$listing['price'],
+                'position' => $position
+            ];
+        }
+
+        // Sort listings by their position on the page.
+        usort(
+            $displayedListings,
+            fn($a, $b) => $a['position'] <=> $b['position']
+        );
+
+        // Verify prices never increase as we move down.
+        for ($i = 1; $i < count($displayedListings); $i++) {
+
+            $previousPrice = $displayedListings[$i - 1]['price'];
+            $currentPrice = $displayedListings[$i]['price'];
+
+            $this->assertTrue(
+                $previousPrice >= $currentPrice,
+                'Listings are not sorted from highest to lowest price.'
+            );
+        }
+    }
+
+    // =========================================
+    // TC-24-03: SORT BY NEWEST
+    // =========================================
+
+    public function testNewestSorting(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Retrieve active listings in the expected order.
+        // Unique item names help us identify them in the HTML.
+        $stmt = $pdo->query("
+            SELECT
+                l.listing_id,
+                l.item_name,
+                l.created_at
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+            ORDER BY
+                l.created_at DESC,
+                l.listing_id DESC
+        ");
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Require enough test data.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($expectedListings),
+            'Test data needs at least two uniquely named active listings.'
+        );
+
+        // Verify listings have different creation timestamps.
+        $distinctDates = array_unique(
+            array_column($expectedListings, 'created_at')
+        );
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($distinctDates),
+            'Test data needs at least two different creation timestamps.'
+        );
+
+        // Request Browse All with Newest sorting.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'sort' => 'recent'
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no search error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify Newest remains selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="recent")(?=[^>]*\bselected\b)[^>]*>/s',
+            $body
+        );
+
+        // Track the position of each listing in the HTML.
+        $previousPosition = -1;
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            // Find this listing in the displayed results.
+            $position = strpos($body, $itemName);
+
+            $this->assertNotFalse(
+                $position,
+                'Listing not found in search results: ' . $itemName
+            );
+
+            // The SQL query is already sorted newest first.
+            // Each next listing must appear later in the HTML.
+            $this->assertGreaterThan(
+                $previousPosition,
+                $position,
+                'Listings are not displayed in newest-first order. ' .
+                'Check listing ID: ' . $listing['listing_id']
+            );
+
+            $previousPosition = $position;
+        }
+    }
+
+    // =========================================
+    // TC-24-04: SORT BY OLDEST
+    // =========================================
+
+    public function testOldestSorting(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Retrieve active listings in oldest-first order.
+        // Only use unique item names to identify listings.
+        $stmt = $pdo->query("
+            SELECT
+                l.listing_id,
+                l.item_name,
+                l.created_at
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+            ORDER BY
+                l.created_at ASC,
+                l.listing_id ASC
+        ");
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Require at least two active listings.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($expectedListings),
+            'Test data needs at least two uniquely named active listings.'
+        );
+
+        // Verify that different creation dates exist.
+        $distinctDates = array_unique(
+            array_column($expectedListings, 'created_at')
+        );
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($distinctDates),
+            'Test data needs at least two different creation timestamps.'
+        );
+
+        // Request Browse All with Oldest sorting.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'sort' => 'oldest'
+            ]
+        );
+
+        // Verify the page loads successfully.
+        $this->assertSame(200, $status);
+
+        // Verify no database error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify Oldest remains selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="oldest")(?=[^>]*\bselected\b)[^>]*>/s',
+            $body
+        );
+
+        // Track listing positions in the HTML.
+        $previousPosition = -1;
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            // Find the listing in the returned HTML.
+            $position = strpos($body, $itemName);
+
+            $this->assertNotFalse(
+                $position,
+                'Listing not found in search results: ' . $itemName
+            );
+
+            // Expected listings are ordered oldest first.
+            // Each next listing must appear later in the HTML.
+            $this->assertGreaterThan(
+                $previousPosition,
+                $position,
+                'Listings are not displayed in oldest-first order. ' .
+                'Check listing ID: ' . $listing['listing_id']
+            );
+
+            $previousPosition = $position;
+        }
+    }
+
+    // =========================================
+    // TC-24-05: SORTING WITH ACTIVE FILTERS
+    // =========================================
+
+    public function testSortingPreservesActiveFilters(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Find a shipping/condition combination with
+        // at least two uniquely named listings
+        // having different prices.
+        $stmt = $pdo->query("
+            SELECT l.`condition` AS selected_condition
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND l.fulfillment_type = 'shipping'
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+            GROUP BY l.`condition`
+            HAVING COUNT(*) >= 2
+                AND COUNT(DISTINCT l.price) >= 2
+            ORDER BY
+                CASE
+                    WHEN l.`condition` = 'good' THEN 0
+                    ELSE 1
+                END,
+                COUNT(*) DESC
+            LIMIT 1
+        ");
+
+        $condition = $stmt->fetchColumn();
+
+        $this->assertNotFalse(
+            $condition,
+            'Test data needs two uniquely named shipping listings ' .
+            'with the same condition and different prices.'
+        );
+
+        // Count all matching active listings.
+        $countStmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'shipping'
+                AND `condition` = :condition
+        ");
+
+        $countStmt->execute([
+            'condition' => $condition
+        ]);
+
+        $expectedCount = (int)$countStmt->fetchColumn();
+
+        // Retrieve uniquely named matching listings
+        // in the expected price order.
+        $stmt = $pdo->prepare("
+            SELECT
+                l.listing_id,
+                l.item_name,
+                l.price
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND l.fulfillment_type = 'shipping'
+                AND l.`condition` = :condition
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+            ORDER BY
+                l.price ASC,
+                l.listing_id DESC
+        ");
+
+        $stmt->execute([
+            'condition' => $condition
+        ]);
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Start with Newest sorting and both filters.
+        [$initialStatus, $initialBody] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'shipping',
+                'condition' => [$condition],
+                'sort' => 'recent'
+            ]
+        );
+
+        $this->assertSame(200, $initialStatus);
+
+        // Change sorting while keeping both filters.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'shipping',
+                'condition' => [$condition],
+                'sort' => 'price_low'
+            ]
+        );
+
+        $this->assertSame(200, $status);
+
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify result counts before and after sorting.
+        foreach ([$initialBody, $body] as $pageBody) {
+
+            $matched = preg_match(
+                '/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/',
+                $pageBody,
+                $matches
+            );
+
+            $this->assertSame(
+                1,
+                $matched,
+                'Could not find the search result count.'
+            );
+
+            $this->assertSame(
+                $expectedCount,
+                (int)$matches[1],
+                'Sorting should not change the filtered result count.'
+            );
+
+            // Verify Shipping remains selected.
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*name="fulfillment")(?=[^>]*value="shipping")(?=[^>]*\bchecked\b)[^>]*>/s',
+                $pageBody
+            );
+
+            // Verify the condition remains selected.
+            $conditionPattern = preg_quote(
+                (string)$condition,
+                '/'
+            );
+
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*name="condition\[\]")' .
+                '(?=[^>]*value="' . $conditionPattern . '")' .
+                '(?=[^>]*\bchecked\b)[^>]*>/s',
+                $pageBody
+            );
+        }
+
+        // Verify Price Low to High is selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="price_low")(?=[^>]*\bselected\b)[^>]*>/s',
+            $body
+        );
+
+        // Verify matching listings appear in ascending
+        // price order, using their names in the HTML.
+        $previousPosition = -1;
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $position = strpos($body, $itemName);
+
+            $this->assertNotFalse(
+                $position,
+                'Listing missing from results: ' . $itemName
+            );
+
+            $this->assertGreaterThan(
+                $previousPosition,
+                $position,
+                'Filtered listings are not in ascending ' .
+                'price order. Check listing ID: ' .
+                $listing['listing_id']
+            );
+
+            $previousPosition = $position;
+        }
+    }
+
+    // =========================================
+    // TC-24-06: SORT BY DISTANCE NEAR TO FAR
+    // =========================================
+
+    public function testDistanceNearToFarSorting(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Choose a valid ZIP code from the database.
+        // Prefer 90001 when available.
+        $zipCode = $pdo->query("
+            SELECT zip_code
+            FROM zip_code_locations
+            WHERE latitude IS NOT NULL
+                AND longitude IS NOT NULL
+            ORDER BY
+                (zip_code = '90001') DESC,
+                zip_code ASC
+            LIMIT 1
+        ")->fetchColumn();
+
+        $this->assertNotFalse(
+            $zipCode,
+            'Test data needs at least one valid ZIP code.'
+        );
+
+        // Calculate distances for active meetup listings.
+        // Use unique item names to identify listings in HTML.
+        $stmt = $pdo->prepare("
+            SELECT
+                l.listing_id,
+                l.item_name,
+                ST_Distance_Sphere(
+                    POINT(l.longitude, l.latitude),
+                    POINT(z.longitude, z.latitude)
+                ) AS distance_meters
+            FROM listings AS l
+            JOIN zip_code_locations AS z
+                ON z.zip_code = :zip
+            WHERE l.listing_status = 'active'
+                AND l.fulfillment_type = 'meetup'
+                AND l.latitude IS NOT NULL
+                AND l.longitude IS NOT NULL
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+            ORDER BY
+                distance_meters ASC,
+                l.listing_id DESC
+        ");
+
+        $stmt->execute([
+            'zip' => $zipCode
+        ]);
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Require at least two meetup listings.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($expectedListings),
+            'Test data needs at least two uniquely named ' .
+            'meetup listings with coordinates.'
+        );
+
+        // Ensure the test includes different distances.
+        $distinctDistances = array_unique(
+            array_map(
+                fn($listing) => round(
+                    (float)$listing['distance_meters'],
+                    1
+                ),
+                $expectedListings
+            )
+        );
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($distinctDistances),
+            'Test data needs meetup listings at different distances.'
+        );
+
+        // Request Browse All with Near to Far sorting.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'meetup',
+                'zip' => $zipCode,
+                'sort' => 'distance_near'
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no search error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify Near to Far remains selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="distance_near")' .
+            '(?=[^>]*\bselected\b)[^>]*>/s',
+            $body
+        );
+
+        // Find each listing's position in the HTML.
+        $displayedListings = [];
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $position = strpos($body, $itemName);
+
+            $this->assertNotFalse(
+                $position,
+                'Meetup listing not found: ' . $itemName
+            );
+
+            $displayedListings[] = [
+                'listing_id' => $listing['listing_id'],
+                'distance' => (float)$listing['distance_meters'],
+                'position' => $position
+            ];
+        }
+
+        // Arrange listings in their displayed HTML order.
+        usort(
+            $displayedListings,
+            fn($a, $b) => $a['position'] <=> $b['position']
+        );
+
+        // Verify distances never decrease down the page.
+        // Allow a very small tolerance for floating-point values.
+        for ($i = 1; $i < count($displayedListings); $i++) {
+
+            $previousDistance =
+                $displayedListings[$i - 1]['distance'];
+
+            $currentDistance =
+                $displayedListings[$i]['distance'];
+
+            $this->assertGreaterThanOrEqual(
+                $previousDistance - 0.1,
+                $currentDistance,
+                'Listings are not sorted nearest first. ' .
+                'Check listing ID: ' .
+                $displayedListings[$i]['listing_id']
+            );
+        }
+    }
+
+    // =========================================
+    // TC-24-07: INVALID SORTING OPTION
+    // =========================================
+
+    public function testInvalidSortFallsBackToNewest(): void
+    {
+        // Connect to MySQL.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ]
+        );
+
+        // Get active listings in the default Newest order.
+        // Use unique item names for HTML comparisons.
+        $stmt = $pdo->query("
+            SELECT
+                l.listing_id,
+                l.item_name,
+                l.created_at
+            FROM listings AS l
+            WHERE l.listing_status = 'active'
+                AND (
+                    SELECT COUNT(*)
+                    FROM listings AS other
+                    WHERE other.listing_status = 'active'
+                        AND other.item_name = l.item_name
+                ) = 1
+            ORDER BY
+                l.created_at DESC,
+                l.listing_id DESC
+        ");
+
+        $expectedListings = $stmt->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        // Require enough data to verify the sorting.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($expectedListings),
+            'Test data needs at least two uniquely named active listings.'
+        );
+
+        // Request the search page with an invalid sort value.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'sort' => 'invalid_option'
+            ]
+        );
+
+        // Verify the page loads.
+        $this->assertSame(200, $status);
+
+        // Verify no search error occurred.
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        // Verify the results count is still displayed.
+        $this->assertMatchesRegularExpression(
+            '/class="search-results__count"[^>]*>\s*\d+\s+results?\b/',
+            $body
+        );
+
+        // Check the position of each listing in the HTML.
+        $previousPosition = -1;
+
+        foreach ($expectedListings as $listing) {
+
+            $itemName = htmlspecialchars(
+                $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $position = strpos($body, $itemName);
+
+            // Every expected listing should be present.
+            $this->assertNotFalse(
+                $position,
+                'Listing not found: ' . $itemName
+            );
+
+            // Listings should follow the default Newest order.
+            $this->assertGreaterThan(
+                $previousPosition,
+                $position,
+                'Invalid sort did not fall back to Newest order. ' .
+                'Check listing ID: ' . $listing['listing_id']
+            );
+
+            $previousPosition = $position;
+        }
+
+        // Verify the fallback sorting option is Newest.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="recent")' .
+            '(?=[^>]*\bselected\b)[^>]*>/s',
+            $body,
+            'Newest should be selected after an invalid sort.'
+        );
+    }
+
      // =========================================
     // TC-23-01: FILTER MEETUP LISTINGS WITHIN A RADIUS
     // =========================================

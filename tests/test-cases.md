@@ -3073,9 +3073,16 @@ Verify that listings are sorted by price in ascending order.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that active listings with
+unique item names appeared in ascending price order.
 
-**Status:** Not Run
+Manual testing confirmed that the marketplace displayed
+listings from lowest to highest price.
+
+The results were consistent with the corresponding
+MySQL sorting query.
+
+**Status:** pass
 
 **Related Jira Defect:** None
 
@@ -3111,9 +3118,16 @@ Verify that listings are sorted by price in descending order.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that active listings with
+unique item names appeared in descending price order.
 
-**Status:** Not Run
+Manual testing confirmed that the marketplace displayed
+listings from highest to lowest price.
+
+The Price: High to Low option remained selected.
+No PHP or database errors occurred.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3153,9 +3167,18 @@ based on their creation timestamps.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that active listings with
+unique item names appeared in descending creation-date order.
 
-**Status:** Not Run
+The displayed order matched the MySQL query using
+created_at DESC and listing_id DESC.
+
+Manual testing confirmed that the newest listings
+appeared first.
+
+The Newest sorting option remained selected.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3195,9 +3218,18 @@ based on their creation timestamps.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that active listings with
+unique item names appeared in ascending creation-date order.
 
-**Status:** Not Run
+The displayed order matched the MySQL query using
+created_at ASC and listing_id ASC.
+
+Manual testing confirmed that the oldest listings
+appeared first.
+
+The Oldest sorting option remained selected.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3242,9 +3274,20 @@ or interfere with previously applied search filters.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that changing the sorting
+option from Newest to Price Low to High preserved the
+selected condition and delivery method filters.
 
-**Status:** Not Run
+The filtered result count remained unchanged and
+matched the corresponding MySQL query.
+
+The matching listings were displayed in ascending
+price order.
+
+Manual testing confirmed that changing the sorting
+dropdown preserved both active filters.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3295,9 +3338,18 @@ to farthest based on the buyer's ZIP-code location.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test verified that active meetup listings
+with valid coordinates appeared in ascending distance order.
 
-**Status:** Not Run
+Distances were calculated using MySQL's ST_Distance_Sphere()
+function and compared against the displayed listing order.
+
+The Distance: Near to Far sorting option remained selected.
+
+Manual testing confirmed that the closest meetup listings
+appeared first when a valid buyer ZIP code was provided.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3335,8 +3387,19 @@ safely without causing database errors.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated test confirmed that providing an
+unsupported sorting value did not cause a PHP
+or database error.
 
-**Status:** Not Run
+The marketplace displayed active listings using
+the default Newest sorting order.
+
+The listing order matched the MySQL query using
+created_at DESC and listing_id DESC.
+
+Manual testing confirmed that the search page
+handled the invalid sorting value successfully.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
