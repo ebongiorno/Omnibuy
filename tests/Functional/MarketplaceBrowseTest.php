@@ -2,96 +2,78 @@
 
 declare(strict_types=1);
 
+namespace OmniBuy\Tests\Functional;
+
+use OmniBuy\Tests\Support\DatabaseTestCase;
+
 require_once __DIR__ . '/../Support/TestHelpers.php';
-require_once __DIR__ . '/../../db_connect.php';
 
-echo "=== Marketplace Browse Feed Tests ===" . PHP_EOL;
+/** UC-16: Browse Feed and Browse All. */
+final class MarketplaceBrowseTest extends DatabaseTestCase
+{
+    public function testBrowseFeedDisplaysActiveSeededListing(): void
+    {
+        $stmt = $this->pdo->query("
+            SELECT item_name
+            FROM listings
+            WHERE listing_status = 'active'
+            ORDER BY created_at DESC, listing_id DESC
+            LIMIT 1
+        ");
+        $browseItem = $stmt->fetchColumn();
+        self::assertNotFalse($browseItem, 'No active seeded listing available.');
 
-// =========================================
-// Get predictable fixtures
-// =========================================
+        $browseResponse = \httpGet('/');
+        self::assertStringContainsString(
+            (string) $browseItem,
+            $browseResponse,
+            'Browse Feed should display an active seeded listing.'
+        );
+    }
 
-$stmt = $pdo->query("
-    SELECT item_name
-    FROM listings
-    WHERE listing_status = 'active'
-    ORDER BY created_at DESC, listing_id DESC
-    LIMIT 1
-");
+    public function testBrowseFeedExcludesInactiveListings(): void
+    {
+        $stmt = $this->pdo->query("
+            SELECT item_name
+            FROM listings
+            WHERE listing_status <> 'active'
+            ORDER BY listing_id ASC
+            LIMIT 1
+        ");
+        $inactiveItem = $stmt->fetchColumn();
 
-$browseItem = $stmt->fetchColumn();
+        if ($inactiveItem === false) {
+            self::markTestSkipped('No inactive seeded listing available.');
+        }
 
-$stmt = $pdo->query("
-    SELECT item_name
-    FROM listings
-    WHERE listing_status = 'active'
-    ORDER BY listing_id ASC
-    LIMIT 1
-");
+        $browseResponse = \httpGet('/');
+        self::assertStringNotContainsString(
+            (string) $inactiveItem,
+            $browseResponse,
+            'Browse Feed should exclude inactive listings.'
+        );
+    }
 
-$sampleItem = $stmt->fetchColumn();
+    public function testBrowseAllDisplaysActiveSeededListing(): void
+    {
+        $stmt = $this->pdo->query("
+            SELECT item_name
+            FROM listings
+            WHERE listing_status = 'active'
+            ORDER BY listing_id ASC
+            LIMIT 1
+        ");
+        $sampleItem = $stmt->fetchColumn();
+        self::assertNotFalse($sampleItem, 'No active seeded listing available.');
 
-$stmt = $pdo->query("
-    SELECT item_name
-    FROM listings
-    WHERE listing_status <> 'active'
-    ORDER BY listing_id ASC
-    LIMIT 1
-");
-
-$inactiveItem = $stmt->fetchColumn();
-
-if (!$browseItem || !$sampleItem) {
-    testFail(
-        'Required active listing fixtures are missing.'
-    );
-
-    finishTests();
+        $browseAllResponse = \httpGet('/pages/search.php', [
+            'browse' => 'all',
+            'search_type' => 'items',
+        ]);
+        self::assertStringContainsString(
+            (string) $sampleItem,
+            $browseAllResponse,
+            'Browse All should display an active seeded listing.'
+        );
+    }
 }
-
-// =========================================
-// UC-16: Browse Feed
-// =========================================
-
-$browseResponse = httpGet('/');
-
-assertContains(
-    (string)$browseItem,
-    $browseResponse,
-    'Browse Feed displays an active seeded listing.'
-);
-
-// =========================================
-// UC-16: Inactive listings excluded
-// =========================================
-
-if ($inactiveItem) {
-    assertNotContains(
-        (string)$inactiveItem,
-        $browseResponse,
-        'Browse Feed excludes inactive listings.'
-    );
-} else {
-    echo "SKIPPED: No inactive seeded listing available."
-        . PHP_EOL;
-}
-
-// =========================================
-// UC-16: Browse All
-// =========================================
-
-$browseAllResponse = httpGet(
-    '/pages/search.php',
-    [
-        'browse' => 'all',
-        'search_type' => 'items',
-    ]
-);
-
-assertContains(
-    (string)$sampleItem,
-    $browseAllResponse,
-    'Browse All displays an active seeded listing.'
-);
-
-finishTests();

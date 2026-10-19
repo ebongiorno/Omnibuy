@@ -2,130 +2,96 @@
 
 declare(strict_types=1);
 
+namespace OmniBuy\Tests\Functional;
+
+use OmniBuy\Tests\Support\DatabaseTestCase;
+
 require_once __DIR__ . '/../Support/TestHelpers.php';
-require_once __DIR__ . '/../../db_connect.php';
 
-echo "=== Item Search Tests ===" . PHP_EOL;
-
-// =========================================
-// Get predictable fixtures
-// =========================================
-
-$stmt = $pdo->query("
-    SELECT item_name
-    FROM listings
-    WHERE listing_status = 'active'
-    ORDER BY listing_id ASC
-    LIMIT 1
-");
-
-$sampleItem = $stmt->fetchColumn();
-
-$stmt = $pdo->query("
-    SELECT item_name
-    FROM listings
-    WHERE listing_status <> 'active'
-    ORDER BY listing_id ASC
-    LIMIT 1
-");
-
-$inactiveItem = $stmt->fetchColumn();
-
-if (!$sampleItem) {
-    testFail(
-        'No active seeded listing available.'
-    );
-
-    finishTests();
-}
-
-$partialItem = explode(
-    ' ',
-    (string)$sampleItem
-)[0];
-
-// =========================================
-// UC-17: Exact Item Search
-// =========================================
-
-$response = httpGet(
-    '/pages/search.php',
-    [
-        'q' => $sampleItem,
-        'search_type' => 'items',
-    ]
-);
-
-if (
-    str_contains($response, (string)$sampleItem)
-    && !str_contains($response, 'No listings found')
-) {
-    testPass(
-        'Item Search returned the seeded listing.'
-    );
-} else {
-    testFail(
-        'Item Search did not return the seeded listing.'
-    );
-}
-
-// =========================================
-// UC-17: Partial Item Search
-// =========================================
-
-$response = httpGet(
-    '/pages/search.php',
-    [
-        'q' => $partialItem,
-        'search_type' => 'items',
-    ]
-);
-
-assertContains(
-    (string)$sampleItem,
-    $response,
-    'Partial Item Search returned the expected listing.'
-);
-
-// =========================================
-// UC-17: No-results state
-// =========================================
-
-$response = httpGet(
-    '/pages/search.php',
-    [
-        'q' => 'ci-no-such-item-948372',
-        'search_type' => 'items',
-    ]
-);
-
-assertContains(
-    'No listings found',
-    $response,
-    'Item Search displays the no-results state.'
-);
-
-// =========================================
-// UC-17: Inactive item exclusion
-// =========================================
-
-if ($inactiveItem) {
-    $response = httpGet(
-        '/pages/search.php',
-        [
-            'q' => $inactiveItem,
+/**
+ * UC-17: Search Items. Uses the same seeded database fixtures and HTTP helper
+ * as the original standalone test, but lets PHPUnit manage assertions/results.
+ */
+final class ItemSearchTest extends DatabaseTestCase
+{
+    public function testExactItemSearchReturnsSeededListing(): void
+    {
+        $sampleItem = $this->activeItemName();
+        $response = \httpGet('/pages/search.php', [
+            'q' => $sampleItem,
             'search_type' => 'items',
-        ]
-    );
+        ]);
 
-    assertContains(
-        'No listings found',
-        $response,
-        'Item Search excludes inactive listings.'
-    );
-} else {
-    echo "SKIPPED: No inactive seeded listing available."
-        . PHP_EOL;
+        self::assertStringContainsString($sampleItem, $response);
+        self::assertStringNotContainsString('No listings found', $response);
+    }
+
+    public function testPartialItemSearchReturnsExpectedListing(): void
+    {
+        $sampleItem = $this->activeItemName();
+        $partialItem = explode(' ', $sampleItem)[0];
+        $response = \httpGet('/pages/search.php', [
+            'q' => $partialItem,
+            'search_type' => 'items',
+        ]);
+
+        self::assertStringContainsString(
+            $sampleItem,
+            $response,
+            'Partial Item Search should return the expected seeded listing.'
+        );
+    }
+
+    public function testItemSearchDisplaysNoResultsState(): void
+    {
+        $response = \httpGet('/pages/search.php', [
+            'q' => 'ci-no-such-item-948372',
+            'search_type' => 'items',
+        ]);
+
+        self::assertStringContainsString('No listings found', $response);
+    }
+
+    public function testItemSearchExcludesInactiveListings(): void
+    {
+        $stmt = $this->pdo->query("
+            SELECT item_name
+            FROM listings
+            WHERE listing_status <> 'active'
+            ORDER BY listing_id ASC
+            LIMIT 1
+        ");
+        $inactiveItem = $stmt->fetchColumn();
+
+        if ($inactiveItem === false) {
+            self::markTestSkipped('No inactive seeded listing available.');
+        }
+
+        $response = \httpGet('/pages/search.php', [
+            'q' => (string) $inactiveItem,
+            'search_type' => 'items',
+        ]);
+
+        self::assertStringContainsString(
+            'No listings found',
+            $response,
+            'Item Search should not return inactive listings.'
+        );
+    }
+
+    private function activeItemName(): string
+    {
+        $stmt = $this->pdo->query("
+            SELECT item_name
+            FROM listings
+            WHERE listing_status = 'active'
+            ORDER BY listing_id ASC
+            LIMIT 1
+        ");
+        $sampleItem = $stmt->fetchColumn();
+
+        self::assertNotFalse($sampleItem, 'No active seeded listing available.');
+
+        return (string) $sampleItem;
+    }
 }
-
-finishTests();
