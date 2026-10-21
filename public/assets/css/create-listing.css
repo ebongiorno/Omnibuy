@@ -42,3 +42,11 @@
   padding: 12px 24px;
   cursor: pointer;
 }
+
+
+.create-listing__hint {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary, #64748b);
+    line-height: 1.5;
+}

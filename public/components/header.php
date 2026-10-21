@@ -45,6 +45,11 @@ function navActive(string $key, string $activeNav): string
   <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
   <link rel="stylesheet" href="/assets/css/shared-navigation.css">
 
+
+<?php if (!empty($pageStylesheet)): ?>
+  <link rel="stylesheet" href="<?= htmlspecialchars($pageStylesheet, ENT_QUOTES, 'UTF-8') ?>">
+<?php endif; ?>
+
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
 </head>
