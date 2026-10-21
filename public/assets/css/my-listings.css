@@ -1,0 +1,109 @@
+
+/* =========================================
+   OMNIBUY MY LISTINGS
+   ========================================= */
+
+.my-listings-page {
+    padding-block: var(--space-8, 32px);
+}
+
+.my-listings-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.my-listings-heading h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 36px);
+    color: var(--color-navy, #172b4d);
+}
+
+.my-listings-subtitle {
+    color: var(--color-text-secondary, #64748b);
+    margin-top: 8px;
+}
+
+.my-listings-create {
+    display: inline-block;
+    padding: 12px 20px;
+    border-radius: var(--radius-input, 8px);
+    background: var(--color-primary, #2563eb);
+    color: white;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.my-listings-create:hover {
+    filter: brightness(0.92);
+}
+
+/* Listing cards */
+
+.my-listings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4, 16px);
+}
+
+.my-listings__item {
+    padding: 24px;
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-card, 12px);
+    transition: box-shadow 150ms ease;
+}
+
+.my-listings__item:hover {
+    box-shadow: 0 8px 22px rgb(15 23 42 / 0.08);
+}
+
+.my-listings__item h2 {
+    margin: 0 0 16px;
+    color: var(--color-text, #1e293b);
+    font-size: 20px;
+}
+
+.my-listings__item p {
+    margin: 10px 0;
+    color: var(--color-text-secondary, #64748b);
+    line-height: 1.5;
+}
+
+.my-listings__item strong {
+    color: var(--color-text, #1e293b);
+}
+
+/* Messages */
+
+.my-listings-message {
+    padding: 36px;
+    text-align: center;
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-card, 12px);
+}
+
+.my-listings-success {
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #166534;
+}
+
+/* Responsive */
+
+@media (max-width: 700px) {
+    .my-listings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .my-listings-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
