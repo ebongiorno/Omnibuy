@@ -436,7 +436,8 @@ VALUES
     (19, 'Board Game Bunker', TRUE, 'DEV_PAYOUT_019'),
     (20, 'Clover Closet', FALSE, 'DEV_PAYOUT_020'),
     (21, 'Wired Nook', TRUE, 'DEV_PAYOUT_021'),
-    (22, 'Second Chance Shelf', FALSE, 'DEV_PAYOUT_022');
+    (22, 'Second Chance Shelf', FALSE, 'DEV_PAYOUT_022'),
+    (23, 'The Curious Fox', FALSE, 'DEV_PAYOUT_023');
 
 
 -- =========================================
