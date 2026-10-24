@@ -2585,18 +2585,18 @@ VALUES
     (68, 66, '/assets/images/listing/listing-percy-jackson-the-lightning-thief-paperback.jpg', 1),
     (69, 67, '/assets/images/listing/listing-the-silent-patient-by-alex-michaelides-paperback.jpg', 1),
     (70, 68, '/assets/images/listing/listing-clean-code-by-robert-c-martin-paperback.jpg', 1),
-    (71, 69, '/assets/images/listing/listing-marvel-legends-spider-man-6-inch-action-figure.jpg', 1),
-    (72, 70, '/assets/images/listing/listing-marvel-legends-iron-man-mark-85-action-figure.jpg', 1),
-    (73, 71, '/assets/images/listing/listing-marvel-legends-wolverine-action-figure.jpg', 1),
-    (74, 72, '/assets/images/listing/listing-dc-multiverse-batman-7-inch-action-figure.jpg', 1),
-    (75, 73, '/assets/images/listing/listing-dc-multiverse-superman-action-figure.jpg', 1),
-    (76, 74, '/assets/images/listing/listing-dc-multiverse-the-flash-action-figure.jpg', 1),
-    (77, 75, '/assets/images/listing/listing-power-rangers-lightning-collection-red-ranger.jpg', 1),
-    (78, 76, '/assets/images/listing/listing-power-rangers-lightning-collection-green-ranger.jpg', 1),
-    (79, 77, '/assets/images/listing/listing-power-rangers-lightning-collection-pink-ranger.jpg', 1),
-    (80, 78, '/assets/images/listing/listing-pokemon-pikachu-v-trading-card.jpg', 1),
-    (81, 79, '/assets/images/listing/listing-pokemon-mewtwo-vstar-trading-card.jpg', 1),
-    (82, 80, '/assets/images/listing/listing-pokemon-eevee-vmax-promo-card.jpg', 1);
+    (71, 69, '/assets/images/listing/listing-spiderman-figure.jpg', 1),
+    (72, 70, '/assets/images/listing/listing-iron-man-figure.jpg', 1),
+    (73, 71, '/assets/images/listing/listing-wolverine-figure.jpg', 1),
+    (74, 72, '/assets/images/listing/listing-batman-figure.jpg', 1),
+    (75, 73, '/assets/images/listing/listing-superman-figure.jpg', 1),
+    (76, 74, '/assets/images/listing/listing-the-flash-figure.jpg', 1),
+    (77, 75, '/assets/images/listing/listing-red-ranger-figure.jpg', 1),
+    (78, 76, '/assets/images/listing/listing-green-ranger-figure.jpg', 1),
+    (79, 77, '/assets/images/listing/listing-pink-ranger-figure.jpg', 1),
+    (80, 78, '/assets/images/listing/listing-surf-pikachu-card.jpg', 1),
+    (81, 79, '/assets/images/listing/listing-mewtwo-card.jpg', 1),
+    (82, 80, '/assets/images/listing/listing-eevee-card.jpg', 1);
 
 
 -- =========================================
