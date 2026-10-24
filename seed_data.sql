@@ -467,7 +467,11 @@ VALUES
     (9, 3, 'Mens Clothing', 'Clothing and accessories for men.', NULL),
     (10, 3, 'Womens Clothing', 'Clothing and accessories for women.', NULL),
 
-    (12, 11, 'Trading Cards', 'Collectible trading cards including sports and gaming cards.', NULL);
+    (12, 11, 'Trading Cards', 'Collectible trading cards including sports and gaming cards.', NULL),
+    (13, 11, 'Action Figures',
+     'Collectible action figures featuring characters from movies, television, comics, and popular franchises.',
+     NULL);
+
 
 
 -- =========================================
