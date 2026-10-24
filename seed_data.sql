@@ -117,6 +117,292 @@ VALUES
         'Seller account used for inactive seller regression testing.',
         FALSE,
         'suspended'
+    ),
+
+    (
+        7,
+        'Maya',
+        'Chen',
+        'neonattic',
+        'neonattic@example.com',
+        'DEV_ONLY_HASH_7',
+        TRUE,
+        '555-0107',
+        '1997-05-14',
+        NULL,
+        'Retro games, consoles, and nostalgic tech finds.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        8,
+        'Owen',
+        'Rivera',
+        'deskcraftdaily',
+        'deskcraftdaily@example.com',
+        'DEV_ONLY_HASH_8',
+        TRUE,
+        '555-0108',
+        '1993-11-08',
+        NULL,
+        'My shop is all about making workspaces more comfortable. I usually sell desk accessories, monitor stands, stationery,
+         and the occasional chair after a home office refresh.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        9,
+        'Priya',
+        'Shah',
+        'page.turner_88',
+        'page.turner_88@example.com',
+        'DEV_ONLY_HASH_9',
+        TRUE,
+        '555-0109',
+        '1995-02-23',
+        NULL,
+        'Book collector with a soft spot for mysteries, fantasy, and old college textbooks. 
+         I photograph any highlighting, creased pages, or shelf wear so buyers know what they are getting.
+         I also enjoy putting together inexpensive reading bundles.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        10,
+        'Luca',
+        'Bennett',
+        'loopandloom',
+        'loopandloom@example.com',
+        'DEV_ONLY_HASH_10',
+        TRUE,
+        '555-0110',
+        '2002-06-19',
+        NULL,
+        'Pre-loved clothes with personality.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        11,
+        'Samira',
+        'Brooks',
+        'pixelcrate',
+        'pixelcrate@example.com',
+        'DEV_ONLY_HASH_11',
+        TRUE,
+        '555-0111',
+        '1998-09-04',
+        NULL,
+        'I love finding practical gear for creative people. My listings range from spare computer peripherals and drawing tablets to little studio upgrades. 
+         Everything gets tested and cleaned before I post it, and I try to include useful photos of ports, cables, and wear.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        12,
+        'Elias',
+        'Martinez',
+        'greenroomgoods',
+        'greenroomgoods@example.com',
+        'DEV_ONLY_HASH_12',
+        TRUE,
+        '555-0112',
+        '1989-12-30',
+        NULL,
+        'Plants, planters, small shelves, and cozy apartment decor for a greener room.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        13,
+        'Riley',
+        'Thompson',
+        'themidnightmarket',
+        'themidnightmarket@example.com',
+        'DEV_ONLY_HASH_13',
+        TRUE,
+        '555-0113',
+        '1991-03-12',
+        NULL,
+        'Welcome to my rotating collection of unusual finds. One week it might be a film camera or a board game,
+         and the next it might be retro home decor. I focus on items that are still useful, even if they have a story to tell.
+          I note missing pieces and cosmetic flaws in the descriptions, and I am happy to answer questions before a sale.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        14,
+        'Nia',
+        'Carter',
+        'vintagevault22',
+        'vintagevault22@example.com',
+        'DEV_ONLY_HASH_14',
+        TRUE,
+        '555-0114',
+        '1999-07-27',
+        NULL,
+        'Vintage jackets, bags, and accessories with a little history.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        15,
+        'Theo',
+        'Park',
+        'cupboardcollective',
+        'cupboardcollective@example.com',
+        'DEV_ONLY_HASH_15',
+        TRUE,
+        '555-0115',
+        '1996-10-16',
+        NULL,
+        'I collect useful kitchen extras and pass along the pieces I do not need. 
+         Expect bakeware, mugs, cookware, and small appliances, with clear condition notes and measurements.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        16,
+        'Hazel',
+        'Collins',
+        'campusflip',
+        'campusflip@example.com',
+        'DEV_ONLY_HASH_16',
+        TRUE,
+        '555-0116',
+        '2003-01-21',
+        NULL,
+        'Affordable essentials for students.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        17,
+        'Arjun',
+        'Desai',
+        'soundwave_stash',
+        'soundwave_stash@example.com',
+        'DEV_ONLY_HASH_17',
+        TRUE,
+        '555-0117',
+        '1994-04-09',
+        NULL,
+        'Music lover trading headphones, speakers, cables, and beginner recording equipment. 
+         I test audio gear before listing and mention any battery issues, scratches, or missing accessories.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        18,
+        'Zoe',
+        'Foster',
+        'mossandmarble',
+        'mossandmarble@example.com',
+        'DEV_ONLY_HASH_18',
+        TRUE,
+        '555-0118',
+        '1992-08-18',
+        NULL,
+        'I enjoy finding home pieces that look good without costing a fortune. My storefront features lamps, vases, baskets, little side tables, 
+         and other decorating finds. Some pieces are nearly new; others have visible character from years of use. 
+         I list dimensions whenever I can and flag anything fragile or awkward to transport, especially for local meetups.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        19,
+        'Mateo',
+        'Silva',
+        'boardgamebunker',
+        'boardgamebunker@example.com',
+        'DEV_ONLY_HASH_19',
+        TRUE,
+        '555-0119',
+        '1988-05-06',
+        NULL,
+        'Board games, puzzles, and tabletop extras. I count the pieces before I post each game.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        20,
+        'Iris',
+        'Walker',
+        'clovercloset',
+        'clovercloset@example.com',
+        'DEV_ONLY_HASH_20',
+        TRUE,
+        '555-0120',
+        '2000-12-02',
+        NULL,
+        'A mix of everyday fashion, thrifted favorites, and accessories that deserve a second home. 
+        I include sizing details and photos of labels because fit varies so much between brands. I am always adding seasonal pieces as I reorganize my closet.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        21,
+        'Jae',
+        'Robinson',
+        'wirednook',
+        'wirednook@example.com',
+        'DEV_ONLY_HASH_21',
+        TRUE,
+        '555-0121',
+        '1997-01-11',
+        NULL,
+        'Small gadgets. Fair prices. Clear photos.',
+        FALSE,
+        'active'
+    ),
+
+    (
+        22,
+        'Avery',
+        'Walsh',
+        'second_chance_shelf',
+        'second_chance_shelf@example.com',
+        'DEV_ONLY_HASH_22',
+        TRUE,
+        '555-0122',
+        '1990-09-25',
+        NULL,
+        'I sell a little bit of everything that still has plenty of life left, from study guides and desk organizers to collectibles 
+         and household odds and ends. I prefer detailed listings over surprises: if there is a scratch, a worn corner, or a missing box, I will mention it. 
+         Browse around and you might find exactly what your shelf needs.',
+        TRUE,
+        'active'
+    ),
+
+    (
+        23,
+        'Harper',
+        'Sullivan',
+        'thecuriousfox',
+        'harper.sullivan@example.com',
+        'DEV_ONLY_HASH_23',
+        TRUE,
+        '555-0123',
+        '1997-09-14',
+        NULL,
+        'Welcome to my little corner of OmniBuy! I enjoy finding unique vintage pieces, handmade decorations, and interesting collectibles.
+         My shop is a mix of nostalgic treasures and everyday discoveries. I believe every item has a story, and I hope you find something special here!',
+        FALSE,
+        'active'
     );
 
 
@@ -134,7 +420,23 @@ VALUES
     (1, 'TechNest', TRUE, 'DEV_PAYOUT_001'),
     (2, 'HomeCorner', TRUE, 'DEV_PAYOUT_002'),
     (3, 'CampusCloset', FALSE, 'DEV_PAYOUT_003'),
-    (6, 'SuspendedSellerTest', FALSE, 'DEV_PAYOUT_006');
+    (6, 'SuspendedSellerTest', FALSE, 'DEV_PAYOUT_006'),
+    (7, 'Neon Attic', TRUE, 'DEV_PAYOUT_007'),
+    (8, 'DeskCraft Daily', TRUE, 'DEV_PAYOUT_008'),
+    (9, 'Paper Trail Books', FALSE, 'DEV_PAYOUT_009'),
+    (10, 'Loop & Loom', FALSE, 'DEV_PAYOUT_010'),
+    (11, 'Pixel Crate', TRUE, 'DEV_PAYOUT_011'),
+    (12, 'Green Room Goods', FALSE, 'DEV_PAYOUT_012'),
+    (13, 'Midnight Market', TRUE, 'DEV_PAYOUT_013'),
+    (14, 'Vintage Vault', TRUE, 'DEV_PAYOUT_014'),
+    (15, 'Cupboard Collective', FALSE, 'DEV_PAYOUT_015'),
+    (16, 'Campus Flip', FALSE, 'DEV_PAYOUT_016'),
+    (17, 'Soundwave Stash', TRUE, 'DEV_PAYOUT_017'),
+    (18, 'Moss & Marble', FALSE, 'DEV_PAYOUT_018'),
+    (19, 'Board Game Bunker', TRUE, 'DEV_PAYOUT_019'),
+    (20, 'Clover Closet', FALSE, 'DEV_PAYOUT_020'),
+    (21, 'Wired Nook', TRUE, 'DEV_PAYOUT_021'),
+    (22, 'Second Chance Shelf', FALSE, 'DEV_PAYOUT_022');
 
 
 -- =========================================
