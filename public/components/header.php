@@ -181,7 +181,7 @@ function navActive(string $key, string $activeNav): string
       <a class="primary-nav__link<?= navActive(
           'sporting-goods',
           $activeNav,
-      ) ?>" href="/category.php?category=sporting-goods">Sporting Goods</a>
+      ) ?>" href="/category.php?category=sporting-goods">Books</a>
       <a class="primary-nav__link" href="/categories.php">More</a>
 
       <!-- Phones: the header hides the account links, so the menu shows them instead. -->
