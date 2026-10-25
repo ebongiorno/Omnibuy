@@ -2501,8 +2501,6 @@ VALUES
 -- =========================================
 -- LISTING IMAGES
 -- =========================================
--- Replace these placeholder paths/URLs later
--- with actual project images if desired.
 
 INSERT INTO listing_images (
     listing_image_id,
@@ -2536,7 +2534,6 @@ VALUES
     (21, 19, '/assets/images/listing/listing-trading-cards2.jpg', 1),
     (22, 20, '/assets/images/listing/listing-trading-cards3.jpg', 1),
 
-    -- Image placeholders for the 60 new category-page listings.
     (23, 21, '/assets/images/listing/listing-dell.jpg', 1),
     (24, 22, '/assets/images/listing/listing-logitech-mouse.png', 1),
     (25, 23, '/assets/images/listing/listing-asus-laptop.jpg', 1),
@@ -2549,6 +2546,7 @@ VALUES
     (32, 30, '/assets/images/listing/listing-bose-speaker.jpg', 1),
     (33, 31, '/assets/images/listing/listing-hyperx-headset.png', 1),
     (34, 32, '/assets/images/listing/listing-logitech-webcam.png', 1),
+
     (35, 33, '/assets/images/listing/listing-ikea-shelf.png', 1),
     (36, 34, '/assets/images/listing/listing-coffee-table.png', 1),
     (37, 35, '/assets/images/listing/listing-ikea-dresser.png', 1),
@@ -2561,6 +2559,7 @@ VALUES
     (44, 42, '/assets/images/listing/listing-skillet.png', 1),
     (45, 43, '/assets/images/listing/listing-toaster.png', 1),
     (46, 44, '/assets/images/listing/listing-hand-mixer.jpg', 1),
+
     (47, 45, '/assets/images/listing/listing-nike-hoodie.jpg', 1),
     (48, 46, '/assets/images/listing/listing-levi-jeans.jpg', 1),
     (49, 47, '/assets/images/listing/listing-adidas-pants.png', 1),
@@ -2573,6 +2572,7 @@ VALUES
     (56, 54, '/assets/images/listing/listing-aritzia-sweatshirt.jpg', 1),
     (57, 55, '/assets/images/listing/listing-floral-dress.jpg', 1),
     (58, 56, '/assets/images/listing/listing-handbag.jpg', 1),
+
     (59, 57, '/assets/images/listing/listing-hunger-games.jpg', 1),
     (60, 58, '/assets/images/listing/listing-atomic-habits.png', 1),
     (61, 59, '/assets/images/listing/listing-harry-potter.png', 1),
@@ -2585,6 +2585,7 @@ VALUES
     (68, 66, '/assets/images/listing/listing-percy-jackson.jpg', 1),
     (69, 67, '/assets/images/listing/listing-the-silent-patient-book.jpg', 1),
     (70, 68, '/assets/images/listing/listing-clean-code-book.png', 1),
+
     (71, 69, '/assets/images/listing/listing-spiderman-figure.jpg', 1),
     (72, 70, '/assets/images/listing/listing-iron-man-figure.jpg', 1),
     (73, 71, '/assets/images/listing/listing-wolverine-figure.jpg', 1),
