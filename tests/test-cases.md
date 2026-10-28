@@ -1425,6 +1425,9 @@ Not yet recorded.
 
 
 ## UC-19: Filter Listings by Category
+**Automated PHPUnit source:** `tests/Functional/CategoryFilterTest.php`  
+**Execution evidence:** User-confirmed successful targeted PHPUnit tests and complete PHPUnit suite. Automated verification covers 11 test methods; UI-only or deferred scenarios are identified separately below.
+
 ### TC-19-01: Filter by a Child Category
 
 **Use Case:** UC-19
@@ -1457,9 +1460,9 @@ listings assigned to that category.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testSubcategoryDisplaysItsListingsButNotSiblingListings` PHPUnit test verified an active Computers item appeared, an Audio item was absent, and the displayed count matched MySQL. The selection UI was previously confirmed manually.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1498,9 +1501,9 @@ listings from that category and its direct child categories.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testParentCategoryIncludesListingsFromBothSubcategories` PHPUnit test confirmed Electronics includes Computers and Audio listings, and its count matches MySQL.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1537,9 +1540,9 @@ without requiring a search keyword.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testLeafCategoryWithoutSubcategoriesDisplaysItsListings` and main-category count tests submitted category filters without a keyword; results appeared with the expected database counts.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1577,9 +1580,9 @@ an item keyword search.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testMatchingKeywordWithinCategoryFindsTheListing` PHPUnit test located a known active book by its name within the Books category and did not display the no-results message.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1615,7 +1618,9 @@ are handled safely.
 - No unsafe SQL behavior should occur.
 
 **Actual Result:**
-Not yet recorded.
+Not covered by `CategoryFilterTest.php`: the dropdown does not allow arbitrary values. Direct-request invalid-parameter regression testing is deferred.
+
+Execution result not yet recorded.
 
 **Status:** Not Run
 
@@ -1653,14 +1658,252 @@ category restriction.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testRemovingCategoryFilterRestoresBrowseAllResults` PHPUnit test simulated selecting All Categories and confirmed listings across multiple categories and the full active count. It did not automate clicking the JavaScript Clear button.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
 
+### TC-19-07: Include Trading Cards and Action Figures Under Collectibles
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that the Collectibles parent category includes active listings from both Trading Cards and Action Figures.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Parent category: Collectibles
+- Subcategories: Trading Cards and Action Figures
+
+**Test Steps:**
+1. Retrieve the three category IDs from MySQL.
+2. Request Item Search filtered by Collectibles.
+3. Find an active listing name from each subcategory in the rendered results.
+
+**Expected Result:**
+- At least one active trading-card listing is displayed.
+- At least one active action-figure listing is displayed.
+
+**Actual Result:**
+The `testCollectiblesIncludesTradingCardsAndActionFigures` PHPUnit test found an active item from each subcategory in the Collectibles response.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-19-08: Filter a Category Without Subcategories (Books)
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that a leaf category without child categories displays its active listings and excludes unrelated products.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Category: Books
+- Unrelated category: Computers
+
+**Test Steps:**
+1. Retrieve the Books and Computers IDs from MySQL.
+2. Request search results with the Books filter.
+3. Check a known active book is displayed and a known computer is absent.
+4. Compare the result count with the active Books count in MySQL.
+
+**Expected Result:**
+- Active Books listings appear.
+- Unrelated computer listings are excluded.
+- The result count matches the active Books count.
+
+**Actual Result:**
+The `testLeafCategoryWithoutSubcategoriesDisplaysItsListings` PHPUnit test verified listing inclusion/exclusion and matched the MySQL result count.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-19-09: Verify Active Listing Counts Across Main Categories
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that each parent category displays the correct number of active listings from itself and its direct children.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Electronics
+- Home and Furniture
+- Clothing
+- Books
+- Collectibles
+
+**Test Steps:**
+1. Look up each main category ID in MySQL.
+2. For each category, count active listings directly assigned to the category or its direct children.
+3. Request category-filtered results for each main category.
+4. Compare each displayed result count against MySQL.
+
+**Expected Result:**
+- Every displayed count matches the active listing count from MySQL.
+- No inactive listings are included in the count.
+
+**Actual Result:**
+The `testEveryMainCategoryHasTheExpectedNumberOfActiveListings` PHPUnit test compared all five parent-category counts with corresponding MySQL counts.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-19-10: Exclude Inactive Listings From Category Results
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that a category filter never exposes hidden, sold, archived, or draft listings as active results.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- An existing inactive seeded listing
+- The inactive listing’s category
+
+**Test Steps:**
+1. Select an inactive listing and its category from MySQL.
+2. Request search results filtered by that category.
+3. Confirm the inactive listing name is absent.
+4. Compare the displayed count with the active count for the category.
+
+**Expected Result:**
+- The inactive listing is absent from displayed results.
+- The result count includes only active listings.
+
+**Actual Result:**
+The `testInactiveListingIsExcludedFromItsCategory` PHPUnit test found no inactive item name and verified the expected active count.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-19-11: Show No Results for Unmatched Keyword Within a Category
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that a category-filtered keyword search displays an empty state if no listings match.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Category: Books
+- Keyword: ci-no-such-category-item-948372
+
+**Test Steps:**
+1. Request Item Search with the Books category and the nonexistent keyword.
+2. Read the returned empty-state message and result count.
+
+**Expected Result:**
+- The page displays `No listings found`.
+- The result count is zero.
+
+**Actual Result:**
+The `testNonMatchingKeywordWithinCategoryDisplaysNoResults` PHPUnit test confirmed the no-results message and a zero result count.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-19-12: Preserve Selected Category in Dropdown
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that submitting a category filter retains the selected dropdown option in the HTML response.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Selected category: Action Figures
+
+**Test Steps:**
+1. Look up the Action Figures ID in MySQL.
+2. Request category-filtered search results.
+3. Inspect the matching HTML `<option>` tag.
+
+**Expected Result:**
+- The selected Action Figures option has its `selected` attribute.
+
+**Actual Result:**
+The `testSelectedCategoryRemainsSelectedInDropdown` PHPUnit test verified the selected option in the returned HTML.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-19-13: Update Results After Changing Categories
+
+**Use Case:** UC-19
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that switching between two category choices updates the returned items without retaining unrelated items.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- First category: Books
+- Second category: Computers
+
+**Test Steps:**
+1. Request Books-filtered results and record a known active book.
+2. Request Computers-filtered results and record a known active computer.
+3. Verify the book appears only in the Books response and the computer only in the Computers response.
+
+**Expected Result:**
+- Each category response includes its own expected listing.
+- Neither response displays the known listing from the unrelated category.
+
+**Actual Result:**
+The `testChangingCategoryUpdatesTheDisplayedListings` PHPUnit test verified inclusion and exclusion across the two category responses.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-20: Filter Listings by Price Range
+**Automated PHPUnit source:** `tests/Functional/PriceRangeFilterTest.php`  
+**Execution evidence:** User-confirmed successful targeted PHPUnit tests and complete PHPUnit suite. Automated verification covers 16 test methods; UI-only or deferred scenarios are identified separately below.
+
 ### TC-20-01: Filter by Minimum Price Only
 
 **Use Case:** UC-20
@@ -1694,9 +1937,9 @@ priced at or above the selected value.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testMinimumPriceOnlyIncludesListingsAtOrAboveMinimum` PHPUnit test applied minimum 50 and verified the active MySQL count, included a qualifying item, and excluded an item below the minimum.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1734,9 +1977,9 @@ priced at or below the selected value.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testMaximumPriceOnlyIncludesListingsAtOrBelowMaximum` PHPUnit test applied maximum 100 and verified the active MySQL count, included a qualifying item, and excluded an item above the maximum.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1776,9 +2019,9 @@ within the inclusive price range.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testInclusiveMinimumAndMaximumPriceRange` PHPUnit test used 50–100, confirmed matching active listings, excluded a below-minimum item, and matched the inclusive MySQL count.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1813,9 +2056,9 @@ the maximum is rejected safely.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The `testMinimumGreaterThanMaximumDisplaysValidationError` PHPUnit test submitted minimum 100 and maximum 50, then verified `Invalid Price Range` and the expected minimum-greater-than-maximum message.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1852,9 +2095,9 @@ values are rejected safely.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The separate PHPUnit tests for negative minimum/maximum, nonnumeric minimum/maximum, and more than two decimal places all verified the appropriate `Invalid Price Range` heading and field-specific message. These assertions test validation responses rather than instrumenting SQL execution.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -1895,7 +2138,9 @@ filtering and keyword search.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Not covered by `PriceRangeFilterTest.php`: this multi-filter combination remains deferred until combined Marketplace Discovery testing.
+
+Execution result not yet recorded.
 
 **Status:** Not Run
 
@@ -1906,7 +2151,7 @@ Not yet recorded.
 
 **Use Case:** UC-20
 
-**Test Type:** Manual Functional / Automated Functional
+**Test Type:** Manual Functional 
 
 **Objective:**
 Verify that clearing filters removes both minimum and
@@ -1934,206 +2179,406 @@ maximum price restrictions.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Not covered by `PriceRangeFilterTest.php`: the suite verifies blank price fields and retained inputs, but it does not automate clicking the JavaScript Clear button.
 
-**Status:** Not Run
+Execution result not yet recorded.
+
+Manual testing confirmed that clicking the Clear button
+successfully removed the applied minimum and maximum
+price filters.
+
+Both price input fields were reset to blank, and the
+search results updated to display eligible active listings
+without the previously applied price restrictions.
+
+No PHP or database errors occurred.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
 
-## UC-25: View Listing Detail
-### TC-25-01: Open an Active Listing Detail Page
+### TC-20-08: Include Listings at an Equal Minimum and Maximum Price
 
-**Use Case:** UC-25
+**Use Case:** UC-20
 
-**Test Type:** Manual Functional / Automated Functional
+**Test Type:** Automated Functional
 
 **Objective:**
-Verify that a buyer can open the detail page for an
-active marketplace listing.
+Verify an inclusive price range with equal minimum and maximum values matches listings at that exact price.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- An active listing exists.
-- Listing Detail functionality is implemented.
+- The MySQL test database contains the required seeded listings and categories.
 
 **Test Data:**
-- Known active listing ID
+- Minimum = maximum = the price of a real active seeded listing
 
 **Test Steps:**
-1. Open the marketplace browse or search results.
-2. Select a known active listing.
-3. Open its detail page.
-4. Examine the displayed listing information.
+1. Retrieve a known active listing price from MySQL.
+2. Request results with that price for both `min_price` and `max_price`.
+3. Verify the listing name appears and the result count equals the active exact-price count.
 
 **Expected Result:**
-- The detail page should load successfully.
-- The displayed information should correspond to the
-  selected listing.
-- No PHP or database errors should occur.
+- Listings priced exactly at the boundary appear.
+- The result count matches the number of active listings at that price.
 
 **Actual Result:**
-Not yet recorded.
+The `testEqualBoundsIncludeListingsAtThatExactPrice` PHPUnit test verified the selected listing appears and the count matches MySQL.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
+### TC-20-09: Filter Using Two-Decimal Price Values
 
-### TC-25-02: Display Correct Listing Information
+**Use Case:** UC-20
 
-**Use Case:** UC-25
-
-**Test Type:** Manual Functional / Automated Integration
+**Test Type:** Automated Functional
 
 **Objective:**
-Verify that Listing Detail displays the correct stored
-information for the selected listing.
+Verify that valid monetary amounts with two decimals are accepted and filter results correctly.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- A known active listing has complete listing data.
+- The MySQL test database contains the required seeded listings and categories.
 
 **Test Data:**
-- Listing ID
-- Item name
-- Description
-- Price
-- Condition
-- Category
-- Fulfillment information
-- Listing images, if available
+- Minimum price: 19.99
+- Maximum price: 49.99
 
 **Test Steps:**
-1. Retrieve the known listing record from the database.
-2. Open the listing's detail page.
-3. Compare displayed values with the stored listing data.
-4. Examine any associated listing images.
+1. Request results with minimum 19.99 and maximum 49.99.
+2. Count matching active listings directly in MySQL.
+3. Compare the returned count and check for price validation errors.
 
 **Expected Result:**
-- Displayed listing values should match the database.
-- Images should correspond to the selected listing.
-- No unrelated listing information should appear.
-- No PHP or database errors should occur.
+- The displayed count matches the inclusive decimal range in MySQL.
+- `Invalid Price Range` is not displayed.
 
 **Actual Result:**
-Not yet recorded.
+The `testDecimalPriceRangeReturnsCorrectResults` PHPUnit test verified the count and absence of validation errors.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
+### TC-20-10: Reject Negative Minimum Price
 
-### TC-25-03: Handle Invalid Listing Identifier
-
-**Use Case:** UC-25
-
-**Test Type:** Automated Functional / Manual Negative Testing
-
-**Objective:**
-Verify that invalid or nonexistent listing identifiers
-are handled safely.
-
-**Preconditions:**
-- OmniBuy is running in Docker.
-- Listing Detail functionality is implemented.
-
-**Test Data:**
-- Non-numeric listing ID
-- Nonexistent numeric listing ID
-
-**Test Steps:**
-1. Open the Listing Detail route with a non-numeric ID.
-2. Examine the application's response.
-3. Repeat with a numeric ID that does not exist.
-4. Check for PHP or database errors.
-
-**Expected Result:**
-- Invalid listing identifiers should not cause SQL errors.
-- Nonexistent listings should produce an appropriate
-  unavailable or not-found state.
-- No unrelated listing data should be displayed.
-
-**Actual Result:**
-Not yet recorded.
-
-**Status:** Not Run
-
-**Related Jira Defect:** None
-
-
-### TC-25-04: Prevent Inactive Listing From Appearing as Available
-
-**Use Case:** UC-25
+**Use Case:** UC-20
 
 **Test Type:** Automated Functional / Negative Testing
 
 **Objective:**
-Verify that an inactive listing is not presented to buyers
-as an available marketplace item.
+Verify that a negative minimum price is rejected by server-side validation.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- A known hidden, sold, archived, or draft listing exists.
+- The MySQL test database contains the required seeded listings and categories.
 
 **Test Data:**
-- Known inactive listing ID
+- Minimum price: -10
 
 **Test Steps:**
-1. Attempt to open the inactive listing directly.
-2. Examine the returned page or error state.
-3. Verify the listing is not presented as actively available.
-4. Compare the response with the listing's stored status.
+1. Request Item Search with `min_price=-10`.
+2. Inspect the error heading and validation explanation.
 
 **Expected Result:**
-- The inactive listing should not be presented as an
-  available marketplace purchase.
-- The page should handle the unavailable listing safely.
-- No PHP or database errors should occur.
+- The response displays `Invalid Price Range`.
+- The response explains that the minimum must be a valid price with up to two decimal places.
 
 **Actual Result:**
-Not yet recorded.
+The `testNegativeMinimumPriceDisplaysValidationError` PHPUnit test found the expected heading and message.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
+### TC-20-11: Reject Negative Maximum Price
 
-### TC-25-05: Verify Listing Detail Uses the Correct Listing ID
+**Use Case:** UC-20
 
-**Use Case:** UC-25
-
-**Test Type:** Automated Integration
+**Test Type:** Automated Functional / Negative Testing
 
 **Objective:**
-Verify that Listing Detail returns data only for the
-requested listing ID.
+Verify that a negative maximum price is rejected by server-side validation.
 
 **Preconditions:**
-- An isolated test database is available.
-- At least two listings with different data exist.
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
 
 **Test Data:**
-- Listing A with known values
-- Listing B with different known values
+- Maximum price: -25
 
 **Test Steps:**
-1. Open Listing A's detail page.
-2. Record the displayed listing information.
-3. Open Listing B's detail page.
-4. Compare each page against its database record.
-5. Check for data from the other listing.
+1. Request Item Search with `max_price=-25`.
+2. Inspect the error heading and validation explanation.
 
 **Expected Result:**
-- Listing A should display only Listing A data.
-- Listing B should display only Listing B data.
-- Listing data should not be mixed between IDs.
-- No PHP or database errors should occur.
+- The response displays `Invalid Price Range`.
+- The response explains that the maximum must be a valid price with up to two decimal places.
 
 **Actual Result:**
-Not yet recorded.
+The `testNegativeMaximumPriceDisplaysValidationError` PHPUnit test found the expected heading and message.
 
-**Status:** Not Run
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-12: Reject Nonnumeric Minimum Price
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that server-side validation rejects a nonnumeric minimum value submitted in a request.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Minimum price: abc
+
+**Test Steps:**
+1. Request Item Search with `min_price=abc`.
+2. Inspect the error heading and validation explanation.
+
+**Expected Result:**
+- The response displays `Invalid Price Range`.
+- The response explains that the minimum must be a valid price with up to two decimal places.
+
+**Actual Result:**
+The `testNonnumericMinimumPriceDisplaysValidationError` PHPUnit test found the expected heading and message.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-13: Reject Nonnumeric Maximum Price
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that server-side validation rejects a nonnumeric maximum value submitted in a request.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Maximum price: xyz
+
+**Test Steps:**
+1. Request Item Search with `max_price=xyz`.
+2. Inspect the error heading and validation explanation.
+
+**Expected Result:**
+- The response displays `Invalid Price Range`.
+- The response explains that the maximum must be a valid price with up to two decimal places.
+
+**Actual Result:**
+The `testNonnumericMaximumPriceDisplaysValidationError` PHPUnit test found the expected heading and message.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-14: Reject Prices With More Than Two Decimal Places
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional / Boundary / Negative Testing
+
+**Objective:**
+Verify that price inputs exceeding two decimal places are rejected.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Minimum price: 15.999
+
+**Test Steps:**
+1. Request Item Search with `min_price=15.999`.
+2. Inspect the validation response.
+
+**Expected Result:**
+- The response displays `Invalid Price Range`.
+- The response explains that the minimum price supports up to two decimal places.
+
+**Actual Result:**
+The `testMoreThanTwoDecimalPlacesDisplaysValidationError` PHPUnit test found the expected heading and message.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-15: Allow Zero as a Minimum Price
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that a minimum price of zero is accepted and includes all eligible active listings.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Minimum price: 0
+- Maximum price: Blank
+
+**Test Steps:**
+1. Request Item Search with `min_price=0`.
+2. Compare the result count against MySQL active listings with price at least zero.
+3. Check for validation errors.
+
+**Expected Result:**
+- The request succeeds without a price validation error.
+- The result count matches all eligible active listings.
+
+**Actual Result:**
+The `testZeroMinimumIncludesAllActiveListings` PHPUnit test verified the active count and absence of validation errors.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-16: Show No Results for a Price Above All Listings
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that an excessively high valid minimum price produces the normal empty state.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Minimum price: 999999999
+
+**Test Steps:**
+1. Request Item Search with the high minimum.
+2. Inspect the message and result count.
+
+**Expected Result:**
+- The response displays `No listings found`.
+- The result count is zero.
+
+**Actual Result:**
+The `testVeryHighMinimumDisplaysNoResults` PHPUnit test verified the empty state and zero result count.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-17: Do Not Filter Browse All When Price Inputs Are Blank
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that leaving both price inputs blank preserves the full Browse All listing set.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Browse mode: all
+- Minimum price: Blank
+- Maximum price: Blank
+
+**Test Steps:**
+1. Request Browse All with empty `min_price` and `max_price`.
+2. Compare the response count with the total active listing count in MySQL.
+3. Check for price validation errors.
+
+**Expected Result:**
+- All active listings remain eligible.
+- The displayed count matches the full active listing count.
+- No price validation error appears.
+
+**Actual Result:**
+The `testBlankPriceFieldsDoNotRestrictBrowseAll` PHPUnit test verified the active count and absence of validation errors.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-18: Exclude Inactive Listings Even When Their Price Matches
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that a price filter does not make an inactive listing visible.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- An inactive seeded listing and its stored price
+- Minimum = maximum = the inactive listing price
+
+**Test Steps:**
+1. Retrieve an inactive listing’s name and price from MySQL.
+2. Request Item Search filtered to its exact price.
+3. Verify the inactive listing name is absent and the displayed count matches active items at that price.
+
+**Expected Result:**
+- The inactive listing remains excluded.
+- Only active listings contribute to the displayed count.
+
+**Actual Result:**
+The `testInactiveListingIsExcludedEvenIfItsPriceMatches` PHPUnit test confirmed name exclusion and matched the active-price count.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-20-19: Preserve Submitted Minimum and Maximum Values
+
+**Use Case:** UC-20
+
+**Test Type:** Automated Functional
+
+**Objective:**
+Verify that submitted price inputs remain populated after the results page reloads.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- The MySQL test database contains the required seeded listings and categories.
+
+**Test Data:**
+- Minimum price: 25.50
+- Maximum price: 125.75
+
+**Test Steps:**
+1. Request Item Search with both price values.
+2. Inspect the returned minimum and maximum HTML input elements.
+
+**Expected Result:**
+- The minimum input retains `25.50`.
+- The maximum input retains `125.75`.
+
+**Actual Result:**
+The `testSubmittedPriceValuesRemainInFilterInputs` PHPUnit test verified both input values in the returned HTML.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3399,5 +3844,202 @@ Manual testing confirmed that the search page
 handled the invalid sorting value successfully.
 
 **Status:** Pass
+
+**Related Jira Defect:** None
+
+
+## UC-25: View Listing Detail
+### TC-25-01: Open an Active Listing Detail Page
+
+**Use Case:** UC-25
+
+**Test Type:** Manual Functional / Automated Functional
+
+**Objective:**
+Verify that a buyer can open the detail page for an
+active marketplace listing.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- An active listing exists.
+- Listing Detail functionality is implemented.
+
+**Test Data:**
+- Known active listing ID
+
+**Test Steps:**
+1. Open the marketplace browse or search results.
+2. Select a known active listing.
+3. Open its detail page.
+4. Examine the displayed listing information.
+
+**Expected Result:**
+- The detail page should load successfully.
+- The displayed information should correspond to the
+  selected listing.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+Not yet recorded.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-02: Display Correct Listing Information
+
+**Use Case:** UC-25
+
+**Test Type:** Manual Functional / Automated Integration
+
+**Objective:**
+Verify that Listing Detail displays the correct stored
+information for the selected listing.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A known active listing has complete listing data.
+
+**Test Data:**
+- Listing ID
+- Item name
+- Description
+- Price
+- Condition
+- Category
+- Fulfillment information
+- Listing images, if available
+
+**Test Steps:**
+1. Retrieve the known listing record from the database.
+2. Open the listing's detail page.
+3. Compare displayed values with the stored listing data.
+4. Examine any associated listing images.
+
+**Expected Result:**
+- Displayed listing values should match the database.
+- Images should correspond to the selected listing.
+- No unrelated listing information should appear.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+Not yet recorded.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-03: Handle Invalid Listing Identifier
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Functional / Manual Negative Testing
+
+**Objective:**
+Verify that invalid or nonexistent listing identifiers
+are handled safely.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing Detail functionality is implemented.
+
+**Test Data:**
+- Non-numeric listing ID
+- Nonexistent numeric listing ID
+
+**Test Steps:**
+1. Open the Listing Detail route with a non-numeric ID.
+2. Examine the application's response.
+3. Repeat with a numeric ID that does not exist.
+4. Check for PHP or database errors.
+
+**Expected Result:**
+- Invalid listing identifiers should not cause SQL errors.
+- Nonexistent listings should produce an appropriate
+  unavailable or not-found state.
+- No unrelated listing data should be displayed.
+
+**Actual Result:**
+Not yet recorded.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-04: Prevent Inactive Listing From Appearing as Available
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that an inactive listing is not presented to buyers
+as an available marketplace item.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A known hidden, sold, archived, or draft listing exists.
+
+**Test Data:**
+- Known inactive listing ID
+
+**Test Steps:**
+1. Attempt to open the inactive listing directly.
+2. Examine the returned page or error state.
+3. Verify the listing is not presented as actively available.
+4. Compare the response with the listing's stored status.
+
+**Expected Result:**
+- The inactive listing should not be presented as an
+  available marketplace purchase.
+- The page should handle the unavailable listing safely.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+Not yet recorded.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-05: Verify Listing Detail Uses the Correct Listing ID
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration
+
+**Objective:**
+Verify that Listing Detail returns data only for the
+requested listing ID.
+
+**Preconditions:**
+- An isolated test database is available.
+- At least two listings with different data exist.
+
+**Test Data:**
+- Listing A with known values
+- Listing B with different known values
+
+**Test Steps:**
+1. Open Listing A's detail page.
+2. Record the displayed listing information.
+3. Open Listing B's detail page.
+4. Compare each page against its database record.
+5. Check for data from the other listing.
+
+**Expected Result:**
+- Listing A should display only Listing A data.
+- Listing B should display only Listing B data.
+- Listing data should not be mixed between IDs.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+Not yet recorded.
+
+**Status:** Not Run
 
 **Related Jira Defect:** None
