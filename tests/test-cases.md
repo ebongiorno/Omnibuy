@@ -2179,10 +2179,6 @@ maximum price restrictions.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not covered by `PriceRangeFilterTest.php`: the suite verifies blank price fields and retained inputs, but it does not automate clicking the JavaScript Clear button.
-
-Execution result not yet recorded.
-
 Manual testing confirmed that clicking the Clear button
 successfully removed the applied minimum and maximum
 price filters.
