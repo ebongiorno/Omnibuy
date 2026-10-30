@@ -2874,6 +2874,109 @@ final class SearchPageTest extends TestCase
         }
     }
 
+    // =========================================
+    // TC-23-04: HANDLE MISSING BUYER ZIP CODE
+    // =========================================
+
+    public function testMeetupRadiusRejectsMissingZipCode(): void
+    {
+        // First confirm that active meetup listings exist
+        // when no radius filter is applied.
+        [$baselineStatus, $baselineBody] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'meetup'
+            ]
+        );
+
+        $this->assertSame(200, $baselineStatus);
+
+        // Ensure the baseline returns actual listings.
+        $this->assertMatchesRegularExpression(
+            '/class="search-results__count"[^>]*>' .
+            '\s*[1-9]\d*\s+results?\b/s',
+            $baselineBody,
+            'Test data needs active meetup listings.'
+        );
+
+        // Apply a 10-mile radius with no ZIP code.
+        [$status, $body] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'meetup',
+                'zip' => '',
+                'radius' => '10'
+            ]
+        );
+
+        // Verify the page responds successfully.
+        $this->assertSame(200, $status);
+
+        // Verify the validation error is displayed.
+        $this->assertStringContainsString(
+            'Invalid Meetup Location',
+            $body
+        );
+
+        $this->assertStringContainsString(
+            'Enter a valid 5-digit ZIP code to filter or sort by distance.',
+            $body
+        );
+
+        // Verify the error is displayed as an alert.
+        $this->assertMatchesRegularExpression(
+            '/class="search-message search-message--error"' .
+            '\s+role="alert"/s',
+            $body
+        );
+
+        // Verify no unfiltered listing results appear.
+        $this->assertStringNotContainsString(
+            '<article class="listing-card">',
+            $body,
+            'Listings should not appear when the ZIP code is missing.'
+        );
+
+        // Verify the result count remains zero.
+        $this->assertMatchesRegularExpression(
+            '/class="search-results__count"[^>]*>' .
+            '\s*0 results\b/s',
+            $body
+        );
+
+        // Verify the ZIP code remains blank.
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*name="zip")' .
+            '(?=[^>]*value="")[^>]*>/s',
+            $body
+        );
+
+        // Verify the 10-mile radius remains selected.
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="10")' .
+            '(?=[^>]*selected)[^>]*>/s',
+            $body
+        );
+
+        // Verify no PHP or database errors appear.
+        $this->assertStringNotContainsString(
+            'Fatal error',
+            $body
+        );
+
+        $this->assertStringNotContainsString(
+            'Unable to retrieve search results',
+            $body
+        );
+
+        $this->assertStringNotContainsString(
+            'SQLSTATE[',
+            $body
+        );
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH

@@ -3163,9 +3163,9 @@ are included and listings just beyond it are excluded.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that the meetup radius filter correctly handled listings at and around the 10-mile boundary of ZIP code 92831. Three temporary meetup listings were created at approximately 9.99, 10.00, and 10.01 miles from the selected location. The distances were calculated independently using PHP before being tested against the search page. The listing within the radius and the listing at the closest representable boundary coordinate were included in the results, while the listing beyond 10 miles was excluded. The page loaded successfully without PHP or database errors, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3204,7 +3204,9 @@ produces an appropriate validation error.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Automated testing using PHPUnit confirmed that the meetup radius filter correctly handled listings at and around the 10-mile boundary of ZIP code 92831. Three temporary meetup listings were created at approximately 9.99, 10.00, and 10.01 miles from the selected location. The distances were calculated independently using PHP before being tested against the search page. The listing within the radius and the listing at the closest representable boundary coordinate were included in the results, while the listing beyond 10 miles was excluded. The page loaded successfully without PHP or database errors, and all temporary test listings were removed after testing.
+Automated testing using PHPUnit confirmed that selecting a 10-mile meetup radius without entering a buyer ZIP code produced the expected validation error. The test first verified that active meetup listings were available without a radius filter. When the radius was applied with a blank ZIP code, the application displayed the "Invalid Meetup Location" message requesting a valid five-digit ZIP code. No listing cards were returned, and the result count remained zero, confirming that the application did not display unfiltered results. The ZIP field remained blank, the 10-mile radius selection was preserved, and no PHP or database errors occurred.
+
+Manual testing was performed through the local OmniBuy website by selecting Meetup, leaving the ZIP-code field blank, and applying a 10-mile radius. The search results displayed the expected validation message instead of returning unfiltered listings. No listings were displayed, and the page remained functional without PHP or database errors.
 
 **Status:** Pass
 
