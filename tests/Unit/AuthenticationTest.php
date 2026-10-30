@@ -1,8 +1,12 @@
 <?php
-use OmniBuy\Tests\Security\SecurityTestCase;
 
 declare(strict_types=1);
-namespace OmniBuy\Tests\Security;
+
+namespace OmniBuy\Tests\Unit;
+
+use OmniBuy\Tests\Security\SecurityTestCase;
+declare(strict_types=1);
+
 
 final class AuthenticationTest extends SecurityTestCase
 {
