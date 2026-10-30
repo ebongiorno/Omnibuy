@@ -15,9 +15,9 @@ require_once __DIR__ . '/../Support/TestHelpers.php';
 /**
  * UC-25: Listing Details (Phases 1-4).
  *
- * Uses the same HTTP helper and seeded MySQL database as the existing
- * Marketplace Discovery functional tests. Tests are read-only: no seed data
- * or order/review records are inserted or modified.
+ * Uses the HTTP helper and a disposable Docker test database. Five tests
+ * temporarily create committed fixtures (visible to HTTP) and delete them
+ * in finally blocks; never run this suite against shared/production data.
  *
  * Browser JavaScript behavior (gallery clicks and quantity increments) must
  * still be checked manually or with a browser test; these tests inspect the
@@ -160,19 +160,18 @@ final class ListingDetailTest extends DatabaseTestCase
 
     public function testListingFromInactiveSellerIsUnavailable(): void
     {
-        $listing = $this->fetchOne("
-            SELECT l.listing_id
-            FROM listings AS l
-            INNER JOIN users AS u ON u.user_id = l.seller_user_id
-            WHERE l.listing_status = 'active' AND u.account_status <> 'active'
-            ORDER BY l.listing_id ASC LIMIT 1
-        ");
-        if ($listing === false) {
-            self::markTestSkipped('No active listing belonging to an inactive seller is seeded.');
-        }
-
-        $html = $this->requestListing((int) $listing['listing_id']);
-        self::assertStringContainsString('This listing is not available.', $html);
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $seller = $this->findInactiveSeller($db);
+            if ($seller === null) {
+                $userId = $this->insertFixtureUser($db, $created, 'suspended');
+                $this->insertFixtureSeller($db, $created, $userId);
+                $seller = $userId;
+            }
+            $listingId = $this->insertFixtureListing($db, $created, $seller);
+            $html = $this->requestListing($listingId);
+            self::assertStringContainsString('This listing is not available.', $html);
+            self::assertStringNotContainsString('id="listing-detail-title"', $html);
+        });
     }
 
     public function testShippingInformationMatchesDatabase(): void
@@ -234,7 +233,7 @@ final class ListingDetailTest extends DatabaseTestCase
         self::assertSame((string) $listing['store_name'], trim($sellerLinks->item(0)->textContent));
         self::assertSame(
             '/pages/profile.php?id=' . (int) $listing['seller_user_id'],
-            $sellerLinks->item(0)->getAttribute('href')
+            $this->elementAt($sellerLinks)->getAttribute('href')
         );
         self::assertStringContainsString(
             '@' . (string) $listing['seller_username'],
@@ -289,11 +288,11 @@ final class ListingDetailTest extends DatabaseTestCase
         self::assertCount(1, $mainImage);
         foreach ($imageUrls as $index => $url) {
             $expectedUrl = $this->publicImageUrl((string) $url);
-            self::assertSame($expectedUrl, $thumbnails->item($index)->getAttribute('href'));
+            self::assertSame($expectedUrl, $this->elementAt($thumbnails, $index)->getAttribute('href'));
         }
         self::assertSame(
             $this->publicImageUrl((string) $imageUrls[0]),
-            $mainImage->item(0)->getAttribute('src')
+            $this->elementAt($mainImage)->getAttribute('src')
         );
         self::assertCount(1, $xpath->query('//*[@data-gallery-prev]'));
         self::assertCount(1, $xpath->query('//*[@data-gallery-next]'));
@@ -315,29 +314,18 @@ final class ListingDetailTest extends DatabaseTestCase
 
     public function testListingWithoutImagesUsesFallback(): void
     {
-        $listing = $this->fetchOne("
-            SELECT l.listing_id
-            FROM listings AS l
-            INNER JOIN users AS u ON u.user_id = l.seller_user_id
-            WHERE l.listing_status = 'active' AND u.account_status = 'active'
-              AND NOT EXISTS (
-                  SELECT 1 FROM listing_images AS li WHERE li.listing_id = l.listing_id
-              )
-            ORDER BY l.listing_id ASC LIMIT 1
-        ");
-        if ($listing === false) {
-            self::markTestSkipped('All active seeded listings have images; no fallback fixture exists.');
-        }
-
-        $xpath = $this->xpath($this->requestListing((int) $listing['listing_id']));
-        self::assertSame(
-            '/assets/images/listing/listing-default-img.jpg',
-            $xpath->evaluate('string(//*[@data-gallery-main]/@src)')
-        );
-        self::assertStringContainsString(
-            'No photos have been uploaded for this listing.',
-            $this->requestListing((int) $listing['listing_id'])
-        );
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $sellerId = $this->findActiveSeller($db);
+            $listingId = $this->insertFixtureListing($db, $created, $sellerId);
+            $html = $this->requestListing($listingId);
+            $xpath = $this->xpath($html);
+            self::assertSame(
+                '/assets/images/listing/listing-default-img.jpg',
+                $xpath->evaluate('string(//*[@data-gallery-main]/@src)')
+            );
+            self::assertStringContainsString('No photos have been uploaded for this listing.', $html);
+            self::assertCount(0, $xpath->query('//*[@data-gallery-thumbnail]'));
+        });
     }
 
     public function testFixedPriceQuantityAndDisabledActionButtons(): void
@@ -349,37 +337,30 @@ final class ListingDetailTest extends DatabaseTestCase
         self::assertCount(1, $selectors);
         self::assertSame(
             (string) $listing['quantity'],
-            $selectors->item(0)->getAttribute('data-max-quantity')
+            $this->elementAt($selectors)->getAttribute('data-max-quantity')
         );
         $inputs = $xpath->query('//*[@data-quantity-value]');
         self::assertCount(1, $inputs);
-        self::assertSame('1', $inputs->item(0)->getAttribute('min'));
-        self::assertSame((string) $listing['quantity'], $inputs->item(0)->getAttribute('max'));
-        self::assertSame('1', $inputs->item(0)->getAttribute('value'));
+        self::assertSame('1', $this->elementAt($inputs)->getAttribute('min'));
+        self::assertSame((string) $listing['quantity'], $this->elementAt($inputs)->getAttribute('max'));
+        self::assertSame('1', $this->elementAt($inputs)->getAttribute('value'));
 
         $this->assertButtonsArePlaceholders($xpath);
     }
 
     public function testAuctionListingDoesNotShowDirectPurchaseQuantitySelector(): void
     {
-        $listing = $this->fetchOne("
-            SELECT l.listing_id FROM listings AS l
-            INNER JOIN users AS u ON u.user_id = l.seller_user_id
-            WHERE l.listing_status = 'active' AND u.account_status = 'active'
-              AND l.sale_type = 'auction'
-            ORDER BY l.listing_id ASC LIMIT 1
-        ");
-        if ($listing === false) {
-            self::markTestSkipped('No active auction listing exists in seed data.');
-        }
-
-        $xpath = $this->xpath($this->requestListing((int) $listing['listing_id']));
-        self::assertCount(0, $xpath->query('//*[@data-quantity-selector]'));
-        self::assertStringContainsString(
-            'Auction listings are not available for direct cart purchase.',
-            (string) $xpath->evaluate('string(//*[@id="listing-purchase-heading"]/..)')
-        );
-        $this->assertButtonsArePlaceholders($xpath);
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $sellerId = $this->findActiveSeller($db);
+            $listingId = $this->insertFixtureListing($db, $created, $sellerId, 'auction');
+            $xpath = $this->xpath($this->requestListing($listingId));
+            self::assertCount(0, $xpath->query('//*[@data-quantity-selector]'));
+            self::assertStringContainsString(
+                'Auction listings are not available for direct cart purchase.',
+                (string) $xpath->evaluate('string(//*[@id="listing-purchase-heading"]/..)')
+            );
+            $this->assertButtonsArePlaceholders($xpath);
+        });
     }
 
     public function testListingWithoutReviewsDisplaysEmptyState(): void
@@ -407,101 +388,195 @@ final class ListingDetailTest extends DatabaseTestCase
 
     public function testListingReviewsMatchOnlyTheSelectedListingWhenDataExists(): void
     {
-        $listing = $this->fetchOne("
-            SELECT l.listing_id FROM listings AS l
-            INNER JOIN users AS u ON u.user_id = l.seller_user_id
-            WHERE l.listing_status = 'active' AND u.account_status = 'active'
-              AND EXISTS (
-                  SELECT 1 FROM listing_reviews AS lr
-                  INNER JOIN order_items AS oi ON oi.order_item_id = lr.order_item_id
-                  WHERE oi.listing_id = l.listing_id
-              )
-            ORDER BY l.listing_id ASC LIMIT 1
-        ");
-        if ($listing === false) {
-            self::markTestSkipped('No listing_reviews rows exist for an active listing.');
-        }
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $sellerId = $this->findActiveSeller($db);
+            $buyerId = $this->findActiveBuyer($db, $sellerId);
+            $listingA = $this->insertFixtureListing($db, $created, $sellerId);
+            $listingB = $this->insertFixtureListing($db, $created, $sellerId);
+            $this->insertFixtureReview($db, $created, $listingA, $buyerId, 2, 'UC25 own review');
+            $this->insertFixtureReview($db, $created, $listingB, $buyerId, 5, 'UC25 other listing review');
 
-        $stmt = $this->pdo->prepare("
-            SELECT lr.star_rating, lr.title, lr.description, u.username,
-                   u.account_status
-            FROM listing_reviews AS lr
-            INNER JOIN order_items AS oi ON oi.order_item_id = lr.order_item_id
-            INNER JOIN users AS u ON u.user_id = lr.reviewer_user_id
-            WHERE oi.listing_id = :listing_id
-            ORDER BY lr.created_at DESC, lr.listing_review_id DESC
-            LIMIT 10
-        ");
-        $stmt->execute(['listing_id' => $listing['listing_id']]);
-        $expectedReviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $totalStmt = $this->pdo->prepare("
-            SELECT COUNT(*) AS n, ROUND(AVG(lr.star_rating), 1) AS avg_rating
-            FROM listing_reviews AS lr
-            INNER JOIN order_items AS oi ON oi.order_item_id = lr.order_item_id
-            WHERE oi.listing_id = :listing_id
-        ");
-        $totalStmt->execute(['listing_id' => $listing['listing_id']]);
-        $total = $totalStmt->fetch(PDO::FETCH_ASSOC);
-
-        $xpath = $this->xpath($this->requestListing((int) $listing['listing_id']));
-        $reviewItems = $xpath->query('//li[contains(concat(" ", normalize-space(@class), " "), " listing-detail__review-item ")]');
-        self::assertCount(count($expectedReviews), $reviewItems);
-        self::assertStringContainsString(
-            number_format((float) $total['avg_rating'], 1) . ' / 5',
-            (string) $xpath->evaluate('string(//*[@aria-label="Listing review summary"])')
-        );
-        self::assertStringContainsString(
-            (string) $total['n'] . ' review',
-            (string) $xpath->evaluate('string(//*[@aria-label="Listing review summary"])')
-        );
-
-        foreach ($expectedReviews as $index => $review) {
-            $text = $reviewItems->item($index)->textContent;
-            $publicName = $review['account_status'] === 'active'
-                ? (string) $review['username'] : 'OmniBuy member';
-            self::assertStringContainsString($publicName, $text);
-            self::assertStringContainsString((int) $review['star_rating'] . ' / 5', $text);
-            if (trim((string) ($review['title'] ?? '')) !== '') {
-                self::assertStringContainsString((string) $review['title'], $text);
-            }
-            if (trim((string) ($review['description'] ?? '')) !== '') {
-                self::assertStringContainsString((string) $review['description'], $text);
-            }
-        }
+            $html = $this->requestListing($listingA);
+            $xpath = $this->xpath($html);
+            self::assertCount(1, $xpath->query('//li[contains(concat(" ", normalize-space(@class), " "), " listing-detail__review-item ")]'));
+            self::assertStringContainsString('UC25 own review', $html);
+            self::assertStringNotContainsString('UC25 other listing review', $html);
+            $summary = (string) $xpath->evaluate('string(//*[@aria-label="Listing review summary"])');
+            self::assertStringContainsString('2.0 / 5', $summary);
+            self::assertStringContainsString('1 review', $summary);
+        });
     }
 
     public function testSellerAccountRatingIsIndependentOfListingReviewsWhenDataExists(): void
     {
-        $listing = $this->fetchOne("
-            SELECT l.listing_id, l.seller_user_id
-            FROM listings AS l
-            INNER JOIN users AS u ON u.user_id = l.seller_user_id
-            WHERE l.listing_status = 'active' AND u.account_status = 'active'
-              AND EXISTS (
-                  SELECT 1 FROM user_reviews AS ur
-                  WHERE ur.reviewed_user_id = l.seller_user_id
-              )
-            ORDER BY l.listing_id ASC LIMIT 1
-        ");
-        if ($listing === false) {
-            self::markTestSkipped('No seller user_reviews are available in seed data.');
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $sellerId = $this->findActiveSeller($db);
+            $buyerId = $this->findActiveBuyer($db, $sellerId);
+            $listingId = $this->insertFixtureListing($db, $created, $sellerId);
+            $orderItemId = $this->insertFixtureReview($db, $created, $listingId, $buyerId, 2, 'UC25 listing rating');
+            $this->insertTracked($db, $created, 'user_reviews', [
+                'reviewer_user_id' => $buyerId,
+                'reviewed_user_id' => $sellerId,
+                'order_item_id' => $orderItemId,
+                'star_rating' => 5,
+                'title' => 'UC25 seller account rating',
+            ]);
+
+            $stmt = $db->prepare('SELECT COUNT(*) AS n, ROUND(AVG(star_rating), 1) AS avg_rating FROM user_reviews WHERE reviewed_user_id = ?');
+            $stmt->execute([$sellerId]);
+            $expected = $stmt->fetch(PDO::FETCH_ASSOC);
+            $xpath = $this->xpath($this->requestListing($listingId));
+            $sellerSummary = (string) $xpath->evaluate('string(//*[@aria-label="Seller account rating"])');
+            $listingSummary = (string) $xpath->evaluate('string(//*[@aria-label="Listing review summary"])');
+            self::assertStringContainsString(number_format((float)$expected['avg_rating'], 1) . ' / 5', $sellerSummary);
+            self::assertStringContainsString('from ' . (int)$expected['n'] . ' user review(s)', $sellerSummary);
+            self::assertStringContainsString('2.0 / 5', $listingSummary);
+            self::assertStringContainsString('1 review', $listingSummary);
+        });
+    }
+
+
+    /**
+     * HTTP requests use a DIFFERENT MySQL connection from PHPUnit. Test fixtures
+     * must therefore be committed before httpGet() can see them. Do not run this
+     * class against a shared or production database; use your disposable Docker
+     * test database. All inserted rows are deleted in reverse FK order in finally.
+     *
+     * @param callable(PDO, array):void $callback
+     */
+    private function withListingFixture(callable $callback): void
+    {
+        $db = new PDO(sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int) (getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        ), (string) getenv('DB_USER'), (string) getenv('DB_PASSWORD'), [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]);
+        $created = [];
+        try {
+            $callback($db, $created);
+        } finally {
+            foreach (array_reverse($created) as [$table, $idColumn, $id]) {
+                // Table/column identifiers are fixed in insertTracked(), never from users.
+                $statement = $db->prepare("DELETE FROM {$table} WHERE {$idColumn} = ?");
+                $statement->execute([$id]);
+            }
         }
+    }
 
-        $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) AS n, ROUND(AVG(star_rating), 1) AS avg_rating
-            FROM user_reviews WHERE reviewed_user_id = :seller_id
-        ");
-        $stmt->execute(['seller_id' => $listing['seller_user_id']]);
-        $rating = $stmt->fetch(PDO::FETCH_ASSOC);
-        $xpath = $this->xpath($this->requestListing((int) $listing['listing_id']));
-        $sellerRatingText = (string) $xpath->evaluate('string(//*[@aria-label="Seller account rating"])');
+    /** @return int */
+    private function insertTracked(PDO $db, array &$created, string $table, array $values): int
+    {
+        $keys = [
+            'users' => 'user_id', 'seller_profiles' => 'user_id',
+            'listings' => 'listing_id', 'addresses' => 'address_id',
+            'orders' => 'order_id', 'order_items' => 'order_item_id',
+            'listing_reviews' => 'listing_review_id', 'user_reviews' => 'user_review_id',
+        ];
+        if (!isset($keys[$table])) {
+            throw new \LogicException('Disallowed test fixture table.');
+        }
+        foreach (array_keys($values) as $column) {
+            if (!preg_match('/^[a-z][a-z0-9_]*$/D', $column)) {
+                throw new \LogicException('Invalid test fixture column.');
+            }
+        }
+        $cols = implode(', ', array_map(
+            static fn(string $column): string => "`{$column}`",
+            array_keys($values)
+        ));
+        $marks = implode(', ', array_fill(0, count($values), '?'));
+        $statement = $db->prepare("INSERT INTO {$table} ({$cols}) VALUES ({$marks})");
+        $statement->execute(array_values($values));
+        $id = $table === 'seller_profiles' ? (int) $values['user_id'] : (int) $db->lastInsertId();
+        $created[] = [$table, $keys[$table], $id];
+        return $id;
+    }
 
-        self::assertStringContainsString(
-            number_format((float) $rating['avg_rating'], 1) . ' / 5',
-            $sellerRatingText
-        );
-        self::assertStringContainsString('from ' . (int) $rating['n'] . ' user review(s)', $sellerRatingText);
+    private function findActiveSeller(PDO $db): int
+    {
+        $id = $db->query("SELECT sp.user_id FROM seller_profiles sp JOIN users u ON u.user_id=sp.user_id WHERE u.account_status='active' ORDER BY sp.user_id LIMIT 1")->fetchColumn();
+        self::assertNotFalse($id, 'A seeded active seller is required.');
+        return (int) $id;
+    }
+
+    private function findInactiveSeller(PDO $db): ?int
+    {
+        $id = $db->query("SELECT sp.user_id FROM seller_profiles sp JOIN users u ON u.user_id=sp.user_id WHERE u.account_status <> 'active' ORDER BY sp.user_id LIMIT 1")->fetchColumn();
+        return $id === false ? null : (int) $id;
+    }
+
+    private function findActiveBuyer(PDO $db, int $sellerId): int
+    {
+        $statement = $db->prepare("SELECT user_id FROM users WHERE account_status='active' AND user_id <> ? ORDER BY user_id LIMIT 1");
+        $statement->execute([$sellerId]);
+        $id = $statement->fetchColumn();
+        self::assertNotFalse($id, 'A second seeded active user is required.');
+        return (int) $id;
+    }
+
+    private function insertFixtureUser(PDO $db, array &$created, string $status): int
+    {
+        $suffix = bin2hex(random_bytes(6));
+        return $this->insertTracked($db, $created, 'users', [
+            'first_name' => 'UC25', 'last_name' => 'Test',
+            'username' => 'uc25_' . $suffix, 'email' => 'uc25_' . $suffix . '@example.test',
+            'password_hash' => password_hash('fixture-not-a-real-login', PASSWORD_DEFAULT),
+            'phone_number' => '5550000000', 'birth_date' => '2000-01-01',
+            'account_status' => $status,
+        ]);
+    }
+
+    private function insertFixtureSeller(PDO $db, array &$created, int $userId): void
+    {
+        $this->insertTracked($db, $created, 'seller_profiles', [
+            'user_id' => $userId, 'store_name' => 'UC25 test store ' . $userId,
+            'payout_account_reference' => 'uc25-fixture-' . $userId,
+        ]);
+    }
+
+    private function insertFixtureListing(PDO $db, array &$created, int $sellerId, string $saleType = 'fixed_price'): int
+    {
+        $categoryId = (int) $db->query('SELECT category_id FROM categories ORDER BY category_id LIMIT 1')->fetchColumn();
+        self::assertGreaterThan(0, $categoryId, 'A seeded category is required.');
+        return $this->insertTracked($db, $created, 'listings', [
+            'seller_user_id' => $sellerId, 'category_id' => $categoryId,
+            'item_name' => 'UC25 Fixture ' . bin2hex(random_bytes(5)),
+            'item_description' => 'Temporary PHPUnit fixture',
+            'sale_type' => $saleType, 'fulfillment_type' => 'shipping',
+            'shipping_cost' => '0.00', 'estimated_shipping_days' => 3,
+            'price' => '10.00', 'condition' => 'good',
+            'quantity' => 2, 'listing_status' => 'active',
+        ]);
+    }
+
+    private function insertFixtureReview(PDO $db, array &$created, int $listingId, int $buyerId, int $stars, string $title): int
+    {
+        $addressId = $this->insertTracked($db, $created, 'addresses', [
+            'user_id' => $buyerId, 'address_line_1' => '1 Test Way',
+            'city' => 'Fullerton', 'state_name' => 'CA',
+            'zip_code' => '92831', 'country' => 'USA', 'address_type' => 'billing',
+        ]);
+        $orderId = $this->insertTracked($db, $created, 'orders', [
+            'buyer_user_id' => $buyerId, 'billing_address_id' => $addressId,
+            'subtotal' => '10.00', 'shipping_cost' => '0.00',
+            'tax_amount' => '0.00', 'total_amount' => '10.00',
+        ]);
+        $itemId = $this->insertTracked($db, $created, 'order_items', [
+            'order_id' => $orderId, 'listing_id' => $listingId,
+            'quantity' => 1, 'unit_price' => '10.00',
+            'fulfillment_type' => 'shipping', 'shipping_cost' => '0.00',
+        ]);
+        $this->insertTracked($db, $created, 'listing_reviews', [
+            'reviewer_user_id' => $buyerId, 'order_item_id' => $itemId,
+            'star_rating' => $stars, 'title' => $title,
+            'description' => 'Safe fixture review text',
+        ]);
+        return $itemId;
     }
 
     /** @return array<string, mixed> */
@@ -548,6 +623,20 @@ final class ListingDetailTest extends DatabaseTestCase
         return new DOMXPath($document);
     }
 
+    /**
+     * Ensure a queried DOM node is an element before accessing element-only methods.
+     */
+    private function elementAt(\DOMNodeList $nodes, int $index = 0): \DOMElement
+    {
+        $element = $nodes->item($index);
+        self::assertInstanceOf(
+            \DOMElement::class,
+            $element,
+            'Expected an HTML element at the specified index.'
+        );
+        return $element;
+    }
+
     private function publicImageUrl(string $url): string
     {
         if (str_starts_with($url, 'assets/') || str_starts_with($url, 'uploads/')) {
@@ -562,7 +651,7 @@ final class ListingDetailTest extends DatabaseTestCase
         $wishlistButtons = $xpath->query('//*[@data-add-to-wishlist]');
         self::assertCount(1, $cartButtons);
         self::assertCount(1, $wishlistButtons);
-        self::assertTrue($cartButtons->item(0)->hasAttribute('disabled'));
-        self::assertTrue($wishlistButtons->item(0)->hasAttribute('disabled'));
+        self::assertTrue($this->elementAt($cartButtons)->hasAttribute('disabled'));
+        self::assertTrue($this->elementAt($wishlistButtons)->hasAttribute('disabled'));
     }
 }
