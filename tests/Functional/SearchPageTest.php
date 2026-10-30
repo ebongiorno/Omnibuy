@@ -3145,6 +3145,252 @@ final class SearchPageTest extends TestCase
         }
     }
 
+    // =========================================
+    // TC-23-06: TEST ALL SUPPORTED RADIUS SELECTIONS
+    // =========================================
+
+    public function testMeetupRadiusSupportsAllDistanceSelections(): void
+    {
+        $zip = '92831';
+        $radii = [5, 10, 25, 50];
+
+        // Connect to the Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Retrieve coordinates for ZIP 92831.
+        $zipStmt = $pdo->prepare("
+            SELECT latitude, longitude
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+        ");
+
+        $zipStmt->execute(['zip' => $zip]);
+        $buyer = $zipStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $this->assertIsArray(
+            $buyer,
+            'ZIP 92831 must exist.'
+        );
+
+        $buyerLat = (float)$buyer['latitude'];
+        $buyerLon = (float)$buyer['longitude'];
+
+        // Create controlled listings at different distances.
+        $fixtureMiles = [3, 8, 20, 40, 55];
+        $fixtureIds = [];
+
+        $insert = $pdo->prepare("
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                sale_type,
+                fulfillment_type,
+                location_zip_code,
+                latitude,
+                longitude,
+                meetup_location_type,
+                seller_meetup_radius,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (
+                2, 7, :name,
+                'fixed_price',
+                'meetup',
+                :zip,
+                :latitude,
+                :longitude,
+                'library',
+                10,
+                15.00,
+                'good',
+                1,
+                'active'
+            )
+        ");
+
+        // Establish the expected database results
+        // for each supported radius.
+        $expectedStmt = $pdo->prepare("
+            SELECT listing_id
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'meetup'
+                AND latitude IS NOT NULL
+                AND longitude IS NOT NULL
+                AND ST_Distance_Sphere(
+                    POINT(longitude, latitude),
+                    POINT(:buyer_longitude, :buyer_latitude)
+                ) <= :radius_meters
+        ");
+
+        try {
+            // Insert all five temporary test listings.
+            foreach ($fixtureMiles as $miles) {
+
+                // Calculate coordinates north of the buyer.
+                $latitude = round(
+                    $buyerLat + rad2deg(
+                        $miles * 1609.344 / 6370986.0
+                    ),
+                    6
+                );
+
+                $insert->execute([
+                    'name' => "TC-23-06 Meetup {$miles} Miles",
+                    'zip' => $zip,
+                    'latitude' => $latitude,
+                    'longitude' => $buyerLon
+                ]);
+
+                $fixtureIds[$miles] =
+                    (int)$pdo->lastInsertId();
+            }
+
+            $previousIds = [];
+
+            // Test all four supported radius selections.
+            foreach ($radii as $radius) {
+
+                // Find expected listings in MySQL.
+                $expectedStmt->execute([
+                    'buyer_longitude' => $buyerLon,
+                    'buyer_latitude' => $buyerLat,
+                    'radius_meters' => $radius * 1609.344
+                ]);
+
+                $expectedIds = array_map(
+                    'intval',
+                    $expectedStmt->fetchAll(
+                        \PDO::FETCH_COLUMN
+                    )
+                );
+
+                sort($expectedIds);
+
+                // Request search results for this radius.
+                [$status, $body] = $this->get(
+                    '/pages/search.php',
+                    [
+                        'browse' => 'all',
+                        'fulfillment' => 'meetup',
+                        'zip' => $zip,
+                        'radius' => (string)$radius
+                    ]
+                );
+
+                // Verify the page loads without errors.
+                $this->assertSame(200, $status);
+
+                $this->assertStringNotContainsString(
+                    'Fatal error',
+                    $body
+                );
+
+                $this->assertStringNotContainsString(
+                    'Unable to retrieve search results',
+                    $body
+                );
+
+                $this->assertStringNotContainsString(
+                    'Invalid Meetup Location',
+                    $body
+                );
+
+                $this->assertStringNotContainsString(
+                    'SQLSTATE[',
+                    $body
+                );
+
+                // Extract displayed listing IDs.
+                preg_match_all(
+                    '/<article class="listing-card">.*?' .
+                    'href="listing\.php\?id=(\d+)"/s',
+                    $body,
+                    $matches
+                );
+
+                $actualIds = array_map(
+                    'intval',
+                    $matches[1]
+                );
+
+                sort($actualIds);
+
+                // Verify results against MySQL.
+                $this->assertSame(
+                    $expectedIds,
+                    $actualIds,
+                    "Incorrect meetup results for {$radius} miles."
+                );
+
+                // Verify that each temporary listing is
+                // included or excluded at the correct radius.
+                foreach ($fixtureIds as $miles => $id) {
+
+                    if ($miles <= $radius) {
+
+                        $this->assertContains(
+                            $id,
+                            $actualIds,
+                            "{$miles}-mile listing missing " .
+                            "at {$radius} miles."
+                        );
+
+                    } else {
+
+                        $this->assertNotContains(
+                            $id,
+                            $actualIds,
+                            "{$miles}-mile listing appeared " .
+                            "at {$radius} miles."
+                        );
+                    }
+                }
+
+                // Increasing the radius must not remove
+                // listings included at a smaller radius.
+                $this->assertSame(
+                    [],
+                    array_values(
+                        array_diff($previousIds, $actualIds)
+                    ),
+                    "Increasing to {$radius} miles " .
+                    "removed a previous listing."
+                );
+
+                $previousIds = $actualIds;
+            }
+
+        } finally {
+
+            // Remove all temporary listings,
+            // including when an assertion fails.
+            $delete = $pdo->prepare("
+                DELETE FROM listings
+                WHERE listing_id = :id
+            ");
+
+            foreach ($fixtureIds as $id) {
+                $delete->execute(['id' => $id]);
+            }
+        }
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH

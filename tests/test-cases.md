@@ -3299,9 +3299,11 @@ meetup listings based on distance.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that all four supported meetup radius selections (5, 10, 25, and 50 miles) returned the expected listings for ZIP code 92831. Five temporary meetup listings were created at approximately 3, 8, 20, 40, and 55 miles to verify the behavior of each radius option. The returned listing IDs matched the corresponding MySQL distance queries, confirming that eligible listings were included and listings beyond each selected radius were excluded. The test also verified that increasing the radius did not remove listings previously included at smaller distances. All requests completed without PHP or database errors, and the temporary listings were removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, entering ZIP code 92831, and testing each supported radius individually. The displayed listings were compared against their known distances, and increasing the radius preserved previously eligible results while including additional listings when available. Listings outside the selected distance were excluded, and the page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
