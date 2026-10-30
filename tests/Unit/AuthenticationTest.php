@@ -1,4 +1,6 @@
 <?php
+use OmniBuy\Tests\Security\SecurityTestCase;
+
 declare(strict_types=1);
 namespace OmniBuy\Tests\Security;
 
