@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// UC-25, Phase 3: listing details, multi-image gallery, and purchase interface.
+// UC-25, Phase 4: listing details, gallery, purchase UI, and listing reviews.
 // Install as public/pages/listing.php.
 require_once __DIR__ . '/../../includes/auth.php';
 startSession();
@@ -49,6 +49,10 @@ function listingHumanLabel(string $value): string
 $listing = null;
 $images = [];
 $pageError = null;
+$listingRating = ['review_count' => 0, 'average_rating' => null];
+$sellerRating = ['review_count' => 0, 'average_rating' => null];
+$listingReviews = [];
+$maxDisplayedReviews = 10;
 
 // The query parameter must be a scalar positive integer.
 $rawId = $_GET['id'] ?? null;
@@ -120,6 +124,53 @@ if ($listingId === false) {
             ");
             $imageStatement->execute(['listing_id' => $listingId]);
             $images = $imageStatement->fetchAll(PDO::FETCH_ASSOC);
+
+            // Listing reviews belong to order items, not directly to listings.
+            // Aggregate separately so other joins cannot multiply reviews.
+            $listingRatingStatement = $pdo->prepare("
+                SELECT COUNT(*) AS review_count,
+                       ROUND(AVG(lr.star_rating), 1) AS average_rating
+                FROM listing_reviews AS lr
+                INNER JOIN order_items AS oi
+                    ON oi.order_item_id = lr.order_item_id
+                WHERE oi.listing_id = :listing_id
+            ");
+            $listingRatingStatement->execute(['listing_id' => $listingId]);
+            $listingRating = $listingRatingStatement->fetch(PDO::FETCH_ASSOC)
+                ?: ['review_count' => 0, 'average_rating' => null];
+
+            // User reviews rate the seller account. They are NOT combined with
+            // listing_reviews: these are two different kinds of feedback.
+            $sellerRatingStatement = $pdo->prepare("
+                SELECT COUNT(*) AS review_count,
+                       ROUND(AVG(ur.star_rating), 1) AS average_rating
+                FROM user_reviews AS ur
+                WHERE ur.reviewed_user_id = :seller_user_id
+            ");
+            $sellerRatingStatement->execute([
+                'seller_user_id' => (int) $listing['seller_user_id'],
+            ]);
+            $sellerRating = $sellerRatingStatement->fetch(PDO::FETCH_ASSOC)
+                ?: ['review_count' => 0, 'average_rating' => null];
+
+            // Most recent listing-specific reviews, with only the reviewer
+            // username and status from users. Never retrieve private fields.
+            $reviewStatement = $pdo->prepare("
+                SELECT lr.listing_review_id, lr.star_rating, lr.title,
+                       lr.description, lr.created_at,
+                       u.username AS reviewer_username,
+                       u.account_status AS reviewer_account_status
+                FROM listing_reviews AS lr
+                INNER JOIN order_items AS oi
+                    ON oi.order_item_id = lr.order_item_id
+                INNER JOIN users AS u
+                    ON u.user_id = lr.reviewer_user_id
+                WHERE oi.listing_id = :listing_id
+                ORDER BY lr.created_at DESC, lr.listing_review_id DESC
+                LIMIT 10
+            ");
+            $reviewStatement->execute(['listing_id' => $listingId]);
+            $listingReviews = $reviewStatement->fetchAll(PDO::FETCH_ASSOC);
         }
     } catch (PDOException $exception) {
         error_log('Listing detail retrieval failed: ' . $exception->getMessage());
@@ -127,6 +178,7 @@ if ($listingId === false) {
         $pageError = 'Unable to load this listing right now. Please try again later.';
         $listing = null;
         $images = [];
+        $listingReviews = [];
     }
 }
 
@@ -374,9 +426,83 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                                     <?php endif; ?>
                                 </div>
                             </div>
+                            <div class="listing-detail__seller-rating" aria-label="Seller account rating">
+                                <span class="listing-detail__rating-star" aria-hidden="true">&#9733;</span>
+                                <?php if ((int) $sellerRating['review_count'] > 0): ?>
+                                    <span class="listing-detail__rating-value"><?= number_format((float) $sellerRating['average_rating'], 1) ?> / 5</span>
+                                    <span class="listing-detail__rating-count">from <?= (int) $sellerRating['review_count'] ?> user review(s)</span>
+                                <?php else: ?>
+                                    <span class="listing-detail__rating-count">No user ratings for this seller yet</span>
+                                <?php endif; ?>
+                            </div>
                             <a class="listing-detail__seller-link" href="/pages/profile.php?id=<?= (int) $listing['seller_user_id'] ?>">View seller profile <span aria-hidden="true">&rarr;</span></a>
                         </section>
                     </div>
+
+                    <section class="listing-detail__panel listing-detail__reviews" aria-labelledby="listing-reviews-heading">
+                        <div class="listing-detail__reviews-heading">
+                            <div>
+                                <p class="listing-detail__eyebrow">Buyer feedback</p>
+                                <h2 id="listing-reviews-heading">Reviews for this listing</h2>
+                            </div>
+                            <div class="listing-detail__reviews-summary" aria-label="Listing review summary">
+                                <?php if ((int) $listingRating['review_count'] > 0): ?>
+                                    <span class="listing-detail__rating-star" aria-hidden="true">&#9733;</span>
+                                    <strong><?= number_format((float) $listingRating['average_rating'], 1) ?> / 5</strong>
+                                    <span class="listing-detail__rating-count">(<?= (int) $listingRating['review_count'] ?> review<?= (int) $listingRating['review_count'] === 1 ? '' : 's' ?>)</span>
+                                <?php else: ?>
+                                    <span class="listing-detail__rating-count">No ratings yet</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <?php if ($listingReviews === []): ?>
+                            <div class="listing-detail__reviews-empty">
+                                <p class="listing-detail__reviews-empty-title">No reviews for this listing yet.</p>
+                                <p>Buyer feedback will appear here when reviews are available.</p>
+                            </div>
+                        <?php else: ?>
+                            <ol class="listing-detail__review-list">
+                                <?php foreach ($listingReviews as $review): ?>
+                                    <?php
+                                    $reviewerName = $review['reviewer_account_status'] === 'active'
+                                        ? (string) $review['reviewer_username']
+                                        : 'OmniBuy member';
+                                    $reviewTimestamp = strtotime((string) $review['created_at']);
+                                    $reviewDate = $reviewTimestamp === false
+                                        ? '' : date('M j, Y', $reviewTimestamp);
+                                    $reviewTitle = trim((string) ($review['title'] ?? ''));
+                                    $reviewText = trim((string) ($review['description'] ?? ''));
+                                    ?>
+                                    <li class="listing-detail__review-item">
+                                        <article aria-label="Review by <?= listingEscape($reviewerName) ?>">
+                                            <div class="listing-detail__review-meta">
+                                                <span class="listing-detail__review-author"><?= listingEscape($reviewerName) ?></span>
+                                                <?php if ($reviewDate !== ''): ?>
+                                                    <time datetime="<?= listingEscape(date('Y-m-d', $reviewTimestamp)) ?>"><?= listingEscape($reviewDate) ?></time>
+                                                <?php endif; ?>
+                                            </div>
+                                            <p class="listing-detail__review-stars" aria-label="<?= (int) $review['star_rating'] ?> out of 5 stars">
+                                                <span aria-hidden="true"><?= str_repeat('★', max(0, min(5, (int) $review['star_rating']))) ?><?= str_repeat('☆', max(0, 5 - (int) $review['star_rating'])) ?></span>
+                                                <span class="listing-detail__review-number"><?= (int) $review['star_rating'] ?> / 5</span>
+                                            </p>
+                                            <?php if ($reviewTitle !== ''): ?>
+                                                <h3 class="listing-detail__review-title"><?= listingEscape($reviewTitle) ?></h3>
+                                            <?php endif; ?>
+                                            <?php if ($reviewText !== ''): ?>
+                                                <p class="listing-detail__review-body"><?= nl2br(listingEscape($reviewText)) ?></p>
+                                            <?php elseif ($reviewTitle === ''): ?>
+                                                <p class="listing-detail__review-body listing-detail__review-body--muted">Rating only; no written feedback.</p>
+                                            <?php endif; ?>
+                                        </article>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ol>
+                            <?php if ((int) $listingRating['review_count'] > $maxDisplayedReviews): ?>
+                                <p class="listing-detail__reviews-footnote">Showing the <?= count($listingReviews) ?> most recent reviews of <?= (int) $listingRating['review_count'] ?> total.</p>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </section>
                 </article>
             <?php endif; ?>
         </div>
