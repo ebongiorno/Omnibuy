@@ -3392,9 +3392,9 @@ coordinates are not incorrectly included in radius results.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that meetup listings with missing latitude or longitude coordinates were correctly excluded from radius-filtered search results. Three temporary meetup listings were created for testing: one with a NULL latitude, one with a NULL longitude, and one with valid coordinates corresponding to ZIP code 92831. The test first verified that all three listings appeared when no radius filter was applied. After applying a 10-mile meetup radius, both listings with missing coordinates were excluded, while the valid nearby listing remained visible. The page loaded successfully without PHP or database errors, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

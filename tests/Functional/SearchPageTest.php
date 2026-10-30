@@ -3668,6 +3668,207 @@ final class SearchPageTest extends TestCase
         }
     }
 
+    // =========================================
+    // TC-23-08: HANDLE MEETUP LISTINGS WITH MISSING COORDINATES
+    // =========================================
+
+    public function testMeetupRadiusExcludesListingsWithMissingCoordinates(): void
+    {
+        $zip = '92831';
+        $radiusMiles = 10;
+
+        // Connect to the Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Retrieve the coordinates for ZIP 92831.
+        $zipStmt = $pdo->prepare("
+            SELECT latitude, longitude
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+            LIMIT 1
+        ");
+
+        $zipStmt->execute(['zip' => $zip]);
+        $buyer = $zipStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $this->assertIsArray(
+            $buyer,
+            'ZIP 92831 must exist.'
+        );
+
+        // Define three controlled meetup listings.
+        $fixtures = [
+            'missing_latitude' => [
+                'name' => 'TC-23-08 Missing Latitude',
+                'latitude' => null,
+                'longitude' => $buyer['longitude']
+            ],
+            'missing_longitude' => [
+                'name' => 'TC-23-08 Missing Longitude',
+                'latitude' => $buyer['latitude'],
+                'longitude' => null
+            ],
+            'valid_coordinates' => [
+                'name' => 'TC-23-08 Valid Coordinates',
+                'latitude' => $buyer['latitude'],
+                'longitude' => $buyer['longitude']
+            ]
+        ];
+
+        // Prepare temporary listing insertion.
+        $insert = $pdo->prepare("
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                sale_type,
+                fulfillment_type,
+                location_zip_code,
+                latitude,
+                longitude,
+                meetup_location_type,
+                seller_meetup_radius,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (
+                2, 7, :name,
+                'fixed_price',
+                'meetup',
+                :zip,
+                :latitude,
+                :longitude,
+                'library',
+                10,
+                15.00,
+                'good',
+                1,
+                'active'
+            )
+        ");
+
+        $createdIds = [];
+
+        try {
+            // Insert the three temporary listings.
+            foreach ($fixtures as $scenario => $fixture) {
+                $insert->execute([
+                    'name' => $fixture['name'],
+                    'zip' => $zip,
+                    'latitude' => $fixture['latitude'],
+                    'longitude' => $fixture['longitude']
+                ]);
+
+                $createdIds[$scenario] =
+                    (int)$pdo->lastInsertId();
+            }
+
+            // First verify all three listings appear
+            // when no radius filter is applied.
+            [$baselineStatus, $baselineBody] = $this->get(
+                '/pages/search.php',
+                [
+                    'browse' => 'all',
+                    'fulfillment' => 'meetup'
+                ]
+            );
+
+            $this->assertSame(200, $baselineStatus);
+
+            foreach ($createdIds as $scenario => $id) {
+                $this->assertStringContainsString(
+                    'href="listing.php?id=' . $id . '"',
+                    $baselineBody,
+                    "{$scenario} fixture must appear without a radius."
+                );
+            }
+
+            // Apply the 10-mile meetup radius filter.
+            [$status, $body] = $this->get(
+                '/pages/search.php',
+                [
+                    'browse' => 'all',
+                    'fulfillment' => 'meetup',
+                    'zip' => $zip,
+                    'radius' => (string)$radiusMiles
+                ]
+            );
+
+            // Verify the page loads successfully.
+            $this->assertSame(200, $status);
+
+            foreach ([
+                'Fatal error',
+                'SQLSTATE[',
+                'Unable to retrieve search results',
+                'Invalid Meetup Location'
+            ] as $errorText) {
+                $this->assertStringNotContainsString(
+                    $errorText,
+                    $body
+                );
+            }
+
+            // Extract displayed listing IDs.
+            preg_match_all(
+                '/<article\b[^>]*class="listing-card"[^>]*>.*?' .
+                'href="listing\.php\?id=(\d+)"/s',
+                $body,
+                $matches
+            );
+
+            $visibleIds = array_map(
+                'intval',
+                $matches[1]
+            );
+
+            // Verify the NULL latitude listing is excluded.
+            $this->assertNotContains(
+                $createdIds['missing_latitude'],
+                $visibleIds,
+                'Meetup listing with NULL latitude must be excluded.'
+            );
+
+            // Verify the NULL longitude listing is excluded.
+            $this->assertNotContains(
+                $createdIds['missing_longitude'],
+                $visibleIds,
+                'Meetup listing with NULL longitude must be excluded.'
+            );
+
+            // Verify the valid nearby listing is included.
+            $this->assertContains(
+                $createdIds['valid_coordinates'],
+                $visibleIds,
+                'Nearby meetup listing with valid coordinates must appear.'
+            );
+
+        } finally {
+            // Remove temporary listings even if a test fails.
+            $delete = $pdo->prepare("
+                DELETE FROM listings
+                WHERE listing_id = :id
+            ");
+
+            foreach ($createdIds as $id) {
+                $delete->execute(['id' => $id]);
+            }
+        }
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH
