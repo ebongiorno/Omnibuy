@@ -4061,6 +4061,350 @@ final class SearchPageTest extends TestCase
         }
     }
 
+    // =========================================
+    // TC-23-10: RADIUS + CONDITION + DELIVERY + DISTANCE SORT
+    // =========================================
+
+    public function testMeetupRadiusCombinesWithConditionAndDistanceSort(): void
+    {
+        $zip = '92831';
+        $radiusMiles = 25;
+
+        // Connect to the Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Retrieve coordinates for ZIP 92831.
+        $zipStmt = $pdo->prepare("
+            SELECT latitude, longitude
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+            LIMIT 1
+        ");
+
+        $zipStmt->execute(['zip' => $zip]);
+        $buyer = $zipStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $this->assertIsArray(
+            $buyer,
+            'ZIP 92831 must exist.'
+        );
+
+        $buyerLat = (float)$buyer['latitude'];
+        $buyerLon = (float)$buyer['longitude'];
+
+        // Each excluded listing violates a different filter.
+        $fixtures = [
+            'near_good' => [3, 'meetup', 'good', 'active'],
+            'middle_good' => [12, 'meetup', 'good', 'active'],
+            'far_good' => [23, 'meetup', 'good', 'active'],
+            'outside_radius' => [30, 'meetup', 'good', 'active'],
+            'wrong_condition' => [8, 'meetup', 'excellent', 'active'],
+            'wrong_delivery' => [4, 'shipping', 'good', 'active'],
+            'inactive' => [6, 'meetup', 'good', 'sold']
+        ];
+
+        // Prepare temporary listing insertion.
+        $insert = $pdo->prepare("
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                sale_type,
+                fulfillment_type,
+                location_zip_code,
+                latitude,
+                longitude,
+                meetup_location_type,
+                seller_meetup_radius,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (
+                2, 7, :name,
+                'fixed_price',
+                :fulfillment,
+                :zip,
+                :latitude,
+                :longitude,
+                :meetup_type,
+                :meetup_radius,
+                15.00,
+                :condition,
+                1,
+                :status
+            )
+        ");
+
+        $fixtureIds = [];
+
+        try {
+            // Insert all seven temporary listings.
+            foreach ($fixtures as $label => $details) {
+                [$miles, $fulfillment, $condition, $status] = $details;
+
+                $latitude = round(
+                    $buyerLat + rad2deg(
+                        $miles * 1609.344 / 6370986.0
+                    ),
+                    6
+                );
+
+                $isMeetup = $fulfillment === 'meetup';
+
+                $insert->execute([
+                    'name' => 'TC-23-10 ' . $label,
+                    'fulfillment' => $fulfillment,
+                    'zip' => $zip,
+                    'latitude' => $latitude,
+                    'longitude' => $buyerLon,
+                    'meetup_type' => $isMeetup ? 'library' : null,
+                    'meetup_radius' => $isMeetup ? 10 : null,
+                    'condition' => $condition,
+                    'status' => $status
+                ]);
+
+                $fixtureIds[$label] = (int)$pdo->lastInsertId();
+            }
+
+            // Determine all expected eligible listings
+            // in nearest-first order using MySQL.
+            $expectedStmt = $pdo->prepare("
+                SELECT
+                    l.listing_id,
+                    ST_Distance_Sphere(
+                        POINT(l.longitude, l.latitude),
+                        POINT(z.longitude, z.latitude)
+                    ) AS distance_meters
+                FROM listings AS l
+
+                JOIN zip_code_locations AS z
+                    ON z.zip_code = :zip
+
+                WHERE l.listing_status = 'active'
+                    AND l.fulfillment_type = 'meetup'
+                    AND l.`condition` = 'good'
+                    AND l.latitude IS NOT NULL
+                    AND l.longitude IS NOT NULL
+                    AND ST_Distance_Sphere(
+                        POINT(l.longitude, l.latitude),
+                        POINT(z.longitude, z.latitude)
+                    ) <= :radius_meters
+
+                ORDER BY
+                    distance_meters ASC,
+                    l.created_at DESC,
+                    l.listing_id DESC
+            ");
+
+            $expectedStmt->execute([
+                'zip' => $zip,
+                'radius_meters' => $radiusMiles * 1609.344
+            ]);
+
+            $expectedIds = array_map(
+                'intval',
+                $expectedStmt->fetchAll(\PDO::FETCH_COLUMN)
+            );
+
+            // Apply all filters.
+            $query = [
+                'browse' => 'all',
+                'fulfillment' => 'meetup',
+                'condition' => ['good'],
+                'zip' => $zip,
+                'radius' => (string)$radiusMiles
+            ];
+
+            // Request the page before changing sorting.
+            [$beforeStatus, $beforeBody] = $this->get(
+                '/pages/search.php',
+                $query + ['sort' => 'recent']
+            );
+
+            // Change sorting while keeping the filters.
+            [$afterStatus, $afterBody] = $this->get(
+                '/pages/search.php',
+                $query + ['sort' => 'distance_near']
+            );
+
+            // Verify both requests complete without errors.
+            foreach (
+                [
+                    [$beforeStatus, $beforeBody],
+                    [$afterStatus, $afterBody]
+                ] as [$status, $body]
+            ) {
+                $this->assertSame(200, $status);
+
+                foreach (
+                    [
+                        'Fatal error',
+                        'SQLSTATE[',
+                        'Unable to retrieve search results',
+                        'Invalid Meetup Location'
+                    ] as $error
+                ) {
+                    $this->assertStringNotContainsString(
+                        $error,
+                        $body
+                    );
+                }
+            }
+
+            // Extract displayed listing IDs in page order.
+            $extractIds = static function (string $html): array {
+                preg_match_all(
+                    '/<article class="listing-card">.*?' .
+                    'href="listing\.php\?id=(\d+)"/s',
+                    $html,
+                    $matches
+                );
+
+                return array_map('intval', $matches[1]);
+            };
+
+            $beforeIds = $extractIds($beforeBody);
+            $afterIds = $extractIds($afterBody);
+
+            // Before sorting, verify filters return
+            // the correct set of listings.
+            $beforeSorted = $beforeIds;
+            $expectedSorted = $expectedIds;
+
+            sort($beforeSorted);
+            sort($expectedSorted);
+
+            $this->assertSame(
+                $expectedSorted,
+                $beforeSorted,
+                'Filters must return the correct listings.'
+            );
+
+            // After sorting, verify the exact result
+            // set and nearest-first ordering.
+            $this->assertSame(
+                $expectedIds,
+                $afterIds,
+                'Distance sorting must retain all filters ' .
+                'and order results nearest first.'
+            );
+
+            // Verify all three eligible listings appear.
+            foreach (
+                ['near_good', 'middle_good', 'far_good'] as $label
+            ) {
+                $this->assertContains(
+                    $fixtureIds[$label],
+                    $afterIds,
+                    "{$label} should appear."
+                );
+            }
+
+            // Verify each ineligible listing is excluded.
+            foreach (
+                [
+                    'outside_radius',
+                    'wrong_condition',
+                    'wrong_delivery',
+                    'inactive'
+                ] as $label
+            ) {
+                $this->assertNotContains(
+                    $fixtureIds[$label],
+                    $afterIds,
+                    "{$label} should be excluded."
+                );
+            }
+
+            // Confirm the sorting form preserves
+            // all active filter parameters.
+            $this->assertSame(
+                1,
+                preg_match(
+                    '/<form\b(?=[^>]*class="search-results__sort")' .
+                    '[^>]*>.*?<\/form>/s',
+                    $afterBody,
+                    $formMatches
+                )
+            );
+
+            $sortForm = $formMatches[0];
+
+            foreach (
+                [
+                    ['condition\[\]', 'good'],
+                    ['fulfillment', 'meetup'],
+                    ['zip', '92831'],
+                    ['radius', '25'],
+                    ['browse', 'all']
+                ] as [$namePattern, $value]
+            ) {
+                $this->assertMatchesRegularExpression(
+                    '/<input\b(?=[^>]*name="' .
+                    $namePattern .
+                    '")(?=[^>]*value="' .
+                    $value .
+                    '")[^>]*>/s',
+                    $sortForm
+                );
+            }
+
+            // Verify Distance: Near to Far is selected.
+            $this->assertMatchesRegularExpression(
+                '/<option\b(?=[^>]*value="distance_near")' .
+                '(?=[^>]*\bselected\b)[^>]*>/s',
+                $sortForm
+            );
+
+            // Verify Good remains checked.
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*name="condition\[\]")' .
+                '(?=[^>]*value="good")' .
+                '(?=[^>]*\bchecked\b)[^>]*>/s',
+                $afterBody
+            );
+
+            // Verify Meetup remains checked.
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*name="fulfillment")' .
+                '(?=[^>]*value="meetup")' .
+                '(?=[^>]*\bchecked\b)[^>]*>/s',
+                $afterBody
+            );
+
+            // Verify the 25-mile radius is preserved.
+            $this->assertMatchesRegularExpression(
+                '/<option\b(?=[^>]*value="25")' .
+                '(?=[^>]*\bselected\b)[^>]*>/s',
+                $afterBody
+            );
+
+        } finally {
+            // Delete temporary listings even if
+            // an assertion fails.
+            $delete = $pdo->prepare(
+                'DELETE FROM listings WHERE listing_id = :id'
+            );
+
+            foreach ($fixtureIds as $id) {
+                $delete->execute(['id' => $id]);
+            }
+        }
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH

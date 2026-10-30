@@ -3487,9 +3487,11 @@ condition filtering and distance sorting.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that meetup radius filtering worked correctly alongside condition filtering, delivery method filtering, and distance sorting. Seven temporary listings were created with different distances, conditions, delivery methods, and statuses to verify the combined behavior. Applying the Meetup and Good condition filters with a 25-mile radius from ZIP code 92831 returned only eligible active listings. Listings outside the radius, listings with other conditions, shipping listings, and inactive listings were excluded. After selecting Distance: Near to Far, the returned listing IDs matched the expected MySQL results in ascending distance order. All selected filters remained preserved, no PHP or database errors occurred, and the temporary test listings were removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, Good condition, ZIP code 92831, and a 25-mile radius before changing the sort order to Distance: Near to Far. The search results reflected the selected filters, and the selections remained applied after sorting. Available results were checked for eligibility and correct ordering where multiple matching listings were present. The page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 ## UC-24: Sort Results
