@@ -3204,9 +3204,9 @@ produces an appropriate validation error.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that the meetup radius filter correctly handled listings at and around the 10-mile boundary of ZIP code 92831. Three temporary meetup listings were created at approximately 9.99, 10.00, and 10.01 miles from the selected location. The distances were calculated independently using PHP before being tested against the search page. The listing within the radius and the listing at the closest representable boundary coordinate were included in the results, while the listing beyond 10 miles was excluded. The page loaded successfully without PHP or database errors, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
