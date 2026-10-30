@@ -1290,9 +1290,11 @@ returns meetup listings within the specified distance.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that filtering meetup listings within 10 miles of ZIP code 92831 returned the expected results. A temporary nearby meetup listing was created to verify that eligible listings were included. The returned listing IDs matched the MySQL distance query, confirming that listings outside the radius and shipping-only listings were excluded. The ZIP code, radius, and delivery method selections remained applied, and the page loaded without PHP or database errors. The temporary listing was removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, entering ZIP code 92831, and choosing a 10-mile radius. The search results displayed the expected empty state because the existing seed data contained no eligible meetup listings within that distance. The selected filters remained applied, and the page displayed no PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
