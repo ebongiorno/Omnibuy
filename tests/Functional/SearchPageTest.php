@@ -2438,7 +2438,189 @@ final class SearchPageTest extends TestCase
         }
     }
 
-    
+    // =========================================
+    // TC-23-02: EXCLUDE MEETUP LISTINGS OUTSIDE THE RADIUS
+    // =========================================
+
+    public function testMeetupRadiusExcludesDistantListings(): void
+    {
+        $zip = '92831';
+        $radiusMiles = 10;
+        $radiusMeters = $radiusMiles * 1609.344;
+
+        // Connect to the Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Retrieve coordinates for the buyer ZIP code.
+        $zipStmt = $pdo->prepare("
+            SELECT latitude, longitude
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+        ");
+
+        $zipStmt->execute(['zip' => $zip]);
+        $location = $zipStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $this->assertIsArray(
+            $location,
+            'ZIP 92831 must exist.'
+        );
+
+        // Find all active meetup listings beyond 10 miles.
+        $farStmt = $pdo->prepare("
+            SELECT listing_id
+            FROM listings
+            WHERE listing_status = 'active'
+                AND fulfillment_type = 'meetup'
+                AND latitude IS NOT NULL
+                AND longitude IS NOT NULL
+                AND ST_Distance_Sphere(
+                    POINT(longitude, latitude),
+                    POINT(:buyer_longitude, :buyer_latitude)
+                ) > :radius_meters
+        ");
+
+        $farStmt->execute([
+            'buyer_longitude' => $location['longitude'],
+            'buyer_latitude' => $location['latitude'],
+            'radius_meters' => $radiusMeters
+        ]);
+
+        $farIds = $farStmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        $this->assertNotEmpty(
+            $farIds,
+            'Test data needs active meetup listings outside 10 miles.'
+        );
+
+        // Create a temporary nearby meetup listing.
+        $insert = $pdo->prepare("
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                sale_type,
+                fulfillment_type,
+                location_zip_code,
+                latitude,
+                longitude,
+                meetup_location_type,
+                seller_meetup_radius,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (
+                2, 7,
+                'TC-23-02 Nearby Meetup Fixture',
+                'fixed_price',
+                'meetup',
+                :zip,
+                :latitude,
+                :longitude,
+                'library',
+                10,
+                15.00,
+                'good',
+                1,
+                'active'
+            )
+        ");
+
+        $insert->execute([
+            'zip' => $zip,
+            'latitude' => $location['latitude'],
+            'longitude' => $location['longitude']
+        ]);
+
+        $nearId = (int)$pdo->lastInsertId();
+
+        try {
+            // Verify distant listings appear without a radius.
+            [$allStatus, $allBody] = $this->get(
+                '/pages/search.php',
+                [
+                    'browse' => 'all',
+                    'fulfillment' => 'meetup'
+                ]
+            );
+
+            $this->assertSame(200, $allStatus);
+
+            $this->assertStringContainsString(
+                'href="listing.php?id=' . $farIds[0] . '"',
+                $allBody,
+                'A distant listing should appear without a radius.'
+            );
+
+            // Apply the 10-mile meetup radius filter.
+            [$status, $body] = $this->get(
+                '/pages/search.php',
+                [
+                    'browse' => 'all',
+                    'fulfillment' => 'meetup',
+                    'zip' => $zip,
+                    'radius' => (string)$radiusMiles
+                ]
+            );
+
+            // Verify the page loads without errors.
+            $this->assertSame(200, $status);
+
+            $this->assertStringNotContainsString(
+                'Fatal error',
+                $body
+            );
+
+            $this->assertStringNotContainsString(
+                'Unable to retrieve search results',
+                $body
+            );
+
+            $this->assertStringNotContainsString(
+                'Invalid Meetup Location',
+                $body
+            );
+
+            // Verify the nearby meetup listing is included.
+            $this->assertStringContainsString(
+                'href="listing.php?id=' . $nearId . '"',
+                $body,
+                'The nearby meetup listing should remain visible.'
+            );
+
+            // Verify every known distant listing is excluded.
+            foreach ($farIds as $farId) {
+                $this->assertStringNotContainsString(
+                    'href="listing.php?id=' . $farId . '"',
+                    $body,
+                    'Distant meetup listing ' . $farId .
+                    ' was not excluded.'
+                );
+            }
+
+        } finally {
+            // Remove the temporary test listing.
+            $delete = $pdo->prepare("
+                DELETE FROM listings
+                WHERE listing_id = :id
+            ");
+
+            $delete->execute(['id' => $nearId]);
+        }
+    }
 
 
     // =========================================

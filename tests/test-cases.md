@@ -3119,9 +3119,11 @@ are excluded from the search results.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that meetup listings located more than 10 miles from ZIP code 92831 were excluded from the search results. The test retrieved active meetup listings outside the selected radius from MySQL and verified that they appeared when no radius was applied. After applying the 10-mile radius filter, all identified distant listings were excluded, while a temporary nearby meetup listing remained visible. The page loaded successfully without PHP or database errors, and the temporary listing was removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, entering ZIP code 92831, and applying a 10-mile radius. Distant meetup listings that were visible without the radius filter were no longer displayed after applying it. The page displayed the expected no-results message with the existing seed data, and no PHP or database errors occurred.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
