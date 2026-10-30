@@ -3869,6 +3869,198 @@ final class SearchPageTest extends TestCase
         }
     }
 
+    // =========================================
+    // TC-23-09: VERIFY DISTANCE CALCULATION ACCURACY
+    // =========================================
+
+    public function testMeetupRadiusDistanceCalculationAccuracy(): void
+    {
+        $zip = '92831';
+        $metersPerMile = 1609.344;
+        $toleranceMiles = 0.02;
+
+        // Predetermined expected distances, calculated
+        // independently from these known coordinates.
+        $fixtures = [
+            'same_location' => [
+                'latitude' => 33.887300,
+                'longitude' => -117.894600,
+                'expected_miles' => 0.0000
+            ],
+            'north' => [
+                'latitude' => 33.937300,
+                'longitude' => -117.894600,
+                'expected_miles' => 3.4547
+            ],
+            'northeast' => [
+                'latitude' => 34.087300,
+                'longitude' => -117.694600,
+                'expected_miles' => 17.9510
+            ],
+            'west' => [
+                'latitude' => 33.887300,
+                'longitude' => -118.294600,
+                'expected_miles' => 22.9428
+            ]
+        ];
+
+        // Connect to the disposable Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Confirm that ZIP 92831 matches the known
+        // coordinates used for expected distances.
+        $zipStmt = $pdo->prepare("
+            SELECT latitude, longitude
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+        ");
+
+        $zipStmt->execute(['zip' => $zip]);
+        $buyer = $zipStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $this->assertIsArray(
+            $buyer,
+            'ZIP 92831 must exist.'
+        );
+
+        $this->assertEqualsWithDelta(
+            33.887300,
+            (float)$buyer['latitude'],
+            0.000001
+        );
+
+        $this->assertEqualsWithDelta(
+            -117.894600,
+            (float)$buyer['longitude'],
+            0.000001
+        );
+
+        // Prepare temporary meetup listings.
+        $insert = $pdo->prepare("
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                sale_type,
+                fulfillment_type,
+                location_zip_code,
+                latitude,
+                longitude,
+                meetup_location_type,
+                seller_meetup_radius,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (
+                2, 7, :name,
+                'fixed_price',
+                'meetup',
+                :zip,
+                :latitude,
+                :longitude,
+                'library',
+                10,
+                15.00,
+                'good',
+                1,
+                'active'
+            )
+        ");
+
+        // Use the same distance calculation
+        // as the search page.
+        $distanceStmt = $pdo->prepare("
+            SELECT ST_Distance_Sphere(
+                POINT(l.longitude, l.latitude),
+                POINT(z.longitude, z.latitude)
+            ) AS distance_meters
+            FROM listings AS l
+            JOIN zip_code_locations AS z
+                ON z.zip_code = :zip
+            WHERE l.listing_id = :id
+        ");
+
+        $createdIds = [];
+
+        try {
+            foreach ($fixtures as $name => $fixture) {
+
+                // Insert a listing at known coordinates.
+                $insert->execute([
+                    'name' => 'TC-23-09 ' . $name,
+                    'zip' => $zip,
+                    'latitude' => $fixture['latitude'],
+                    'longitude' => $fixture['longitude']
+                ]);
+
+                $id = (int)$pdo->lastInsertId();
+                $createdIds[] = $id;
+
+                // Calculate the same distance twice
+                // to verify repeatable results.
+                $distances = [];
+
+                for ($run = 0; $run < 2; $run++) {
+                    $distanceStmt->execute([
+                        'zip' => $zip,
+                        'id' => $id
+                    ]);
+
+                    $meters = $distanceStmt->fetchColumn();
+
+                    $this->assertNotFalse($meters);
+                    $distances[] = (float)$meters;
+                }
+
+                // Verify identical coordinates produce
+                // consistent distance calculations.
+                $this->assertEqualsWithDelta(
+                    $distances[0],
+                    $distances[1],
+                    0.000001,
+                    "Repeated distance calculation changed: {$name}."
+                );
+
+                // Convert MySQL meters into miles.
+                $actualMiles = $distances[0] / $metersPerMile;
+
+                // Compare against independently
+                // calculated expected distance.
+                $this->assertEqualsWithDelta(
+                    $fixture['expected_miles'],
+                    $actualMiles,
+                    $toleranceMiles,
+                    "Distance calculation is incorrect: {$name}."
+                );
+            }
+
+        } finally {
+
+            // Remove all temporary test listings.
+            $delete = $pdo->prepare("
+                DELETE FROM listings
+                WHERE listing_id = :id
+            ");
+
+            foreach ($createdIds as $id) {
+                $delete->execute(['id' => $id]);
+            }
+        }
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH

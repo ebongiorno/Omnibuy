@@ -3437,9 +3437,9 @@ results for known geographic coordinates.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that OmniBuy's meetup distance calculations produced accurate and consistent results for known geographic coordinates. Four temporary meetup listings were created at predetermined locations relative to ZIP code 92831, with expected distances of approximately 0, 3.4547, 17.9510, and 22.9428 miles. The test used MySQL's ST_Distance_Sphere function to calculate distances in meters, converted the results to miles, and compared them against independently calculated reference distances. All calculated values fell within the defined 0.02-mile tolerance. Repeating the calculations with identical coordinates produced consistent results, confirming that the distance calculations were repeatable. No PHP or database errors occurred, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
