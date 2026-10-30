@@ -18,6 +18,12 @@ $currentSellerId = filter_var(
 
 $isLoggedIn = $currentSellerId !== false && $currentSellerId !== null;
 
+// SOC 2 CC6.3: Require authentication before accessing seller listings.
+if (!$isLoggedIn) {
+    header('Location: /pages/login.php');
+    exit;
+}
+
 $currentUser = [
     'username' => $_SESSION['username'] ?? 'Seller',
     'avatar_url' => $_SESSION['avatar_url']
