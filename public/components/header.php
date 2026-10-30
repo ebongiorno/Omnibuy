@@ -45,6 +45,11 @@ function navActive(string $key, string $activeNav): string
   <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
   <link rel="stylesheet" href="/assets/css/shared-navigation.css">
 
+
+<?php if (!empty($pageStylesheet)): ?>
+  <link rel="stylesheet" href="<?= htmlspecialchars($pageStylesheet, ENT_QUOTES, 'UTF-8') ?>">
+<?php endif; ?>
+
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
 </head>
@@ -176,7 +181,7 @@ function navActive(string $key, string $activeNav): string
       <a class="primary-nav__link<?= navActive(
           'sporting-goods',
           $activeNav,
-      ) ?>" href="/category.php?category=sporting-goods">Sporting Goods</a>
+      ) ?>" href="/category.php?category=sporting-goods">Books</a>
       <a class="primary-nav__link" href="/categories.php">More</a>
 
       <!-- Phones: the header hides the account links, so the menu shows them instead. -->

@@ -274,10 +274,29 @@ fi
 echo "  ... starting the database again"
 docker compose start db >/dev/null 2>&1
 
-if wait_for_healthy && [ "$(http_status "$APP_URL/pages/search.php?q=keyboard")" = "200" ]; then
-    pass "site recovers by itself once the database is back"
+if ! wait_for_healthy; then
+    fail "site recovers by itself once the database is back" \
+        "database did not become healthy after restart"
 else
-    fail "site recovers by itself once the database is back"
+    recovery_status=""
+
+    for attempt in $(seq 1 30); do
+        recovery_status=$(http_status \
+            "$APP_URL/pages/search.php?q=keyboard")
+
+        if [ "$recovery_status" = "200" ]; then
+            pass "site recovers by itself once the database is back"
+            break
+        fi
+
+        echo "  ... waiting for site recovery ($attempt/30), HTTP $recovery_status"
+        sleep 2
+    done
+
+    if [ "$recovery_status" != "200" ]; then
+        fail "site recovers by itself once the database is back" \
+            "last HTTP status: $recovery_status"
+    fi
 fi
 
 # ---------------------------------------------------------------------------
