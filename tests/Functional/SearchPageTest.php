@@ -3391,6 +3391,283 @@ final class SearchPageTest extends TestCase
         }
     }
 
+    // =========================================
+    // TC-23-07: PRESERVE SHIPPING DURING RADIUS FILTERING
+    // =========================================
+
+    public function testMeetupRadiusPreservesShippingWithoutDeliverySelection(): void
+    {
+        $zip = '92831';
+        $radiusMiles = 10;
+
+        // Connect to the Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Retrieve coordinates for ZIP 92831.
+        $zipStmt = $pdo->prepare("
+            SELECT latitude, longitude
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+        ");
+
+        $zipStmt->execute(['zip' => $zip]);
+        $buyer = $zipStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $this->assertIsArray(
+            $buyer,
+            'ZIP 92831 must exist.'
+        );
+
+        $buyerLat = (float)$buyer['latitude'];
+        $buyerLon = (float)$buyer['longitude'];
+
+        $fixtureIds = [];
+
+        // Create three listings at controlled distances.
+        $fixtures = [
+            'near_meetup' => [
+                'type' => 'meetup',
+                'miles' => 3
+            ],
+            'far_meetup' => [
+                'type' => 'meetup',
+                'miles' => 20
+            ],
+            'far_shipping' => [
+                'type' => 'shipping',
+                'miles' => 40
+            ]
+        ];
+
+        $insert = $pdo->prepare("
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                sale_type,
+                fulfillment_type,
+                location_zip_code,
+                latitude,
+                longitude,
+                meetup_location_type,
+                seller_meetup_radius,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (
+                2, 7, :name,
+                'fixed_price',
+                :type,
+                :zip,
+                :latitude,
+                :longitude,
+                :meetup_type,
+                :meetup_radius,
+                15.00,
+                'good',
+                1,
+                'active'
+            )
+        ");
+
+        try {
+            // Insert the temporary test listings.
+            foreach ($fixtures as $label => $fixture) {
+                $latitude = round(
+                    $buyerLat + rad2deg(
+                        $fixture['miles'] * 1609.344 / 6370986.0
+                    ),
+                    6
+                );
+
+                $isMeetup = $fixture['type'] === 'meetup';
+
+                $insert->execute([
+                    'name' => 'TC-23-07 ' . $label,
+                    'type' => $fixture['type'],
+                    'zip' => $zip,
+                    'latitude' => $latitude,
+                    'longitude' => $buyerLon,
+                    'meetup_type' => $isMeetup ? 'library' : null,
+                    'meetup_radius' => $isMeetup ? 10 : null
+                ]);
+
+                $fixtureIds[$label] = (int)$pdo->lastInsertId();
+            }
+
+            // Find every active shipping listing.
+            $shippingIds = array_map(
+                'intval',
+                $pdo->query("
+                    SELECT listing_id
+                    FROM listings
+                    WHERE listing_status = 'active'
+                        AND fulfillment_type = 'shipping'
+                ")->fetchAll(\PDO::FETCH_COLUMN)
+            );
+
+            $this->assertNotEmpty(
+                $shippingIds,
+                'Active shipping listings must exist.'
+            );
+
+            // Calculate expected results:
+            // All shipping listings OR nearby meetup listings.
+            $expectedStmt = $pdo->prepare("
+                SELECT listing_id
+                FROM listings
+                WHERE listing_status = 'active'
+                    AND (
+                        fulfillment_type = 'shipping'
+                        OR (
+                            fulfillment_type = 'meetup'
+                            AND latitude IS NOT NULL
+                            AND longitude IS NOT NULL
+                            AND ST_Distance_Sphere(
+                                POINT(longitude, latitude),
+                                POINT(:lon, :lat)
+                            ) <= :meters
+                        )
+                    )
+            ");
+
+            $expectedStmt->execute([
+                'lon' => $buyerLon,
+                'lat' => $buyerLat,
+                'meters' => $radiusMiles * 1609.344
+            ]);
+
+            $expectedIds = array_map(
+                'intval',
+                $expectedStmt->fetchAll(\PDO::FETCH_COLUMN)
+            );
+
+            sort($expectedIds);
+
+            // Request the page without selecting
+            // either Shipping or Meetup.
+            [$status, $body] = $this->get(
+                '/pages/search.php',
+                [
+                    'browse' => 'all',
+                    'zip' => $zip,
+                    'radius' => (string)$radiusMiles
+                ]
+            );
+
+            // Verify successful page loading.
+            $this->assertSame(200, $status);
+
+            foreach ([
+                'Fatal error',
+                'SQLSTATE[',
+                'Unable to retrieve search results',
+                'Invalid Meetup Location'
+            ] as $error) {
+                $this->assertStringNotContainsString(
+                    $error,
+                    $body
+                );
+            }
+
+            // Extract the listing IDs shown on the page.
+            preg_match_all(
+                '/<article class="listing-card">.*?' .
+                'href="listing\.php\?id=(\d+)"/s',
+                $body,
+                $matches
+            );
+
+            $actualIds = array_map(
+                'intval',
+                $matches[1]
+            );
+
+            sort($actualIds);
+
+            // Verify the complete result set.
+            $this->assertSame(
+                $expectedIds,
+                $actualIds,
+                'Radius filtering must preserve shipping ' .
+                'and include only nearby meetup listings.'
+            );
+
+            // Verify all shipping listings remain visible.
+            foreach ($shippingIds as $id) {
+                $this->assertContains(
+                    $id,
+                    $actualIds,
+                    "Shipping listing {$id} disappeared."
+                );
+            }
+
+            // Verify each controlled test scenario.
+            $this->assertContains(
+                $fixtureIds['near_meetup'],
+                $actualIds,
+                'Nearby meetup listing should appear.'
+            );
+
+            $this->assertContains(
+                $fixtureIds['far_shipping'],
+                $actualIds,
+                'Distant shipping listing should remain visible.'
+            );
+
+            $this->assertNotContains(
+                $fixtureIds['far_meetup'],
+                $actualIds,
+                'Distant meetup listing should be excluded.'
+            );
+
+            // Confirm neither delivery method is selected.
+            $this->assertDoesNotMatchRegularExpression(
+                '/<input\b(?=[^>]*name="fulfillment")' .
+                '(?=[^>]*\bchecked\b)[^>]*>/s',
+                $body
+            );
+
+            // Verify ZIP and radius selections remain applied.
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*name="zip")' .
+                '(?=[^>]*value="92831")[^>]*>/s',
+                $body
+            );
+
+            $this->assertMatchesRegularExpression(
+                '/<option\b(?=[^>]*value="10")' .
+                '(?=[^>]*\bselected\b)[^>]*>/s',
+                $body
+            );
+
+        } finally {
+            // Delete all temporary listings,
+            // including if an assertion fails.
+            $delete = $pdo->prepare("
+                DELETE FROM listings
+                WHERE listing_id = :id
+            ");
+
+            foreach ($fixtureIds as $id) {
+                $delete->execute(['id' => $id]);
+            }
+        }
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH

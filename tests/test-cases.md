@@ -3345,9 +3345,11 @@ method is selected.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that applying a 10-mile radius to ZIP code 92831 without selecting a delivery method preserved all active shipping listings while restricting meetup listings based on distance. Three temporary listings were created at approximately 3, 20, and 40 miles to verify the behavior of nearby meetup, distant meetup, and distant shipping listings. The nearby meetup and distant shipping listings appeared in the results, while the meetup listing outside the radius was excluded. The returned listing IDs matched the expected MySQL query results, confirming that the radius did not restrict shipping listings. The ZIP code and radius selections remained applied, neither delivery method was selected, and the page loaded without PHP or database errors. All temporary listings were removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by leaving both delivery methods unselected, entering ZIP code 92831, and applying a 10-mile radius. Active shipping listings remained visible, while meetup listings beyond the selected distance were excluded. The selected ZIP code and radius were preserved, and the page displayed no PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
