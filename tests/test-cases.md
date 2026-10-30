@@ -3252,9 +3252,11 @@ missing from the reference table are handled appropriately.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that the meetup radius filter correctly rejected both invalid ZIP-code formats and ZIP codes missing from the reference database. The test submitted 12A45 to verify format validation and confirmed that 00000 was absent from the zip_code_locations table before testing the unknown ZIP scenario. Both inputs produced their corresponding validation messages, and no unfiltered listing results were returned. The result count remained zero, the entered ZIP codes and selected 10-mile radius were preserved, and the page loaded without PHP or database errors.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup and applying a 10-mile radius with invalid location information. Entering 12A45 was rejected by the browser's ZIP-code validation, and a direct request confirmed that the PHP backend also displayed the appropriate five-digit ZIP-code error. Entering the unknown ZIP code 00000 displayed the expected ZIP-code-not-found message. Neither scenario returned unfiltered listings, and the page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 

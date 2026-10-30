@@ -2977,6 +2977,174 @@ final class SearchPageTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-23-05: HANDLE INVALID OR UNKNOWN ZIP CODE
+    // =========================================
+
+    public function testMeetupRadiusRejectsInvalidOrUnknownZipCodes(): void
+    {
+        // Connect to the Docker test database.
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            getenv('DB_HOST') ?: 'db',
+            (int)(getenv('DB_PORT') ?: 3306),
+            getenv('DB_NAME') ?: 'omnibuy'
+        );
+
+        $pdo = new \PDO(
+            $dsn,
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+        );
+
+        // Verify that the unknown ZIP is not in the
+        // geographic reference table.
+        $unknownZip = '00000';
+
+        $zipStmt = $pdo->prepare("
+            SELECT 1
+            FROM zip_code_locations
+            WHERE zip_code = :zip
+            LIMIT 1
+        ");
+
+        $zipStmt->execute(['zip' => $unknownZip]);
+
+        $this->assertFalse(
+            $zipStmt->fetchColumn(),
+            'ZIP 00000 must be absent from the reference table.'
+        );
+
+        // Confirm that meetup listings normally appear
+        // when no radius filter is applied.
+        [$baselineStatus, $baselineBody] = $this->get(
+            '/pages/search.php',
+            [
+                'browse' => 'all',
+                'fulfillment' => 'meetup'
+            ]
+        );
+
+        $this->assertSame(200, $baselineStatus);
+
+        $this->assertStringContainsString(
+            '<article class="listing-card">',
+            $baselineBody,
+            'Test data needs active meetup listings.'
+        );
+
+        // Define the two invalid ZIP scenarios.
+        $testCases = [
+            'Invalid ZIP format' => [
+                'zip' => '12A45',
+                'message' =>
+                    'Enter a valid 5-digit ZIP code to filter or sort by distance.'
+            ],
+            'Unknown ZIP code' => [
+                'zip' => $unknownZip,
+                'message' =>
+                    'ZIP code not found. Please enter another ZIP code.'
+            ]
+        ];
+
+        foreach ($testCases as $scenario => $testData) {
+
+            // Request the search page using invalid ZIP data.
+            [$status, $body] = $this->get(
+                '/pages/search.php',
+                [
+                    'browse' => 'all',
+                    'fulfillment' => 'meetup',
+                    'zip' => $testData['zip'],
+                    'radius' => '10'
+                ]
+            );
+
+            // Verify the page responds successfully.
+            $this->assertSame(
+                200,
+                $status,
+                $scenario . ': Unexpected HTTP status.'
+            );
+
+            // Verify the location error appears.
+            $this->assertStringContainsString(
+                'Invalid Meetup Location',
+                $body,
+                $scenario . ': Missing validation heading.'
+            );
+
+            // Verify the correct error message appears.
+            $this->assertStringContainsString(
+                $testData['message'],
+                $body,
+                $scenario . ': Incorrect validation message.'
+            );
+
+            // Verify the error is marked as an alert.
+            $this->assertMatchesRegularExpression(
+                '/class="search-message search-message--error"' .
+                '\s+role="alert"/s',
+                $body
+            );
+
+            // Verify invalid input does not return
+            // unfiltered marketplace listings.
+            $this->assertStringNotContainsString(
+                '<article class="listing-card">',
+                $body,
+                $scenario . ': Listings should not be displayed.'
+            );
+
+            // Verify the results count remains zero.
+            $this->assertMatchesRegularExpression(
+                '/class="search-results__count"[^>]*>' .
+                '\s*0 results\b/s',
+                $body,
+                $scenario . ': Result count should be zero.'
+            );
+
+            // Verify the entered ZIP remains in the form.
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*name="zip")' .
+                '(?=[^>]*value="' .
+                preg_quote($testData['zip'], '/') .
+                '")[^>]*>/s',
+                $body,
+                $scenario . ': ZIP selection was not preserved.'
+            );
+
+            // Verify the 10-mile radius remains selected.
+            $this->assertMatchesRegularExpression(
+                '/<option\b(?=[^>]*value="10")' .
+                '(?=[^>]*selected)[^>]*>/s',
+                $body
+            );
+
+            // Verify no PHP or database errors appear.
+            $this->assertStringNotContainsString(
+                'Fatal error',
+                $body
+            );
+
+            $this->assertStringNotContainsString(
+                'Warning:',
+                $body
+            );
+
+            $this->assertStringNotContainsString(
+                'SQLSTATE[',
+                $body
+            );
+
+            $this->assertStringNotContainsString(
+                'Unable to retrieve search results',
+                $body
+            );
+        }
+    }
+
 
     // =========================================
     // TC-24-01: PRICE LOW TO HIGH
