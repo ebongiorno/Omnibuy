@@ -17,7 +17,6 @@ final class ListingCrudTest extends DatabaseTestCase
 
         $suffix = $this->uniqueSuffix();
 
-        // Create a temporary seller.
         $this->sellerId = $this->createUser('listing_seller');
 
         $this->pdo->prepare('
@@ -36,7 +35,6 @@ final class ListingCrudTest extends DatabaseTestCase
             'payout_reference' => "LISTING_TEST_$suffix",
         ]);
 
-        // Create a temporary category.
         $this->pdo->prepare('
             INSERT INTO categories (category_name)
             VALUES (:category_name)
@@ -112,7 +110,10 @@ final class ListingCrudTest extends DatabaseTestCase
         $this->assertIsArray($listing);
         $this->assertSame('Test Laptop', $listing['item_name']);
         $this->assertEquals(499.99, (float) $listing['price']);
-        $this->assertSame($this->sellerId, (int) $listing['seller_user_id']);
+        $this->assertSame(
+            $this->sellerId,
+            (int) $listing['seller_user_id']
+        );
     }
 
     public function testUpdateListing(): void
@@ -123,12 +124,16 @@ final class ListingCrudTest extends DatabaseTestCase
             UPDATE listings
             SET price = :price
             WHERE listing_id = :listing_id
+              AND seller_user_id = :seller_id
         ');
 
         $stmt->execute([
             'price' => 399.99,
             'listing_id' => $listingId,
+            'seller_id' => $this->sellerId,
         ]);
+
+        $this->assertSame(1, $stmt->rowCount());
 
         $check = $this->pdo->prepare('
             SELECT price
@@ -172,6 +177,43 @@ final class ListingCrudTest extends DatabaseTestCase
         $this->assertSame(
             0,
             (int) $check->fetchColumn()
+        );
+    }
+
+    public function testOtherSellerCannotUpdateListingPrice(): void
+    {
+        $listingId = $this->createTestListing();
+
+        $otherSellerId = $this->createUser('other_listing_seller');
+
+        $stmt = $this->pdo->prepare('
+            UPDATE listings
+            SET price = :price
+            WHERE listing_id = :listing_id
+              AND seller_user_id = :seller_id
+        ');
+
+        $stmt->execute([
+            'price' => 1.00,
+            'listing_id' => $listingId,
+            'seller_id' => $otherSellerId,
+        ]);
+
+        $this->assertSame(0, $stmt->rowCount());
+
+        $check = $this->pdo->prepare('
+            SELECT price
+            FROM listings
+            WHERE listing_id = :listing_id
+        ');
+
+        $check->execute([
+            'listing_id' => $listingId,
+        ]);
+
+        $this->assertEquals(
+            499.99,
+            (float) $check->fetchColumn()
         );
     }
 }
