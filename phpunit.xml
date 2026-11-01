@@ -12,6 +12,7 @@
         Unit:        fast tests of a single piece of PHP, no database or web server
         Integration: tests against the real MySQL database (schema rules, constraints)
         Functional:  HTTP requests to the running web container, checking real pages
+        Security:    focused CC6.6 regression tests for Marketplace Discovery
     -->
     <testsuites>
         <testsuite name="Unit">
@@ -22,6 +23,9 @@
         </testsuite>
         <testsuite name="Functional">
             <directory>tests/Functional</directory>
+        </testsuite>
+        <testsuite name="Security">
+            <file>tests/Security/MarketplaceMalformedInputTest.php</file>
         </testsuite>
     </testsuites>
 
