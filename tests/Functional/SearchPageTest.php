@@ -1407,7 +1407,7 @@ final class SearchPageTest extends TestCase
             // Extract listing IDs from rendered listing cards.
             preg_match_all(
                 '/<article class="listing-card">.*?' .
-                'href="listing\.php\?id=(\d+)".*?' .
+                'href="(?:\/pages\/)?listing\.php\?id=(\d+)".*?' .
                 '<\/article>/s',
                 $body,
                 $matches
@@ -1557,7 +1557,7 @@ final class SearchPageTest extends TestCase
             $this->assertSame(200, $allStatus);
 
             $this->assertStringContainsString(
-                'href="listing.php?id=' . $farIds[0] . '"',
+                'href="/pages/listing.php?id=' . $farIds[0] . '"',
                 $allBody,
                 'A distant listing should appear without a radius.'
             );
@@ -1593,7 +1593,7 @@ final class SearchPageTest extends TestCase
 
             // Verify the nearby meetup listing is included.
             $this->assertStringContainsString(
-                'href="listing.php?id=' . $nearId . '"',
+                'href="/pages/listing.php?id=' . $nearId . '"',
                 $body,
                 'The nearby meetup listing should remain visible.'
             );
@@ -1601,7 +1601,7 @@ final class SearchPageTest extends TestCase
             // Verify every known distant listing is excluded.
             foreach ($farIds as $farId) {
                 $this->assertStringNotContainsString(
-                    'href="listing.php?id=' . $farId . '"',
+                    'href="/pages/listing.php?id=' . $farId . '"',
                     $body,
                     'Distant meetup listing ' . $farId .
                     ' was not excluded.'
@@ -1826,7 +1826,7 @@ final class SearchPageTest extends TestCase
 
             // Extract IDs of displayed listing cards.
             preg_match_all(
-                '/href="listing\.php\?id=(\d+)"/',
+                '/href="(?:\/pages\/)?listing\.php\?id=(\d+)"/',
                 $body,
                 $matches
             );
@@ -2316,7 +2316,7 @@ final class SearchPageTest extends TestCase
                 // Extract displayed listing IDs.
                 preg_match_all(
                     '/<article class="listing-card">.*?' .
-                    'href="listing\.php\?id=(\d+)"/s',
+                    'href="(?:\/pages\/)?listing\.php\?id=(\d+)"/s',
                     $body,
                     $matches
                 );
@@ -2583,7 +2583,7 @@ final class SearchPageTest extends TestCase
             // Extract the listing IDs shown on the page.
             preg_match_all(
                 '/<article class="listing-card">.*?' .
-                'href="listing\.php\?id=(\d+)"/s',
+                'href="(?:\/pages\/)?listing\.php\?id=(\d+)"/s',
                 $body,
                 $matches
             );
@@ -2787,7 +2787,7 @@ final class SearchPageTest extends TestCase
 
             foreach ($createdIds as $scenario => $id) {
                 $this->assertStringContainsString(
-                    'href="listing.php?id=' . $id . '"',
+                    'href="/pages/listing.php?id=' . $id . '"',
                     $baselineBody,
                     "{$scenario} fixture must appear without a radius."
                 );
@@ -2822,7 +2822,7 @@ final class SearchPageTest extends TestCase
             // Extract displayed listing IDs.
             preg_match_all(
                 '/<article\b[^>]*class="listing-card"[^>]*>.*?' .
-                'href="listing\.php\?id=(\d+)"/s',
+                'href="(?:\/pages\/)?listing\.php\?id=(\d+)"/s',
                 $body,
                 $matches
             );
@@ -3265,7 +3265,7 @@ final class SearchPageTest extends TestCase
             $extractIds = static function (string $html): array {
                 preg_match_all(
                     '/<article class="listing-card">.*?' .
-                    'href="listing\.php\?id=(\d+)"/s',
+                    'href="(?:\/pages\/)?listing\.php\?id=(\d+)"/s',
                     $html,
                     $matches
                 );
