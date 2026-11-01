@@ -1,0 +1,97 @@
+# XSS assessment ONLY. Separate containers, localhost ports, and named volumes.
+# Source code is mounted read-only; editing files on the host still affects both stacks.
+services:
+
+  web:
+    build: .
+    container_name: omnibuy-xss-web
+    ports:
+      - "127.0.0.1:8082:80"
+
+    volumes:
+      - ./:/var/www/html:ro
+      # Uploaded profile photos (UC-04). A named volume so the web server
+      # can write to it and the photos stay out of git.
+      - profile_uploads:/var/www/html/public/uploads
+
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      # Address used in links inside emails (UC-03 password reset)
+      SITE_URL: http://localhost:8082
+      # Outgoing email goes to Mailpit; read it at http://localhost:8025
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM: no-reply@omnibuy.local
+
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+
+  # Catches every email the site sends, so nothing reaches real inboxes.
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: omnibuy-xss-mailpit
+
+    ports:
+      - "127.0.0.1:8026:8025"
+
+
+  db:
+    image: mysql:8.0
+    container_name: omnibuy-xss-db
+
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init/omnibuy_database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/init/zip_code_locations.sql:/docker-entrypoint-initdb.d/02-zip-locations.sql:ro
+      - ./seed_data.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
+
+    # Run a real query over TCP as the app user. `mysqladmin ping` over the
+    # local socket also succeeds against the temporary server MySQL runs while
+    # importing the init scripts, so the db was reported healthy before the
+    # schema and seed data were loaded.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysql --protocol=TCP -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" -e 'SELECT 1' \"$$MYSQL_DATABASE\""
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: omnibuy-xss-phpmyadmin
+
+    ports:
+      - "127.0.0.1:8083:80"
+
+    environment:
+      PMA_HOST: db
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+volumes:
+  mysql_data:
+    name: omnibuy_xss_isolated_mysql_data
+  profile_uploads:
+    name: omnibuy_xss_isolated_profile_uploads
