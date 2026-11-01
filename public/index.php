@@ -14,7 +14,7 @@ $sortOptions = [
     'price_high' => 'l.price DESC, l.created_at DESC'
 ];
 
-if (!array_key_exists($sort, $sortOptions)) {
+if (!is_string($sort) || !array_key_exists($sort, $sortOptions)) {
     $sort = 'recent';
 }
 
