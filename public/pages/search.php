@@ -8,7 +8,10 @@ require_once __DIR__ . '/../../db_connect.php';
 // SEARCH INPUT
 // =========================================
 
-$searchQuery = trim($_GET['q'] ?? '');
+$rawSearchQuery = $_GET['q'] ?? '';
+$searchQuery = is_string($rawSearchQuery)
+    ? trim($rawSearchQuery)
+    : '';
 $searchType = $_GET['search_type'] ?? 'items';
 $allowedSearchTypes = [
     'items',
@@ -136,7 +139,7 @@ $allowedSortOptions = [
     "
 ];
 
-if (!array_key_exists($sortOption, $allowedSortOptions)) {
+if (!is_string($sortOption) || !array_key_exists($sortOption, $allowedSortOptions)) {
     $sortOption = 'recent';
 }
 
@@ -153,8 +156,12 @@ $allowedConditions = [
     'refurbished',
     'for_parts'
 ];
+
 $conditionFilters = array_values(
-    array_intersect($conditionFilters, $allowedConditions)
+    array_intersect(
+        array_filter($conditionFilters, 'is_string'),
+        $allowedConditions
+    )
 );
 
 $conditionSql = '';
