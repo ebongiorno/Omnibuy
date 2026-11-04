@@ -1,0 +1,6 @@
+services:
+  db:
+    command:
+      - sh
+      - -c
+      - "echo 'SEC-CI-04: Intentional MySQL startup failure' >&2; exit 1"
