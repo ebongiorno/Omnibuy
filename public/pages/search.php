@@ -1781,5 +1781,6 @@ $hasNoResults =
         });
     </script>
 
+    <script src="/assets/js/image-fallback.js" defer></script>
 </body>
 </html>
