@@ -42,6 +42,13 @@
             }
         };
 
+        // Attach fallback handling to the main gallery image
+        useFallback(mainImage);
+
+        // Attach fallback handling to every thumbnail image
+        gallery.querySelectorAll('.listing-gallery__thumbnail img')
+            .forEach(useFallback);
+
         if (thumbs.length < 2) return;
 
         let selected = 0;
