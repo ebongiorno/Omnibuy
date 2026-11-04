@@ -76,6 +76,9 @@ Backup of *.doc*
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,microsoftoffice,visualstudiocode
 
+# Local database backups
+backups/
+
 ### Environment variables ###
 .env
 .env.local
