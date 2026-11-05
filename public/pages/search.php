@@ -498,6 +498,9 @@ if (
             c.category_name
         FROM listings AS l
 
+        INNER JOIN users AS u
+            ON u.user_id = l.seller_user_id
+
         LEFT JOIN listing_images AS li
             ON l.listing_id = li.listing_id
             AND li.display_order = 1
@@ -506,6 +509,7 @@ if (
             ON l.category_id = c.category_id
 
         WHERE l.listing_status = 'active'
+            AND u.account_status = 'active'
             $keywordSql
             $categorySql
             $priceSql
