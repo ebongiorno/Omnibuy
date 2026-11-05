@@ -256,8 +256,44 @@ include $header;
                                 'UTF-8'
                             ) ?>
                         </p>
-                        
-                        <p>
+
+                        <?php if ($listing['listing_status'] === 'active'): ?>
+
+                            <form
+                                action="/pages/my-listings.php"
+                                method="POST"
+                                onsubmit="return confirm('Are you sure you want to mark this listing as sold?');"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="action"
+                                    value="mark_sold"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="listing_id"
+                                    value="<?= (int) $listing['listing_id'] ?>"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="<?= htmlspecialchars(
+                                        csrfToken(),
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>"
+                                >
+
+                                <button type="submit" class="my-listings__mark-sold">
+                                    Mark as Sold
+                                </button>
+                            </form>
+
+                        <?php endif; ?>
+
+                         <p>
                             <strong>Created:</strong>
 
                             <?= htmlspecialchars(
