@@ -16,12 +16,38 @@
         // Broken image paths get a placeholder without triggering an error loop.
         const useFallback = (image) => {
             if (!image) return;
-            image.addEventListener('error', () => {
-                if (image.getAttribute('src') !== fallback) image.src = fallback;
-            });
+
+            const handleFailure = () => {
+                if (image.getAttribute('src') === fallback) {
+                    return;
+                }
+
+                image.src = fallback;
+
+                // If this is a gallery thumbnail, make its link safe too.
+                const thumbnailLink = image.closest(
+                    '[data-gallery-thumbnail]'
+                );
+
+                if (thumbnailLink) {
+                    thumbnailLink.setAttribute('href', fallback);
+                }
+            };
+
+            image.addEventListener('error', handleFailure);
+
+            // Covers an image that failed before JavaScript initialized.
+            if (image.complete && image.naturalWidth === 0) {
+                handleFailure();
+            }
         };
+
+        // Attach fallback handling to the main gallery image
         useFallback(mainImage);
-        gallery.querySelectorAll('.listing-gallery__thumbnail img').forEach(useFallback);
+
+        // Attach fallback handling to every thumbnail image
+        gallery.querySelectorAll('.listing-gallery__thumbnail img')
+            .forEach(useFallback);
 
         if (thumbs.length < 2) return;
 

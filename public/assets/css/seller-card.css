@@ -55,6 +55,12 @@
     font-size: 42px;
 }
 
+/* Always hide inactive seller image and placeholder elements. */
+.seller-card__image img[hidden],
+.seller-card__image > i[hidden] {
+    display: none !important;
+}
+
 
 /* =========================================
    SELLER CARD CONTENT

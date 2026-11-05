@@ -1,3 +1,12 @@
+<?php
+// Helper that handles unsafe or missing URL values on the server
+require_once __DIR__ . '/../../includes/marketplace-image.php';
+
+$cardImageUrl = marketplaceImageUrl(
+    $listing['image_url'] ?? null
+);
+?>
+
 <article class="listing-card">
     <a
         class="listing-card__image-link"
@@ -5,8 +14,17 @@
     >
         <div class="listing-card__image">
             <img
-                src="<?= htmlspecialchars($listing['image_url'] ?? '/assets/images/listing/listing-default-img.jpg', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
-                alt="<?= htmlspecialchars($listing['item_name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                src="<?= htmlspecialchars(
+                    $cardImageUrl,
+                    ENT_QUOTES | ENT_SUBSTITUTE,
+                    'UTF-8'
+                ) ?>"
+                alt="<?= htmlspecialchars(
+                    $listing['item_name'],
+                    ENT_QUOTES | ENT_SUBSTITUTE,
+                    'UTF-8'
+                ) ?>"
+                data-image-fallback
             >
         </div>
     </a>

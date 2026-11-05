@@ -25,7 +25,7 @@
             <directory>tests/Functional</directory>
         </testsuite>
         <testsuite name="Security">
-            <file>tests/Security/MarketplaceMalformedInputTest.php</file>
+            <directory>tests/Security</directory>
         </testsuite>
     </testsuites>
 

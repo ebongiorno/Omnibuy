@@ -343,6 +343,7 @@ try {
 
     </main>
 
+    <script src="/assets/js/image-fallback.js" defer></script>
     <!-- =========================================
          MOBILE NAVIGATION AND ACCOUNT MENU
          Same script the shared footer loads on every other page.
