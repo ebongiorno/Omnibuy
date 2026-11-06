@@ -523,9 +523,9 @@ marketplace search results.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings containing a unique search term. Both listings initially appeared in Browse All and keyword search results. After authenticating as the listing owner and marking one listing as sold, the database confirmed that its status changed to sold while the other listing remained active. Subsequent searches confirmed that the sold listing no longer appeared in either Browse All or keyword search results, while the active listing remained visible and accessible through its listing link. All assertions passed.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

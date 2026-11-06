@@ -243,6 +243,132 @@ final class MarkListingSoldTest extends TestCase
 
 
     // =========================================
+    // TC-14-03: EXCLUDE SOLD LISTINGS FROM SEARCH
+    // =========================================
+
+    public function testSoldListingIsExcludedFromActiveSearchResults(): void
+    {
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Use a unique term to isolate this test's listings.
+        $searchTerm = 'UC14Search' . bin2hex(random_bytes(6));
+
+        $soldName = $searchTerm . ' Sold Candidate';
+        $activeName = $searchTerm . ' Active Control';
+
+        $soldId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $soldName
+        );
+
+        $activeId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $activeName
+        );
+
+        $browseUrl = '/pages/search.php?browse=all';
+
+        $searchUrl = '/pages/search.php?' . http_build_query([
+            'q' => $searchTerm,
+            'search_type' => 'items',
+        ]);
+
+        // Both listings should initially appear in Browse All.
+        $beforeBrowse = $this->browser->get($browseUrl);
+
+        $this->assertSame(200, $beforeBrowse['status']);
+        $this->assertStringContainsString(
+            $soldName,
+            $beforeBrowse['body']
+        );
+        $this->assertStringContainsString(
+            $activeName,
+            $beforeBrowse['body']
+        );
+
+        // Both should also appear in keyword search.
+        $beforeSearch = $this->browser->get($searchUrl);
+
+        $this->assertSame(200, $beforeSearch['status']);
+        $this->assertStringContainsString(
+            $soldName,
+            $beforeSearch['body']
+        );
+        $this->assertStringContainsString(
+            $activeName,
+            $beforeSearch['body']
+        );
+
+        // Log in and mark the first listing as sold.
+        $token = $this->logInAs($seller['email']);
+
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $soldId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(303, $response['status']);
+
+        // Confirm the database statuses.
+        $this->assertSame(
+            'sold',
+            $this->listingStatus($soldId)
+        );
+
+        $this->assertSame(
+            'active',
+            $this->listingStatus($activeId)
+        );
+
+        // The sold listing must disappear from Browse All.
+        $afterBrowse = $this->browser->get($browseUrl);
+
+        $this->assertSame(200, $afterBrowse['status']);
+        $this->assertStringNotContainsString(
+            $soldName,
+            $afterBrowse['body']
+        );
+        $this->assertStringContainsString(
+            $activeName,
+            $afterBrowse['body']
+        );
+
+        // The sold listing must also disappear from search.
+        $afterSearch = $this->browser->get($searchUrl);
+
+        $this->assertSame(200, $afterSearch['status']);
+        $this->assertStringNotContainsString(
+            $soldName,
+            $afterSearch['body']
+        );
+        $this->assertStringContainsString(
+            $activeName,
+            $afterSearch['body']
+        );
+
+        // Verify the active listing's link remains available.
+        $this->assertStringContainsString(
+            'href="/pages/listing.php?id=' . $activeId . '"',
+            $afterSearch['body']
+        );
+
+        // Verify the sold listing's link is absent.
+        $this->assertStringNotContainsString(
+            'href="/pages/listing.php?id=' . $soldId . '"',
+            $afterSearch['body']
+        );
+    }
+
+
+
+    // =========================================
     // TEST DATA HELPERS
     // =========================================
 
