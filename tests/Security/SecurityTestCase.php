@@ -1,113 +1,153 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OmniBuy\Tests\Security;
 
+use OmniBuy\Tests\Support\HttpClient;
+use PDO;
 use PHPUnit\Framework\TestCase;
 
-/** HTTP integration test base. Uses isolated cookie jars per test identity. */
+/**
+ * Base for the SOC 2 CC6.1 logical access tests (SEC-01 to SEC-08 in
+ * docs/security/CC6.1-Test-Plan.md).
+ *
+ * Tests send real HTTP requests to the running site, so they see exactly
+ * what a browser would. Each test uses its own disposable accounts, which
+ * are deleted afterwards; real and seeded users are never touched.
+ */
 abstract class SecurityTestCase extends TestCase
 {
-    /** @var array<string,resource> */
-    private array $cookieJars = [];
+    protected const PASSWORD = 'Sup3rSecret!';
+    protected const LOGIN_ERROR = 'Incorrect email/username or password.';
 
-    protected function config(string $key): string
-    {
-        return trim((string) (getenv($key) ?: ''));
-    }
+    protected PDO $pdo;
 
-    protected function requireConfig(string ...$keys): void
-    {
-        foreach ($keys as $key) {
-            if ($this->config($key) === '') {
-                $this->markTestSkipped("Configure {$key} in the test environment; not assessed.");
-            }
-        }
-    }
+    /** @var list<int> */
+    private array $createdUserIds = [];
 
-    protected function endpoint(string $pathKey): string
+    protected function setUp(): void
     {
-        $this->requireConfig('OMNIBUY_BASE_URL', $pathKey);
-        return rtrim($this->config('OMNIBUY_BASE_URL'), '/') . '/' . ltrim($this->config($pathKey), '/');
-    }
+        parent::setUp();
 
-    /** @return array{status:int,body:string,headers:array<string,string>} */
-    protected function request(string $identity, string $method, string $pathKey, array $data = []): array
-    {
-        if (!extension_loaded('curl')) {
-            $this->markTestSkipped('PHP curl extension is required; not assessed.');
-        }
-        $url = $this->endpoint($pathKey);
-        $ch = curl_init($url);
-        if ($ch === false) {
-            throw new \RuntimeException('Cannot initialize cURL');
-        }
-        $cookieFile = $this->cookieJars[$identity] ?? tempnam(sys_get_temp_dir(), 'obsec_');
-        if ($cookieFile === false) {
-            throw new \RuntimeException('Cannot create temporary cookie jar');
-        }
-        $this->cookieJars[$identity] = $cookieFile;
-        $headers = [];
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADERFUNCTION => static function ($curl, string $header) use (&$headers): int {
-                $pieces = explode(':', $header, 2);
-                if (count($pieces) === 2) {
-                    $headers[strtolower(trim($pieces[0]))] = trim($pieces[1]);
-                }
-                return strlen($header);
-            },
-            CURLOPT_COOKIEJAR => $cookieFile,
-            CURLOPT_COOKIEFILE => $cookieFile,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_CUSTOMREQUEST => strtoupper($method),
-        ]);
-        if (strtoupper($method) === 'POST') {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
-        }
-        $body = curl_exec($ch);
-        if ($body === false) {
-            $error = curl_error($ch);
-            curl_close($ch);
-            throw new \RuntimeException("Request failed: {$error}");
-        }
-        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
-        return ['status' => $status, 'body' => (string) $body, 'headers' => $headers];
-    }
-
-    protected function login(string $identity, string $emailKey, string $passwordKey): void
-    {
-        $this->requireConfig($emailKey, $passwordKey, 'OMNIBUY_LOGIN_PATH');
-        $result = $this->request($identity, 'POST', 'OMNIBUY_LOGIN_PATH', [
-            $this->config('OMNIBUY_LOGIN_EMAIL_FIELD') ?: 'email' => $this->config($emailKey),
-            $this->config('OMNIBUY_LOGIN_PASSWORD_FIELD') ?: 'password' => $this->config($passwordKey),
-        ]);
-        self::assertContains($result['status'], [200, 302, 303], 'Test account login must succeed');
-    }
-
-    protected function assertDenied(array $response): void
-    {
-        self::assertContains($response['status'], [401, 403, 302, 303], 'Expected access denial or login redirect');
-        if (in_array($response['status'], [302, 303], true)) {
-            $location = $response['headers']['location'] ?? '';
-            self::assertNotSame('', $location, 'Redirect must include Location');
-            $loginPath = $this->config('OMNIBUY_LOGIN_PATH');
-            self::assertNotSame('', $loginPath, 'Configure login path to verify redirects');
-            self::assertStringContainsString($loginPath, $location, 'Redirect should lead to login');
-        }
+        $this->pdo = new PDO(
+            sprintf(
+                'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+                getenv('DB_HOST') ?: 'db',
+                (int) (getenv('DB_PORT') ?: 3306),
+                getenv('DB_NAME') ?: 'omnibuy'
+            ),
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+        );
     }
 
     protected function tearDown(): void
     {
-        foreach ($this->cookieJars as $file) {
-            if (is_string($file) && is_file($file)) {
-                unlink($file);
-            }
+        // Password resets are removed with the user (ON DELETE CASCADE).
+        foreach ($this->createdUserIds as $userId) {
+            $this->pdo->prepare('DELETE FROM users WHERE user_id = ?')->execute([$userId]);
         }
-        $this->cookieJars = [];
+        $this->createdUserIds = [];
+
         parent::tearDown();
+    }
+
+    /**
+     * A new browser with its own cookies, i.e. a separate person.
+     */
+    protected function browser(): HttpClient
+    {
+        return HttpClient::fromEnvironment();
+    }
+
+    /**
+     * Creates a disposable account with password self::PASSWORD. The row is
+     * committed so the web server can see it, and deleted in tearDown().
+     *
+     * @param array<string, mixed> $overrides users columns to set
+     * @return array<string, mixed> the users row, without password_hash
+     */
+    protected function createAccount(array $overrides = []): array
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $row = array_merge([
+            'first_name' => 'Sec',
+            'last_name' => "Tester$suffix",
+            'username' => "sec_$suffix",
+            'email' => "sec_$suffix@example.com",
+            'password_hash' => password_hash(self::PASSWORD, PASSWORD_DEFAULT),
+            'phone_number' => '555-' . random_int(1000, 9999),
+            'birth_date' => '2000-01-01',
+        ], $overrides);
+
+        $columns = array_keys($row);
+        $this->pdo->prepare(sprintf(
+            'INSERT INTO users (%s) VALUES (:%s)',
+            implode(', ', $columns),
+            implode(', :', $columns)
+        ))->execute($row);
+
+        $this->trackUser((int) $this->pdo->lastInsertId());
+
+        unset($row['password_hash']);
+
+        return ['user_id' => (int) $this->pdo->lastInsertId()] + $row;
+    }
+
+    /**
+     * Marks an account made some other way (e.g. through the sign-up form) for deletion.
+     */
+    protected function trackUser(int $userId): void
+    {
+        $this->createdUserIds[] = $userId;
+    }
+
+    /**
+     * Submits the real login form, CSRF token included.
+     *
+     * @return array{status: int, location: ?string, body: string}
+     */
+    protected function logIn(HttpClient $browser, string $identifier, string $password = self::PASSWORD): array
+    {
+        $page = $browser->get('/pages/login.php');
+
+        return $browser->post('/pages/login.php', [
+            'csrf_token' => HttpClient::csrfToken($page['body']),
+            'redirect' => '/',
+            'identifier' => $identifier,
+            'password' => $password,
+        ]);
+    }
+
+    /**
+     * A browser that is logged in as $account.
+     */
+    protected function loggedInAs(array $account): HttpClient
+    {
+        $browser = $this->browser();
+        $response = $this->logIn($browser, $account['email']);
+        self::assertSame(302, $response['status'], 'Test fixture: login should succeed');
+
+        return $browser;
+    }
+
+    /**
+     * The response sent the visitor to the login page instead of serving the page.
+     */
+    protected function assertRedirectsToLogin(array $response, string $message = ''): void
+    {
+        self::assertSame(302, $response['status'], $message ?: 'Expected a redirect to the login page');
+        self::assertStringStartsWith('/pages/login.php', (string) $response['location'], $message);
+    }
+
+    /** @return array<string, mixed> */
+    protected function userRow(int $userId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE user_id = ?');
+        $stmt->execute([$userId]);
+
+        return $stmt->fetch();
     }
 }
