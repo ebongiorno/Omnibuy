@@ -48,6 +48,14 @@ final class HttpClient
     }
 
     /**
+     * Sends a cookie the server didn't set, e.g. to replay an old session ID.
+     */
+    public function setCookie(string $name, string $value): void
+    {
+        $this->cookies[$name] = $value;
+    }
+
+    /**
      * Reads the hidden CSRF token from a page's form.
      */
     public static function csrfToken(string $html): string

@@ -16,9 +16,10 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
     {
         $stmt = $this->pdo->query("
             SELECT item_name
-            FROM listings
-            WHERE listing_status = 'active'
-            ORDER BY created_at DESC, listing_id DESC
+            FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active' AND u.account_status = 'active'
+            ORDER BY l.created_at DESC, l.listing_id DESC
             LIMIT 1
         ");
 
@@ -62,9 +63,10 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
     {
         $stmt = $this->pdo->query("
             SELECT item_name
-            FROM listings
-            WHERE listing_status = 'active'
-            ORDER BY listing_id ASC
+            FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active' AND u.account_status = 'active'
+            ORDER BY l.created_at DESC, l.listing_id DESC
             LIMIT 1
         ");
 
