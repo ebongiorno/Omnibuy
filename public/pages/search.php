@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 startSession();
 
 require_once __DIR__ . '/../../db_connect.php';
+require_once __DIR__ . '/../../includes/marketplace-image.php';
 
 // =========================================
 // SEARCH INPUT
@@ -497,6 +498,9 @@ if (
             c.category_name
         FROM listings AS l
 
+        INNER JOIN users AS u
+            ON u.user_id = l.seller_user_id
+
         LEFT JOIN listing_images AS li
             ON l.listing_id = li.listing_id
             AND li.display_order = 1
@@ -505,6 +509,7 @@ if (
             ON l.category_id = c.category_id
 
         WHERE l.listing_status = 'active'
+            AND u.account_status = 'active'
             $keywordSql
             $categorySql
             $priceSql
@@ -1535,20 +1540,34 @@ $hasNoResults =
                         <?php if ($searchType === 'seller_profiles'): ?>
                             <div class="seller-grid">
                                 <?php foreach ($sellers as $seller): ?>
-                                    <article class="seller-card">
+                                    <article class="seller-card">  
+                                        <?php
+                                            $sellerImageUrl = marketplaceImageUrl(
+                                                $seller['profile_image_url'] ?? null,
+                                                ''
+                                            );
+                                        ?>
+
                                         <div class="seller-card__image">
-                                            <?php if (!empty($seller['profile_image_url'])): ?>
+                                            <?php if ($sellerImageUrl !== ''): ?>
                                                 <img
                                                     src="<?= htmlspecialchars(
-                                                        $seller['profile_image_url']
-                                                        ) ?>"
+                                                    $sellerImageUrl,
+                                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                                    'UTF-8'
+                                                    ) ?>"
                                                     alt=""
-                                                    >
-                                            <?php else: ?>
+                                                    data-seller-image
+                                                >
+
                                                 <i
                                                     class="fa-solid fa-user"
                                                     aria-hidden="true"
+                                                    data-seller-placeholder
+                                                    hidden
                                                 ></i>
+                                            <?php else: ?>
+                                                <i class="fa-solid fa-user" aria-hidden="true"></i>
                                             <?php endif; ?>
                                         </div>
 
@@ -1781,5 +1800,7 @@ $hasNoResults =
         });
     </script>
 
+    <script src="/assets/js/image-fallback.js" defer></script>
+    <script src="/assets/js/seller-image-fallback.js" defer></script>
 </body>
 </html>

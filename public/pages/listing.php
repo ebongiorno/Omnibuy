@@ -5,6 +5,7 @@ declare(strict_types=1);
 // UC-25, Phase 4: listing details, gallery, purchase UI, and listing reviews.
 // Install as public/pages/listing.php.
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/marketplace-image.php';
 startSession();
 
 /** Escape text and attribute values from the database before rendering HTML. */
@@ -187,7 +188,7 @@ $hasListingPhotos = count($images) > 0;
 $galleryImages = [];
 
 foreach ($images as $image) {
-    $galleryImages[] = listingImageUrl($image['image_url'] ?? null, $defaultImage);
+    $galleryImages[] = marketplaceImageUrl($image['image_url'] ?? null, $defaultImage);
 }
 
 if (!$galleryImages) {
@@ -413,7 +414,7 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                             <div class="listing-detail__seller">
                                 <div class="listing-detail__seller-avatar" aria-hidden="true">
                                     <?php if (!empty($listing['seller_image_url'])): ?>
-                                        <img src="<?= listingEscape(listingImageUrl($listing['seller_image_url'], $defaultImage)) ?>" alt="" loading="lazy" width="64" height="64">
+                                        <img src="<?= listingEscape(marketplaceImageUrl($listing['seller_image_url'], $defaultImage)) ?>" alt="" loading="lazy" width="64" height="64">
                                     <?php else: ?>
                                         <?= listingEscape(strtoupper(substr((string) $listing['store_name'], 0, 1))) ?>
                                     <?php endif; ?>

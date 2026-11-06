@@ -4,6 +4,7 @@
 // listings. Phone and email are only shown to logged-in users.
 
 require_once __DIR__ . '/../../includes/profile.php';
+require_once __DIR__ . '/../../includes/marketplace-image.php';
 
 startSession();
 
@@ -44,8 +45,23 @@ include __DIR__ . '/../components/header.php';
     </div>
   <?php else: ?>
     <header class="profile-card">
-      <img class="profile-card__avatar" alt=""
-        src="<?= htmlspecialchars($profile['profile_image_url']) ?>">
+      <?php
+      $profileAvatarUrl = marketplaceImageUrl(
+        $profile['profile_image_url'] ?? null,
+        '/assets/icons/default-avatar.png'
+      );
+      ?>
+
+      <img
+        class="profile-card__avatar"
+        alt=""
+        src="<?= htmlspecialchars(
+            $profileAvatarUrl,
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        ) ?>"
+        data-profile-avatar
+      >
 
       <div class="profile-card__body">
         <h1 class="profile-card__name"><?= htmlspecialchars($profile['display_name']) ?></h1>
@@ -142,5 +158,7 @@ include __DIR__ . '/../components/header.php';
     <?php endif; ?>
   <?php endif; ?>
 </section>
+
+<script src="/assets/js/profile-avatar-fallback.js" defer></script>
 
 <?php include __DIR__ . '/../components/footer.php'; ?>
