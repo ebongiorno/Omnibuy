@@ -126,7 +126,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND `condition` = 'good'
         ");
 
@@ -207,7 +209,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->query("
             SELECT `condition`
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
             GROUP BY `condition`
             ORDER BY COUNT(*) DESC
             LIMIT 2
@@ -226,7 +230,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->prepare("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND `condition` IN (?, ?)
         ");
 
@@ -304,7 +310,9 @@ final class SearchPageTest extends TestCase
                 `condition` AS selected_condition,
                 fulfillment_type
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type IN ('shipping', 'meetup')
             GROUP BY `condition`, fulfillment_type
             ORDER BY COUNT(*) DESC
@@ -325,7 +333,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->prepare("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND `condition` = :condition
                 AND fulfillment_type = :fulfillment
         ");
@@ -344,7 +354,9 @@ final class SearchPageTest extends TestCase
         $totalCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
         ")->fetchColumn();
 
         $this->assertGreaterThan(
@@ -421,7 +433,9 @@ final class SearchPageTest extends TestCase
         $totalCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
         ")->fetchColumn();
 
         // Choose an existing condition with active listings.
@@ -430,7 +444,9 @@ final class SearchPageTest extends TestCase
                 `condition` AS selected_condition,
                 COUNT(*) AS condition_count
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
             GROUP BY `condition`
             ORDER BY COUNT(*) ASC
             LIMIT 1
@@ -605,7 +621,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
         ");
 
@@ -623,7 +641,9 @@ final class SearchPageTest extends TestCase
         $meetupCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'meetup'
         ")->fetchColumn();
 
@@ -719,7 +739,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'meetup'
         ");
 
@@ -737,7 +759,9 @@ final class SearchPageTest extends TestCase
         $shippingCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
         ")->fetchColumn();
 
@@ -847,14 +871,18 @@ final class SearchPageTest extends TestCase
         $expectedCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
         ")->fetchColumn();
 
         // Count active shipping listings.
         $shippingCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
         ")->fetchColumn();
 
@@ -862,7 +890,9 @@ final class SearchPageTest extends TestCase
         $meetupCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'meetup'
         ")->fetchColumn();
 
@@ -995,7 +1025,9 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
                 AND `condition` = 'good'
         ");
@@ -1014,7 +1046,9 @@ final class SearchPageTest extends TestCase
         $shippingTotal = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
         ")->fetchColumn();
 
@@ -1115,14 +1149,18 @@ final class SearchPageTest extends TestCase
         $totalCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
         ")->fetchColumn();
 
         // Count active shipping listings.
         $shippingCount = (int)$pdo->query("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
         ")->fetchColumn();
 
@@ -1331,9 +1369,11 @@ final class SearchPageTest extends TestCase
             $expectedStmt = $pdo->prepare("
                 SELECT l.listing_id
                 FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
                 JOIN zip_code_locations AS z
                     ON z.zip_code = :zip
                 WHERE l.listing_status = 'active'
+                AND eligible_seller.account_status = 'active'
                     AND l.fulfillment_type = 'meetup'
                     AND l.latitude IS NOT NULL
                     AND l.longitude IS NOT NULL
@@ -1358,7 +1398,7 @@ final class SearchPageTest extends TestCase
             $this->assertContains($fixtureId, $expectedIds);
 
             // Request the search results page.
-            [$status, $body] = $this->get(
+            [$status, $body] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -1479,7 +1519,9 @@ final class SearchPageTest extends TestCase
         $farStmt = $pdo->prepare("
             SELECT listing_id
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'meetup'
                 AND latitude IS NOT NULL
                 AND longitude IS NOT NULL
@@ -1546,7 +1588,7 @@ final class SearchPageTest extends TestCase
 
         try {
             // Verify distant listings appear without a radius.
-            [$allStatus, $allBody] = $this->get(
+            [$allStatus, $allBody] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -1563,7 +1605,7 @@ final class SearchPageTest extends TestCase
             );
 
             // Apply the 10-mile meetup radius filter.
-            [$status, $body] = $this->get(
+            [$status, $body] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -1796,7 +1838,7 @@ final class SearchPageTest extends TestCase
             }
 
             // Request listings within 10 miles of ZIP 92831.
-            [$status, $body] = $this->get(
+            [$status, $body] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -1879,7 +1921,7 @@ final class SearchPageTest extends TestCase
     {
         // First confirm that active meetup listings exist
         // when no radius filter is applied.
-        [$baselineStatus, $baselineBody] = $this->get(
+        [$baselineStatus, $baselineBody] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -1898,7 +1940,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Apply a 10-mile radius with no ZIP code.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -2015,7 +2057,7 @@ final class SearchPageTest extends TestCase
 
         // Confirm that meetup listings normally appear
         // when no radius filter is applied.
-        [$baselineStatus, $baselineBody] = $this->get(
+        [$baselineStatus, $baselineBody] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -2048,7 +2090,7 @@ final class SearchPageTest extends TestCase
         foreach ($testCases as $scenario => $testData) {
 
             // Request the search page using invalid ZIP data.
-            [$status, $body] = $this->get(
+            [$status, $body] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -2225,7 +2267,9 @@ final class SearchPageTest extends TestCase
         $expectedStmt = $pdo->prepare("
             SELECT listing_id
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'meetup'
                 AND latitude IS NOT NULL
                 AND longitude IS NOT NULL
@@ -2280,7 +2324,7 @@ final class SearchPageTest extends TestCase
                 sort($expectedIds);
 
                 // Request search results for this radius.
-                [$status, $body] = $this->get(
+                [$status, $body] = $this->getAllSearchPages(
                     '/pages/search.php',
                     [
                         'browse' => 'all',
@@ -2511,7 +2555,9 @@ final class SearchPageTest extends TestCase
                 $pdo->query("
                     SELECT listing_id
                     FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
                     WHERE listing_status = 'active'
+                    AND eligible_seller.account_status = 'active'
                         AND fulfillment_type = 'shipping'
                 ")->fetchAll(\PDO::FETCH_COLUMN)
             );
@@ -2526,7 +2572,9 @@ final class SearchPageTest extends TestCase
             $expectedStmt = $pdo->prepare("
                 SELECT listing_id
                 FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
                 WHERE listing_status = 'active'
+                AND eligible_seller.account_status = 'active'
                     AND (
                         fulfillment_type = 'shipping'
                         OR (
@@ -2556,7 +2604,7 @@ final class SearchPageTest extends TestCase
 
             // Request the page without selecting
             // either Shipping or Meetup.
-            [$status, $body] = $this->get(
+            [$status, $body] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -2775,7 +2823,7 @@ final class SearchPageTest extends TestCase
 
             // First verify all three listings appear
             // when no radius filter is applied.
-            [$baselineStatus, $baselineBody] = $this->get(
+            [$baselineStatus, $baselineBody] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -2794,7 +2842,7 @@ final class SearchPageTest extends TestCase
             }
 
             // Apply the 10-mile meetup radius filter.
-            [$status, $body] = $this->get(
+            [$status, $body] = $this->getAllSearchPages(
                 '/pages/search.php',
                 [
                     'browse' => 'all',
@@ -2985,6 +3033,7 @@ final class SearchPageTest extends TestCase
                 POINT(z.longitude, z.latitude)
             ) AS distance_meters
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             JOIN zip_code_locations AS z
                 ON z.zip_code = :zip
             WHERE l.listing_id = :id
@@ -3186,11 +3235,13 @@ final class SearchPageTest extends TestCase
                         POINT(z.longitude, z.latitude)
                     ) AS distance_meters
                 FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
 
                 JOIN zip_code_locations AS z
                     ON z.zip_code = :zip
 
                 WHERE l.listing_status = 'active'
+                AND eligible_seller.account_status = 'active'
                     AND l.fulfillment_type = 'meetup'
                     AND l.`condition` = 'good'
                     AND l.latitude IS NOT NULL
@@ -3226,13 +3277,13 @@ final class SearchPageTest extends TestCase
             ];
 
             // Request the page before changing sorting.
-            [$beforeStatus, $beforeBody] = $this->get(
+            [$beforeStatus, $beforeBody] = $this->getAllSearchPages(
                 '/pages/search.php',
                 $query + ['sort' => 'recent']
             );
 
             // Change sorting while keeping the filters.
-            [$afterStatus, $afterBody] = $this->get(
+            [$afterStatus, $afterBody] = $this->getAllSearchPages(
                 '/pages/search.php',
                 $query + ['sort' => 'distance_near']
             );
@@ -3433,11 +3484,15 @@ final class SearchPageTest extends TestCase
                 l.item_name,
                 l.price
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
         ");
@@ -3464,7 +3519,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Request the search page with ascending price sort.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -3559,11 +3614,15 @@ final class SearchPageTest extends TestCase
                 l.item_name,
                 l.price
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
         ");
@@ -3590,7 +3649,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Request the search page with descending price sorting.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -3687,11 +3746,15 @@ final class SearchPageTest extends TestCase
                 l.item_name,
                 l.created_at
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
             ORDER BY
@@ -3722,7 +3785,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Request Browse All with Newest sorting.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -3808,11 +3871,15 @@ final class SearchPageTest extends TestCase
                 l.item_name,
                 l.created_at
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
             ORDER BY
@@ -3843,7 +3910,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Request Browse All with Oldest sorting.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -3927,12 +3994,16 @@ final class SearchPageTest extends TestCase
         $stmt = $pdo->query("
             SELECT l.`condition` AS selected_condition
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND l.fulfillment_type = 'shipping'
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
             GROUP BY l.`condition`
@@ -3959,7 +4030,9 @@ final class SearchPageTest extends TestCase
         $countStmt = $pdo->prepare("
             SELECT COUNT(*)
             FROM listings
+            INNER JOIN users AS eligible_seller ON eligible_seller.user_id = listings.seller_user_id
             WHERE listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND fulfillment_type = 'shipping'
                 AND `condition` = :condition
         ");
@@ -3978,13 +4051,17 @@ final class SearchPageTest extends TestCase
                 l.item_name,
                 l.price
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND l.fulfillment_type = 'shipping'
                 AND l.`condition` = :condition
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
             ORDER BY
@@ -4001,7 +4078,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Start with Newest sorting and both filters.
-        [$initialStatus, $initialBody] = $this->get(
+        [$initialStatus, $initialBody] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -4014,7 +4091,7 @@ final class SearchPageTest extends TestCase
         $this->assertSame(200, $initialStatus);
 
         // Change sorting while keeping both filters.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -4161,16 +4238,20 @@ final class SearchPageTest extends TestCase
                     POINT(z.longitude, z.latitude)
                 ) AS distance_meters
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             JOIN zip_code_locations AS z
                 ON z.zip_code = :zip
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND l.fulfillment_type = 'meetup'
                 AND l.latitude IS NOT NULL
                 AND l.longitude IS NOT NULL
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
             ORDER BY
@@ -4212,7 +4293,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Request Browse All with Near to Far sorting.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -4320,11 +4401,15 @@ final class SearchPageTest extends TestCase
                 l.item_name,
                 l.created_at
             FROM listings AS l
+                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
+            AND eligible_seller.account_status = 'active'
                 AND (
                     SELECT COUNT(*)
                     FROM listings AS other
+                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
                     WHERE other.listing_status = 'active'
+                    AND other_eligible_seller.account_status = 'active'
                         AND other.item_name = l.item_name
                 ) = 1
             ORDER BY
@@ -4344,7 +4429,7 @@ final class SearchPageTest extends TestCase
         );
 
         // Request the search page with an invalid sort value.
-        [$status, $body] = $this->get(
+        [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             [
                 'browse' => 'all',
@@ -4404,6 +4489,36 @@ final class SearchPageTest extends TestCase
             $body,
             'Newest should be selected after an invalid sort.'
         );
+    }
+
+
+    /**
+     * Earlier functional cases inspect the complete matching set. With MD-SEC-08,
+     * obtain each actual HTTP page instead of assuming page 1 contains everything.
+     * The first page's total-result label is preserved for other assertions.
+     * This does NOT bypass or raise the application-level page size.
+     *
+     * @param array<string, mixed> $query
+     * @return array{int, string}
+     */
+    private function getAllSearchPages(string $path, array $query = []): array
+    {
+        unset($query['page']);
+        [$status, $first] = $this->get($path, $query);
+        if ($status !== 200 || $path !== '/pages/search.php') {
+            return [$status, $first];
+        }
+        if (!preg_match('/class="search-results__count"[^>]*>\s*(\d+)\s+results?\b/s', $first, $matches)) {
+            return [$status, $first];
+        }
+        $pages = (int) ceil((int) $matches[1] / 12);
+        for ($page = 2; $page <= $pages && $page <= 1000; $page++) {
+            [$nextStatus, $nextBody] = $this->get($path, $query + ['page' => (string) $page]);
+            $this->assertSame(200, $nextStatus, "Search page {$page} should load successfully.");
+            $this->assertStringNotContainsString('Unable to retrieve search results', $nextBody);
+            $first .= "\n" . $nextBody;
+        }
+        return [$status, $first];
     }
 
     /**

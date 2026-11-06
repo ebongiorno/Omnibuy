@@ -9,6 +9,23 @@ require_once __DIR__ . '/../../includes/marketplace-image.php';
 // SEARCH INPUT
 // =========================================
 
+// MD-SEC-08: Fixed server-side pagination; page numbers are never used
+// directly in SQL. Invalid or unreasonably large requests start at page 1.
+$resultsPerPage = 12;
+$maximumPage = 1000;
+$rawPage = $_GET['page'] ?? '1';
+$currentPage = 1;
+if (is_string($rawPage) && preg_match('/^[1-9][0-9]*$/D', $rawPage)) {
+    $pageInput = filter_var($rawPage, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => $maximumPage],
+    ]);
+    if ($pageInput !== false) {
+        $currentPage = $pageInput;
+    }
+}
+$totalPages = 0;
+$offset = 0;
+
 $rawSearchQuery = $_GET['q'] ?? '';
 $searchQuery = is_string($rawSearchQuery)
     ? trim($rawSearchQuery)
@@ -431,14 +448,24 @@ function executeWithRetry(
     string $sql,
     array $params = [],
     int $maxAttempts = 2,
-    int $delaySeconds = 2
+    int $delaySeconds = 2,
+    array $integerParams = []
 ): array {
     $attempt = 0;
 
     while ($attempt < $maxAttempts) {
         try {
             $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
+            foreach ($params as $name => $value) {
+                $stmt->bindValue(
+                    ':' . ltrim((string)$name, ':'),
+                    $value,
+                    in_array($name, $integerParams, true)
+                        ? PDO::PARAM_INT
+                        : PDO::PARAM_STR
+                );
+            }
+            $stmt->execute();
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -466,6 +493,12 @@ function escapeLike(string $value): string
 }
 
 
+/** Build a URL using validated, canonical search state (not raw GET arrays). */
+function searchPaginationUrl(array $query, int $page): string
+{
+    $query['page'] = $page;
+    return '/pages/search.php?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+}
 
 // =========================================
 // ITEM SEARCH
@@ -484,18 +517,9 @@ if (
     && $priceError === ''
 ) {
 
-    $sql = "
-        SELECT
-            l.listing_id,
-            l.item_name,
-            l.item_description,
-            l.price,
-            l.`condition`,
-            l.fulfillment_type,
-            l.category_id,
-            l.created_at,
-            li.image_url,
-            c.category_name
+    // Both queries use identical joins and filters so totals always reflect
+    // the same eligible listings displayed by Marketplace Discovery.
+    $itemFromWhereSql = "
         FROM listings AS l
 
         INNER JOIN users AS u
@@ -516,8 +540,24 @@ if (
             $conditionSql
             $fulfillmentSql
             $distanceSql
+    ";
 
+    $countSql = "SELECT COUNT(DISTINCT l.listing_id) AS total $itemFromWhereSql";
+    $sql = "
+        SELECT
+            l.listing_id,
+            l.item_name,
+            l.item_description,
+            l.price,
+            l.`condition`,
+            l.fulfillment_type,
+            l.category_id,
+            l.created_at,
+            li.image_url,
+            c.category_name
+        $itemFromWhereSql
         ORDER BY $orderBySql
+        LIMIT :page_limit OFFSET :page_offset
     ";
 
     try {
@@ -561,21 +601,26 @@ if (
             $distanceParams
         );
 
-        // Add coordinates for Near to Far sorting.
-        if ($distanceSortActive) {
-
-            $params['sort_longitude'] = $buyerLongitude;
-            $params['sort_latitude'] = $buyerLatitude;
-
+        // The COUNT query does not include ORDER BY and does not need
+        // sort coordinates; it uses the same WHERE filter parameters.
+        $countRows = executeWithRetry($pdo, $countSql, $params);
+        $resultCount = (int)($countRows[0]['total'] ?? 0);
+        $totalPages = min($maximumPage, (int)ceil($resultCount / $resultsPerPage));
+        if ($totalPages > 0) {
+            $currentPage = min($currentPage, $totalPages);
+            $offset = ($currentPage - 1) * $resultsPerPage;
         }
 
+        // Sorting coordinates apply only to the page retrieval query.
+        if ($distanceSortActive) {
+            $params['sort_longitude'] = $buyerLongitude;
+            $params['sort_latitude'] = $buyerLatitude;
+        }
+        $params['page_limit'] = $resultsPerPage;
+        $params['page_offset'] = $offset;
         $listings = executeWithRetry(
-            $pdo,
-            $sql,
-            $params
+            $pdo, $sql, $params, 2, 2, ['page_limit', 'page_offset']
         );
-
-        $resultCount = count($listings);
 
     } catch (PDOException $e) {
         $searchError = true;
@@ -597,29 +642,7 @@ if (
     && $searchQuery !== ''
 ) {
 
-    $sql = "
-        SELECT
-            sp.user_id,
-            sp.store_name,
-            sp.is_verified,
-
-            u.username,
-            u.first_name,
-
-            CASE
-                WHEN u.is_last_name_hidden = FALSE
-                THEN u.last_name
-                ELSE NULL
-            END AS last_name,
-
-            u.profile_image_url,
-
-            CASE
-                WHEN u.is_bio_hidden = FALSE
-                THEN u.bio
-                ELSE NULL
-            END AS bio
-
+    $sellerFromWhereSql = "
         FROM seller_profiles AS sp
 
         INNER JOIN users AS u
@@ -645,10 +668,37 @@ if (
                     ) LIKE :full_name ESCAPE '!'
                 )
             )
+    ";
+    $sellerCountSql = "SELECT COUNT(*) AS total $sellerFromWhereSql";
+    $sql = "
+        SELECT
+            sp.user_id,
+            sp.store_name,
+            sp.is_verified,
 
+            u.username,
+            u.first_name,
+
+            CASE
+                WHEN u.is_last_name_hidden = FALSE
+                THEN u.last_name
+                ELSE NULL
+            END AS last_name,
+
+            u.profile_image_url,
+
+            CASE
+                WHEN u.is_bio_hidden = FALSE
+                THEN u.bio
+                ELSE NULL
+            END AS bio
+
+        $sellerFromWhereSql
         ORDER BY
             sp.store_name ASC,
-            u.username ASC
+            u.username ASC,
+            sp.user_id ASC
+        LIMIT :page_limit OFFSET :page_offset
     ";
 
     try {
@@ -663,13 +713,18 @@ if (
             'full_name' => $searchValue
         ];
 
+        $countRows = executeWithRetry($pdo, $sellerCountSql, $params);
+        $resultCount = (int)($countRows[0]['total'] ?? 0);
+        $totalPages = min($maximumPage, (int)ceil($resultCount / $resultsPerPage));
+        if ($totalPages > 0) {
+            $currentPage = min($currentPage, $totalPages);
+            $offset = ($currentPage - 1) * $resultsPerPage;
+        }
+        $params['page_limit'] = $resultsPerPage;
+        $params['page_offset'] = $offset;
         $sellers = executeWithRetry(
-            $pdo,
-            $sql,
-            $params
+            $pdo, $sql, $params, 2, 2, ['page_limit', 'page_offset']
         );
-
-        $resultCount = count($sellers);
 
     } catch (PDOException $e) {
         $searchError = true;
@@ -679,6 +734,39 @@ if (
             . $e->getMessage()
         );
     }
+}
+
+// Preserve only validated filters when navigating to another page.
+$paginationQuery = [
+    'q' => $searchQuery,
+    'search_type' => $searchType,
+];
+if ($searchType === 'items') {
+    if ($browseAll) {
+        $paginationQuery['browse'] = 'all';
+    }
+    if ($selectedCategoryId !== null) {
+        $paginationQuery['category'] = $selectedCategoryId;
+    }
+    if ($minPrice !== null) {
+        $paginationQuery['min_price'] = $minPriceInput;
+    }
+    if ($maxPrice !== null) {
+        $paginationQuery['max_price'] = $maxPriceInput;
+    }
+    if ($conditionFilters !== []) {
+        $paginationQuery['condition'] = $conditionFilters;
+    }
+    if ($fulfillmentFilter !== '') {
+        $paginationQuery['fulfillment'] = $fulfillmentFilter;
+    }
+    if ($buyerZip !== '' && $fulfillmentFilter !== 'shipping') {
+        $paginationQuery['zip'] = $buyerZip;
+    }
+    if ($radiusMiles !== null && $fulfillmentFilter !== 'shipping') {
+        $paginationQuery['radius'] = $radiusMiles;
+    }
+    $paginationQuery['sort'] = $sortOption;
 }
 
 $hasNoResults =
@@ -707,6 +795,15 @@ $hasNoResults =
 
     <!-- Search page styles -->
     <link rel="stylesheet" href="/assets/css/search.css">
+
+    <!-- MD-SEC-08 pagination controls -->
+    <style>
+        .search-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; margin: 2rem 0 1rem; }
+        .search-pagination__link { display: inline-flex; min-width: 2.5rem; min-height: 2.5rem; align-items: center; justify-content: center; padding: .5rem .75rem; border: 1px solid currentColor; border-radius: .35rem; text-decoration: none; }
+        .search-pagination__link--current { font-weight: 700; background: #e8edf4; color: #172b4d; }
+        .search-pagination__link:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
+        .search-results__range { margin-top: .25rem; }
+    </style>
 
     <!-- Font Awesome -->
     <script
@@ -1238,6 +1335,12 @@ $hasNoResults =
                             <p class="search-results__count">
                                 <?= $resultCount . ' ' . ($resultCount === 1 ? 'result' : 'results') ?>
                             </p>
+                            <?php if ($resultCount > 0): ?>
+                                <p class="search-results__range">
+                                    Showing <?= $offset + 1 ?>–<?= min($offset + $resultsPerPage, $resultCount) ?>
+                                    of <?= $resultCount ?>
+                                </p>
+                            <?php endif; ?>
 
                         </div>
 
@@ -1628,6 +1731,37 @@ $hasNoResults =
                                     ?>
                                 <?php endforeach; ?>
                             </div>
+                        <?php endif; ?>
+
+                        <?php if ($totalPages > 1): ?>
+                            <nav class="search-pagination" aria-label="Search results pagination">
+                                <?php if ($currentPage > 1): ?>
+                                    <a class="search-pagination__link" href="<?= htmlspecialchars(searchPaginationUrl($paginationQuery, $currentPage - 1), ENT_QUOTES, 'UTF-8') ?>">Previous</a>
+                                <?php endif; ?>
+
+                                <?php
+                                    // Keep navigation compact even for large result sets.
+                                    $firstPage = max(1, $currentPage - 2);
+                                    $lastPage = min($totalPages, $currentPage + 2);
+                                ?>
+                                <?php if ($firstPage > 1): ?>
+                                    <a class="search-pagination__link" href="<?= htmlspecialchars(searchPaginationUrl($paginationQuery, 1), ENT_QUOTES, 'UTF-8') ?>">1</a>
+                                    <?php if ($firstPage > 2): ?><span aria-hidden="true">…</span><?php endif; ?>
+                                <?php endif; ?>
+                                <?php for ($pageNumber = $firstPage; $pageNumber <= $lastPage; $pageNumber++): ?>
+                                    <a class="search-pagination__link<?= $pageNumber === $currentPage ? ' search-pagination__link--current' : '' ?>"
+                                       href="<?= htmlspecialchars(searchPaginationUrl($paginationQuery, $pageNumber), ENT_QUOTES, 'UTF-8') ?>"
+                                       <?= $pageNumber === $currentPage ? 'aria-current="page"' : '' ?>
+                                       aria-label="Page <?= $pageNumber ?>"><?= $pageNumber ?></a>
+                                <?php endfor; ?>
+                                <?php if ($lastPage < $totalPages): ?>
+                                    <?php if ($lastPage < $totalPages - 1): ?><span aria-hidden="true">…</span><?php endif; ?>
+                                    <a class="search-pagination__link" href="<?= htmlspecialchars(searchPaginationUrl($paginationQuery, $totalPages), ENT_QUOTES, 'UTF-8') ?>"><?= $totalPages ?></a>
+                                <?php endif; ?>
+                                <?php if ($currentPage < $totalPages): ?>
+                                    <a class="search-pagination__link" href="<?= htmlspecialchars(searchPaginationUrl($paginationQuery, $currentPage + 1), ENT_QUOTES, 'UTF-8') ?>">Next</a>
+                                <?php endif; ?>
+                            </nav>
                         <?php endif; ?>
                     <?php endif; ?>
 
