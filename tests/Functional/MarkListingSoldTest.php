@@ -367,6 +367,103 @@ final class MarkListingSoldTest extends TestCase
     }
 
 
+    // =========================================
+    // TC-14-04: VERIFY SOLD LISTING HISTORY
+    // =========================================
+
+    public function testSoldListingRemainsInSellerHistory(): void
+    {
+        // Create a temporary seller and listing.
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC14 Sold History '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Confirm the listing initially exists and is active.
+        $this->assertSame(
+            'active',
+            $this->listingStatus($listingId)
+        );
+
+        // Log in as the listing owner.
+        $token = $this->logInAs($seller['email']);
+
+        // Mark the listing as sold.
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(303, $response['status']);
+
+        // Confirm the database still contains the listing.
+        $stmt = $this->pdo->prepare(
+            'SELECT listing_id,
+                    seller_user_id,
+                    item_name,
+                    listing_status
+             FROM listings
+             WHERE listing_id = ?'
+        );
+
+        $stmt->execute([$listingId]);
+        $listing = $stmt->fetch();
+
+        $this->assertIsArray($listing);
+
+        $this->assertSame(
+            $seller['id'],
+            (int) $listing['seller_user_id']
+        );
+
+        $this->assertSame(
+            $listingName,
+            $listing['item_name']
+        );
+
+        $this->assertSame(
+            'sold',
+            $listing['listing_status']
+        );
+
+        // Visit My Listings again without the success parameter.
+        $history = $this->browser->get(
+            '/pages/my-listings.php'
+        );
+
+        $this->assertSame(200, $history['status']);
+
+        // The sold listing should remain visible to its owner.
+        $this->assertStringContainsString(
+            $listingName,
+            $history['body']
+        );
+
+        // Its updated status should be displayed.
+        $this->assertStringContainsString(
+            'Sold',
+            $history['body']
+        );
+
+        // This seller has no other active listings,
+        // so no Mark as Sold button should be available.
+        $this->assertStringNotContainsString(
+            'Mark as Sold',
+            $history['body']
+        );
+    }
+
 
     // =========================================
     // TEST DATA HELPERS

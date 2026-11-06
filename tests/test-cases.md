@@ -563,9 +563,9 @@ the seller's sold-listing history.
   the correct listing record.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and an active listing, then authenticated as the listing owner and submitted a valid Mark as Sold request. The application returned the expected HTTP 303 redirect, and the database confirmed that the listing remained stored with its original listing ID, seller ownership, and item name while its status changed to sold. When the seller accessed My Listings again without the success-message URL parameter, the sold listing remained visible with its updated status. The Mark as Sold button was no longer displayed. All assertions passed.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
