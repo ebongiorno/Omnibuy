@@ -323,7 +323,6 @@ if ($pageUserId !== null) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Wishlist | OmniBuy</title>
->
     <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="/assets/css/shared-navigation.css">
     <link rel="stylesheet" href="/assets/css/wishlist.css">

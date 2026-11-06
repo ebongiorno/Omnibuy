@@ -7,8 +7,8 @@
     apiUrl.hash = '';
     apiUrl.searchParams.set('wishlist_api', '1');
 
-    // Change only this value if your listing detail page uses another route.
-    const listingPage = 'listing.php';
+    // The listing detail page expects ?id=, not ?listing_id=.
+    const listingPage = '/pages/listing.php';
     const container = document.getElementById('wishlist-items');
     const message = document.getElementById('wishlist-message');
     const count = document.getElementById('wishlist-count');
@@ -87,7 +87,7 @@
 
             const link = document.createElement('a');
             const listingUrl = new URL(listingPage, document.baseURI);
-            listingUrl.searchParams.set('listing_id', id);
+            listingUrl.searchParams.set('id', id);
             link.href = listingUrl.href;
             link.className = 'wishlist-card__link';
 
