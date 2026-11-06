@@ -603,9 +603,9 @@ listing as sold.
 - No unrelated database records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created two temporary user accounts and an active listing belonging to User A. After authenticating as User B, the application received a Mark as Sold request targeting User A's listing. The request was rejected with the expected HTTP 404 response. A subsequent database query confirmed that the listing remained active and its ownership was unchanged. The test also verified that User A's listing was not displayed on User B's My Listings page. All assertions passed, confirming that users cannot modify listings belonging to other accounts.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

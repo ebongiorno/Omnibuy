@@ -464,6 +464,102 @@ final class MarkListingSoldTest extends TestCase
         );
     }
 
+    
+    // =========================================
+    // TC-14-05: PREVENT UNAUTHORIZED STATUS CHANGES
+    // =========================================
+
+    public function testUserCannotMarkAnotherUsersListingAsSold(): void
+    {
+        // Create two separate users.
+        $sellerA = $this->createSeller();
+        $sellerB = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Create a listing owned by User A.
+        $listingName = 'UC14 Protected Listing '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $sellerA['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Confirm the listing belongs to User A
+        // and is initially active.
+        $stmt = $this->pdo->prepare(
+            'SELECT seller_user_id, listing_status
+             FROM listings
+             WHERE listing_id = ?'
+        );
+
+        $stmt->execute([$listingId]);
+        $before = $stmt->fetch();
+
+        $this->assertIsArray($before);
+
+        $this->assertSame(
+            $sellerA['id'],
+            (int) $before['seller_user_id']
+        );
+
+        $this->assertSame(
+            'active',
+            $before['listing_status']
+        );
+
+        // Authenticate as User B, not the listing owner.
+        $token = $this->logInAs($sellerB['email']);
+
+        // User B attempts to mark User A's listing as sold.
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        // The backend should reject the unauthorized update.
+        $this->assertSame(
+            404,
+            $response['status'],
+            $response['body']
+        );
+
+        // Verify that the listing still exists,
+        // belongs to User A, and remains active.
+        $stmt->execute([$listingId]);
+        $after = $stmt->fetch();
+
+        $this->assertIsArray($after);
+
+        $this->assertSame(
+            $sellerA['id'],
+            (int) $after['seller_user_id']
+        );
+
+        $this->assertSame(
+            'active',
+            $after['listing_status']
+        );
+
+        // User B should not see User A's listing
+        // on their own My Listings page.
+        $myListings = $this->browser->get(
+            '/pages/my-listings.php'
+        );
+
+        $this->assertSame(200, $myListings['status']);
+
+        $this->assertStringNotContainsString(
+            $listingName,
+            $myListings['body']
+        );
+    }
+
 
     // =========================================
     // TEST DATA HELPERS
