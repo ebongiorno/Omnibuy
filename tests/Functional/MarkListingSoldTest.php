@@ -155,6 +155,93 @@ final class MarkListingSoldTest extends TestCase
         );
     }
 
+
+    // =========================================
+    // TC-14-02: VERIFY LISTING STATUS IN DATABASE
+    // =========================================
+
+    public function testMarkSoldUpdatesOnlyTargetListingRecord(): void
+    {
+        // Create a temporary seller and category.
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Create two active listings belonging to the same seller.
+        $targetId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            'UC14 Target Listing ' . bin2hex(random_bytes(4))
+        );
+
+        $otherId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            'UC14 Unrelated Listing ' . bin2hex(random_bytes(4))
+        );
+
+        // Retrieve the target record before the update.
+        $stmt = $this->pdo->prepare(
+            'SELECT listing_id, seller_user_id, listing_status
+             FROM listings
+             WHERE listing_id = ?'
+        );
+
+        $stmt->execute([$targetId]);
+        $before = $stmt->fetch();
+
+        $this->assertIsArray($before);
+        $this->assertSame('active', $before['listing_status']);
+        $this->assertSame(
+            'active',
+            $this->listingStatus($otherId)
+        );
+
+        // Log in as the owner and mark the target listing as sold.
+        $token = $this->logInAs($seller['email']);
+
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $targetId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(303, $response['status']);
+
+        // Retrieve the target record after the update.
+        $stmt->execute([$targetId]);
+        $after = $stmt->fetch();
+
+        $this->assertIsArray($after);
+
+        // Verify the correct listing was changed to sold.
+        $this->assertSame(
+            'sold',
+            $after['listing_status']
+        );
+
+        // Verify the listing ID did not change.
+        $this->assertSame(
+            $before['listing_id'],
+            $after['listing_id']
+        );
+
+        // Verify seller ownership did not change.
+        $this->assertSame(
+            $before['seller_user_id'],
+            $after['seller_user_id']
+        );
+
+        // Verify the unrelated listing remains active.
+        $this->assertSame(
+            'active',
+            $this->listingStatus($otherId)
+        );
+    }
+
+
     // =========================================
     // TEST DATA HELPERS
     // =========================================

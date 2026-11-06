@@ -485,9 +485,9 @@ correct listing record in the database.
 - Unrelated listing records should not be modified.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings belonging to that seller. The initial database records confirmed that both listings had an active status. After authenticating as the listing owner and submitting a valid Mark as Sold request, the application returned the expected HTTP 303 redirect. A subsequent database query confirmed that the targeted listing's status changed to sold, while its listing ID and seller ownership remained unchanged. The unrelated listing retained its active status, confirming that the update affected only the intended record. All assertions passed, both when TC-14-02 was executed individually and when it was run together with TC-14-01.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
