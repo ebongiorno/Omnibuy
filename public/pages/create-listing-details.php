@@ -32,17 +32,35 @@ $unreadCount = 0;
 $errors = [];
 
 $categoryStmt = $pdo->query(
-    "SELECT category_id, category_name
+    "SELECT category_id, parent_category_id, category_name
      FROM categories
      ORDER BY category_name"
 );
+$categories = $categoryStmt->fetchAll(PDO::FETCH_ASSOC);
+$mainCategories = [];
+$subcategories = [];
+$categoryParents = [];
+$validCategoryIds = [];
 
-$categories = $categoryStmt->fetchAll();
+foreach ($categories as $option) {
+    $id = (string) $option['category_id'];
+    $parent = $option['parent_category_id'];
+    $categoryParents[$id] = $parent === null ? null : (string) $parent;
+    $validCategoryIds[] = $id;
+    if ($parent === null) {
+        $mainCategories[] = $option;
+    } else {
+        $subcategories[(string) $parent][] = $option;
+    }
+}
 
-$validCategoryIds = array_map(
-    'strval',
-    array_column($categories, 'category_id')
-);
+$clothingCategoryId = null;
+foreach ($mainCategories as $option) {
+    if (strcasecmp($option['category_name'], 'Clothing') === 0) {
+        $clothingCategoryId = (string) $option['category_id'];
+        break;
+    }
+}
 
 $allowedConditions = [
     'new',
@@ -59,6 +77,10 @@ $allowedConditions = [
 $listing = $_SESSION['listing'] ?? [];
 
 $category = (string) ($listing['category'] ?? '');
+$mainCategory = (string) ($listing['main_category'] ?? '');
+if ($mainCategory === '' && isset($categoryParents[$category])) {
+    $mainCategory = $categoryParents[$category] ?? $category;
+}
 $condition = (string) ($listing['condition'] ?? '');
 $brand = (string) ($listing['brand'] ?? '');
 $size = (string) ($listing['size'] ?? '');
@@ -81,6 +103,7 @@ $maxImageSize = 10 * 1024 * 1024;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $category = trim((string) ($_POST['category'] ?? ''));
+    $mainCategory = trim((string) ($_POST['main_category'] ?? ''));
     $condition = trim((string) ($_POST['condition'] ?? ''));
     $brand = trim((string) ($_POST['brand'] ?? ''));
     $size = trim((string) ($_POST['size'] ?? ''));
@@ -98,6 +121,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ],
         $validCategoryIds
     );
+
+    $mainCategoryIsValid = array_key_exists($mainCategory, $categoryParents)
+        && $categoryParents[$mainCategory] === null;
+
+    if (!$mainCategoryIsValid) {
+        $errors['main_category'] = 'Please select a valid main category.';
+    } elseif (!isset($categoryParents[$category])) {
+        $errors['category'] = 'Please select a valid category.';
+    } else {
+        $children = $subcategories[$mainCategory] ?? [];
+        $expectedParent = $categoryParents[$category];
+        if ($children !== []) {
+            if ($expectedParent !== $mainCategory) {
+                $errors['category'] = 'Select a subcategory from the chosen main category.';
+            }
+        } elseif ($category !== $mainCategory) {
+            $errors['category'] = 'This category does not have subcategories.';
+        }
+    }
+
+    if ($mainCategory !== $clothingCategoryId) {
+        $size = '';
+    }
 
     if (!in_array($condition, $allowedConditions, true)) {
         $errors['condition'] = 'Invalid item condition.';
@@ -351,24 +397,30 @@ include __DIR__ . '/../components/header.php';
     <form class="listing-details__form" method="post">
 
         <div class="listing-details__field">
-            <label for="category">Category</label>
-
-            <select id="category" name="category" required>
-                <option value="">Select a category</option>
-
-                <?php foreach ($categories as $option): ?>
-                    <option
-                        value="<?= (int) $option['category_id'] ?>"
-                        <?= $category === (string) $option['category_id']
-                            ? 'selected'
-                            : '' ?>
-                    >
-                        <?= htmlspecialchars(
-                            $option['category_name'],
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
+            <label for="main_category">Main Category</label>
+            <select id="main_category" name="main_category" required>
+                <option value="">Select a main category</option>
+                <?php foreach ($mainCategories as $option): ?>
+                    <option value="<?= (int) $option['category_id'] ?>"
+                        <?= $mainCategory === (string) $option['category_id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($option['category_name'], ENT_QUOTES, 'UTF-8') ?>
                     </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="listing-details__field" id="subcategory_field">
+            <label for="category">Subcategory</label>
+            <select id="category" name="category" required>
+                <option value="">Select a subcategory</option>
+                <?php foreach ($subcategories as $parentId => $children): ?>
+                    <?php foreach ($children as $option): ?>
+                        <option value="<?= (int) $option['category_id'] ?>"
+                            data-parent="<?= (int) $parentId ?>"
+                            <?= $category === (string) $option['category_id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($option['category_name'], ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -410,7 +462,7 @@ include __DIR__ . '/../components/header.php';
             >
         </div>
 
-        <div class="listing-details__field">
+        <div class="listing-details__field" id="size_field" <?= $mainCategory === $clothingCategoryId ? '' : 'hidden' ?>>
             <label for="size">Size</label>
             <input
                 type="text"
@@ -484,6 +536,60 @@ include __DIR__ . '/../components/header.php';
     </form>
 
 </section>
+
+
+<script>
+(() => {
+    const main = document.getElementById('main_category');
+    const sub = document.getElementById('category');
+    const subField = document.getElementById('subcategory_field');
+    const sizeField = document.getElementById('size_field');
+    const sizeInput = document.getElementById('size');
+    const clothingId = <?= json_encode($clothingCategoryId) ?>;
+    const options = Array.from(sub.querySelectorAll('option[data-parent]'));
+    const emptyOption = sub.querySelector('option[value=""]');
+
+    function updateCategories(reset = false) {
+        const parentId = main.value;
+        const matching = options.filter(option => option.dataset.parent === parentId);
+        const hasChildren = matching.length > 0;
+        const oldValue = reset ? '' : sub.value;
+
+        options.forEach(option => {
+            option.hidden = option.dataset.parent !== parentId;
+            option.disabled = option.dataset.parent !== parentId;
+        });
+
+        subField.hidden = !hasChildren;
+        sub.required = hasChildren;
+        sub.disabled = !hasChildren;
+        emptyOption.textContent = 'Select a subcategory';
+
+        if (hasChildren) {
+            sub.value = matching.some(option => option.value === oldValue) ? oldValue : '';
+        } else {
+            sub.value = '';
+        }
+
+        const isClothing = parentId !== '' && parentId === clothingId;
+        sizeField.hidden = !isClothing;
+        sizeInput.disabled = !isClothing;
+        if (!isClothing || reset) {
+            sizeInput.value = '';
+        }
+    }
+
+    main.addEventListener('change', () => updateCategories(true));
+    updateCategories();
+
+    document.querySelector('.listing-details__form').addEventListener('submit', () => {
+        if (sub.disabled) {
+            sub.disabled = false;
+            sub.value = main.value;
+        }
+    });
+})();
+</script>
 
 <?php
 include __DIR__ . '/../components/footer.php';
