@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OmniBuy\Tests\Unit;
 
-use OmniBuy\Tests\Security\SecurityTestCase;
+use OmniBuy\Tests\Secz urity\SecurityTestCase;
 
 final class AuthenticationTest extends SecurityTestCase
 {
