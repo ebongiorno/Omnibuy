@@ -120,7 +120,6 @@
         try {
             const data = await requestWishlist(saved ? 'DELETE' : 'POST');
             saved = Boolean(data.saved);
-            showMessage(saved ? 'Added to your wishlist.' : 'Removed from your wishlist.');
         } catch (error) {
             if (error.loginRequired) {
                 authenticated = false;
