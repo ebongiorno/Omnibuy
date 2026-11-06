@@ -1,10 +1,9 @@
 <?php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../db_connect.php';
 
-require_once '../../db_connect.php';
+startSession();
 
 $pageTitle = 'My Listings | OmniBuy';
 $activeNav = 'my-listings';
@@ -21,6 +20,58 @@ $isLoggedIn = $currentSellerId !== false && $currentSellerId !== null;
 // SOC 2 CC6.3: Require authentication before accessing seller listings.
 if (!$isLoggedIn) {
     header('Location: /pages/login.php');
+    exit;
+}
+
+// Mark as sold logic
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if (($_POST['action'] ?? null) !== 'mark_sold') {
+        http_response_code(400);
+        exit('Invalid action.');
+    }
+
+    // Validate CSRF token.
+    $token = $_POST['csrf_token'] ?? null;
+
+    if (!is_string($token) || !isValidCsrfToken($token)) {
+        http_response_code(403);
+        exit('Invalid security token.');
+    }
+
+    // Validate listing ID.
+    $listingId = filter_var(
+        $_POST['listing_id'] ?? null,
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1]]
+    );
+
+    if ($listingId === false || $listingId === null) {
+        http_response_code(400);
+        exit('Invalid listing ID.');
+    }
+
+    // Update only an active listing owned by this seller.
+    $stmt = $pdo->prepare(
+        "UPDATE listings
+         SET listing_status = 'sold'
+         WHERE listing_id = :listing_id
+           AND seller_user_id = :seller_id
+           AND listing_status = 'active'"
+    );
+
+    $stmt->execute([
+        'listing_id' => $listingId,
+        'seller_id' => $currentSellerId
+    ]);
+
+    if ($stmt->rowCount() !== 1) {
+        http_response_code(404);
+        exit('Listing not found or unavailable for this action.');
+    }
+
+    // Redirect to avoid resubmitting the form on refresh.
+    header('Location: /pages/my-listings.php?sold=1', true, 303);
     exit;
 }
 
@@ -117,6 +168,14 @@ include $header;
 
         <?php endif; ?>
 
+        <?php if (($_GET['sold'] ?? '') === '1'): ?>
+
+            <p class="my-listings-success" role="status">
+                Your listing was marked as sold successfully!
+            </p>
+
+        <?php endif; ?>
+
         <?php if (empty($listings)): ?>
 
             <div class="my-listings-message">
@@ -206,7 +265,43 @@ include $header;
                             ) ?>
                         </p>
 
-                        <p>
+                        <?php if ($listing['listing_status'] === 'active'): ?>
+
+                            <form
+                                action="/pages/my-listings.php"
+                                method="POST"
+                                onsubmit="return confirm('Are you sure you want to mark this listing as sold?');"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="action"
+                                    value="mark_sold"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="listing_id"
+                                    value="<?= (int) $listing['listing_id'] ?>"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="<?= htmlspecialchars(
+                                        csrfToken(),
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>"
+                                >
+
+                                <button type="submit" class="my-listings__mark-sold">
+                                    Mark as Sold
+                                </button>
+                            </form>
+
+                        <?php endif; ?>
+
+                         <p>
                             <strong>Created:</strong>
 
                             <?= htmlspecialchars(
