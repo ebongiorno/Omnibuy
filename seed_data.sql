@@ -403,6 +403,24 @@ VALUES
          My shop is a mix of nostalgic treasures and everyday discoveries. I believe every item has a story, and I hope you find something special here!',
         FALSE,
         'active'
+    ),
+
+    -- Shared test login (dev/testing only): tester@omnibuy.test / Sup3rSecret!
+    -- Unlike the users above, this one has a real bcrypt hash so it can log in.
+    (
+        24,
+        'Test',
+        'Account',
+        'omnibuy_tester',
+        'tester@omnibuy.test',
+        '$2y$10$mFNWxU.f7DBUpieaXCqjae7D5tE.crhUluTn9/Uew9FUX/GYlTYTe',
+        TRUE,
+        '555-0100',
+        '2000-01-01',
+        NULL,
+        NULL,
+        FALSE,
+        'active'
     );
 
 
