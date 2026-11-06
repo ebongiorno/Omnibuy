@@ -17,11 +17,9 @@ final class MyListingsTest extends DatabaseTestCase
 
         $suffix = $this->uniqueSuffix();
 
-        // Create two separate seller accounts.
         $this->sellerA = $this->createSeller("Seller A $suffix");
         $this->sellerB = $this->createSeller("Seller B $suffix");
 
-        // Create a temporary listing category.
         $this->pdo->prepare('
             INSERT INTO categories (category_name)
             VALUES (:name)
@@ -95,7 +93,6 @@ final class MyListingsTest extends DatabaseTestCase
 
     private function getSellerListings(int $sellerId): array
     {
-        // Matches the seller filtering and ordering in my-listings.php.
         $stmt = $this->pdo->prepare('
             SELECT
                 listing_id,
@@ -206,5 +203,86 @@ final class MyListingsTest extends DatabaseTestCase
 
         $this->assertSame($secondId, $ids[0]);
         $this->assertSame($firstId, $ids[1]);
+    }
+
+    public function testSellerCanViewListingsWithDifferentStatuses(): void
+    {
+        $statuses = [
+            'active',
+            'hidden',
+            'draft',
+            'sold',
+            'archived',
+        ];
+
+        $listingIds = [];
+
+        foreach ($statuses as $status) {
+            $listingIds[$status] = $this->createListing(
+                $this->sellerA,
+                "Test $status Listing",
+                49.95,
+                $status
+            );
+        }
+
+        $listings = $this->getSellerListings($this->sellerA);
+
+        $this->assertCount(5, $listings);
+
+        foreach ($statuses as $status) {
+            $matching = array_values(array_filter(
+                $listings,
+                fn ($listing) =>
+                    (int) $listing['listing_id'] === $listingIds[$status]
+            ));
+
+            $this->assertCount(1, $matching);
+            $this->assertSame(
+                $status,
+                $matching[0]['listing_status']
+            );
+        }
+    }
+
+    public function testSellerCannotViewOtherSellersListingsAcrossStatuses(): void
+    {
+        $statuses = [
+            'active',
+            'hidden',
+            'draft',
+            'sold',
+            'archived',
+        ];
+
+        $otherSellerListingIds = [];
+
+        foreach ($statuses as $status) {
+            $otherSellerListingIds[] = $this->createListing(
+                $this->sellerB,
+                "Seller B $status Listing",
+                49.95,
+                $status
+            );
+        }
+
+        $ownListingId = $this->createListing(
+            $this->sellerA,
+            'Seller A Listing'
+        );
+
+        $listings = $this->getSellerListings($this->sellerA);
+
+        $ids = array_map(
+            'intval',
+            array_column($listings, 'listing_id')
+        );
+
+        $this->assertCount(1, $listings);
+        $this->assertContains($ownListingId, $ids);
+
+        foreach ($otherSellerListingIds as $listingId) {
+            $this->assertNotContains($listingId, $ids);
+        }
     }
 }

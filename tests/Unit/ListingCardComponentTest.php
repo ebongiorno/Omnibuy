@@ -35,7 +35,7 @@ final class ListingCardComponentTest extends TestCase
     {
         $html = $this->render(['listing_id' => 42]);
 
-        $this->assertStringContainsString('href="listing.php?id=42"', $html);
+        $this->assertStringContainsString('href="/pages/listing.php?id=42"', $html);
     }
 
     public function testFallsBackToDefaultImageWhenListingHasNoImage(): void
