@@ -644,9 +644,9 @@ listing as sold do not create incorrect status changes.
 - No duplicate or unintended database changes should occur.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings to verify repeated and invalid status change requests. After authenticating as the listing owner, the first listing was successfully marked as sold, returning the expected HTTP 303 redirect. A subsequent attempt to mark the same listing as sold was rejected with HTTP 404, and its status remained unchanged. The application also correctly rejected an invalid listing ID with HTTP 400 and requests containing missing or incorrect CSRF tokens with HTTP 403. A GET request attempting to change the listing status did not modify the database. Final verification confirmed that the first listing remained sold while the second listing remained active. All assertions passed, both individually and when executed alongside the other five UC-14 tests.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 ## UC-15: Renew Old Listing

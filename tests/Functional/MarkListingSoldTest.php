@@ -560,6 +560,184 @@ final class MarkListingSoldTest extends TestCase
         );
     }
 
+    
+    // =========================================
+    // TC-14-06: HANDLE REPEATED OR INVALID CHANGES
+    // =========================================
+
+    public function testRepeatedAndInvalidStatusChangesAreRejected(): void
+    {
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Create two active listings.
+        $soldId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            'UC14 Repeat Test ' . bin2hex(random_bytes(4))
+        );
+
+        $controlId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            'UC14 Invalid Request Control ' . bin2hex(random_bytes(4))
+        );
+
+        $this->assertSame(
+            'active',
+            $this->listingStatus($soldId)
+        );
+
+        $this->assertSame(
+            'active',
+            $this->listingStatus($controlId)
+        );
+
+        // Authenticate as the listing owner.
+        $token = $this->logInAs($seller['email']);
+
+        // -----------------------------------------
+        // 1. Successfully mark the first listing sold.
+        // -----------------------------------------
+
+        $firstResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $soldId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(303, $firstResponse['status']);
+
+        $this->assertSame(
+            'sold',
+            $this->listingStatus($soldId)
+        );
+
+        // -----------------------------------------
+        // 2. Attempt to mark it sold again.
+        // -----------------------------------------
+
+        $repeatResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $soldId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(
+            404,
+            $repeatResponse['status'],
+            $repeatResponse['body']
+        );
+
+        $this->assertSame(
+            'sold',
+            $this->listingStatus($soldId)
+        );
+
+        // -----------------------------------------
+        // 3. Submit an invalid listing ID.
+        // -----------------------------------------
+
+        $invalidIdResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => 'invalid-id',
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(
+            400,
+            $invalidIdResponse['status'],
+            $invalidIdResponse['body']
+        );
+
+        // -----------------------------------------
+        // 4. Submit a missing CSRF token.
+        // -----------------------------------------
+
+        $missingTokenResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $controlId,
+            ]
+        );
+
+        $this->assertSame(
+            403,
+            $missingTokenResponse['status'],
+            $missingTokenResponse['body']
+        );
+
+        $this->assertSame(
+            'active',
+            $this->listingStatus($controlId)
+        );
+
+        // -----------------------------------------
+        // 5. Submit an incorrect CSRF token.
+        // -----------------------------------------
+
+        $invalidTokenResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $controlId,
+                'csrf_token' => 'invalid-security-token',
+            ]
+        );
+
+        $this->assertSame(
+            403,
+            $invalidTokenResponse['status'],
+            $invalidTokenResponse['body']
+        );
+
+        $this->assertSame(
+            'active',
+            $this->listingStatus($controlId)
+        );
+
+        // -----------------------------------------
+        // 6. Attempt the status change using GET.
+        // -----------------------------------------
+
+        $getResponse = $this->browser->get(
+            '/pages/my-listings.php?' . http_build_query([
+                'action' => 'mark_sold',
+                'listing_id' => $controlId,
+            ])
+        );
+
+        $this->assertSame(
+            200,
+            $getResponse['status'],
+            $getResponse['body']
+        );
+
+        // -----------------------------------------
+        // 7. Verify the final database statuses.
+        // -----------------------------------------
+
+        $this->assertSame(
+            'sold',
+            $this->listingStatus($soldId)
+        );
+
+        $this->assertSame(
+            'active',
+            $this->listingStatus($controlId)
+        );
+    }
+
 
     // =========================================
     // TEST DATA HELPERS
