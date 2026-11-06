@@ -1,4 +1,3 @@
-
 <?php
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -7,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../../db_connect.php';
 require_once __DIR__ . '/../../includes/listing-validation.php';
+require_once __DIR__ . '/../../includes/account.php';
 
 $pageTitle = 'Listing Details | OmniBuy';
 $activeNav = 'sell';
@@ -190,22 +190,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$isLoggedIn) {
         $errors['seller'] =
             'Please log in before publishing.';
-    } else {
-
-        $sellerStmt = $pdo->prepare(
-            "SELECT user_id
-             FROM seller_profiles
-             WHERE user_id = :user_id"
-        );
-
-        $sellerStmt->execute([
-            'user_id' => $currentSellerId
-        ]);
-
-        if (!$sellerStmt->fetch()) {
-            $errors['seller'] =
-                'Your account does not have a seller profile.';
-        }
     }
 
     if (empty($errors)) {
@@ -227,6 +211,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $pdo->beginTransaction();
+
+            // Any account can sell; its first listing creates the seller profile.
+            ensureSellerProfile($pdo, $currentSellerId);
 
             $stmt = $pdo->prepare(
                 "INSERT INTO listings (
@@ -307,6 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
+            $_SESSION['is_seller'] = true;
             unset($_SESSION['listing']);
 
             header('Location: my-listings.php?published=1');

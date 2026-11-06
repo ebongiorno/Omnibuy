@@ -6,7 +6,7 @@ namespace OmniBuy\Tests\Integration;
 
 use OmniBuy\Tests\Support\DatabaseTestCase;
 
-require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/account.php';
 
 /**
  * Tests seller authentication, publication eligibility,
@@ -24,7 +24,7 @@ final class SellerAuthorizationTest extends DatabaseTestCase
 
         $suffix = $this->uniqueSuffix();
 
-        // Create a buyer without a seller profile.
+        // An account that hasn't sold anything yet, so has no seller profile.
         $this->buyerId = $this->createUser('auth_buyer');
 
         // Create a user who has a seller profile.
@@ -71,26 +71,29 @@ final class SellerAuthorizationTest extends DatabaseTestCase
     }
 
     /**
-     * Matches the seller-profile authorization rule
-     * used by create-listing-details.php.
+     * Matches the publishing rule in create-listing-details.php:
+     * any logged-in account can sell.
      */
     private function canPublish(?int $userId): bool
     {
-        if ($userId === null || $userId < 1) {
-            return false;
-        }
+        return $userId !== null && $userId >= 1;
+    }
 
-        $stmt = $this->pdo->prepare('
-            SELECT user_id
-            FROM seller_profiles
-            WHERE user_id = :user_id
-        ');
+    /** @return array<string, mixed>|false */
+    private function sellerProfile(int $userId): array|false
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM seller_profiles WHERE user_id = :user_id');
+        $stmt->execute(['user_id' => $userId]);
 
-        $stmt->execute([
-            'user_id' => $userId,
-        ]);
+        return $stmt->fetch();
+    }
 
-        return (bool) $stmt->fetchColumn();
+    private function username(int $userId): string
+    {
+        $stmt = $this->pdo->prepare('SELECT username FROM users WHERE user_id = :user_id');
+        $stmt->execute(['user_id' => $userId]);
+
+        return (string) $stmt->fetchColumn();
     }
 
     public function testUnauthenticatedUserCannotPublish(): void
@@ -98,11 +101,42 @@ final class SellerAuthorizationTest extends DatabaseTestCase
         $this->assertFalse($this->canPublish(null));
     }
 
-    public function testBuyerWithoutSellerProfileCannotPublish(): void
+    public function testAccountWithoutSellerProfileCanPublish(): void
     {
-        $this->assertFalse(
+        $this->assertTrue(
             $this->canPublish($this->buyerId)
         );
+    }
+
+    public function testFirstListingCreatesTheSellerProfile(): void
+    {
+        ensureSellerProfile($this->pdo, $this->buyerId);
+
+        $profile = $this->sellerProfile($this->buyerId);
+        $this->assertIsArray($profile);
+        $this->assertSame($this->username($this->buyerId), $profile['store_name']);
+        $this->assertSame("pending-{$this->buyerId}", $profile['payout_account_reference']);
+    }
+
+    public function testExistingSellerProfileIsLeftAlone(): void
+    {
+        $before = $this->sellerProfile($this->sellerId);
+
+        ensureSellerProfile($this->pdo, $this->sellerId);
+        ensureSellerProfile($this->pdo, $this->sellerId);
+
+        $this->assertSame($before, $this->sellerProfile($this->sellerId));
+    }
+
+    public function testStoreNameTakenByAnotherStoreGetsTheUserId(): void
+    {
+        $username = $this->username($this->buyerId);
+        $this->pdo->prepare('UPDATE seller_profiles SET store_name = :name WHERE user_id = :user_id')
+            ->execute(['name' => $username, 'user_id' => $this->sellerId]);
+
+        ensureSellerProfile($this->pdo, $this->buyerId);
+
+        $this->assertSame("$username-{$this->buyerId}", $this->sellerProfile($this->buyerId)['store_name']);
     }
 
     public function testSellerWithProfileCanPublish(): void
@@ -141,8 +175,9 @@ final class SellerAuthorizationTest extends DatabaseTestCase
 
     public function testPublishedListingBelongsToCorrectSeller(): void
     {
-        // Verify the seller is eligible before inserting.
-        $this->assertTrue($this->canPublish($this->sellerId));
+        // A first-time seller, as in create-listing-details.php.
+        $this->sellerId = $this->buyerId;
+        ensureSellerProfile($this->pdo, $this->sellerId);
 
         $stmt = $this->pdo->prepare('
             INSERT INTO listings (
