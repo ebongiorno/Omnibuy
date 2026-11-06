@@ -1,4 +1,16 @@
-/* Listing details: responsive wishlist action. Keep this stylesheet after listing-detail.css. */
+/* Keep the Add/Remove from Wishlist button typography identical to Add to Cart. */
+.listing-detail__actions [data-add-to-cart],
+.listing-detail__actions [data-add-to-wishlist] {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1.3;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+/* Keep both actions responsive; long wishlist labels can wrap cleanly. */
 .listing-detail__actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
@@ -19,7 +31,6 @@
     white-space: normal;
     overflow-wrap: break-word;
     text-align: center;
-    line-height: 1.3;
     cursor: pointer;
 }
 
@@ -33,4 +44,7 @@
 
 .listing-detail__actions [data-wishlist-label] {
     min-width: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
 }
