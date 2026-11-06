@@ -649,6 +649,50 @@ The functional test successfully created a temporary seller account and two acti
 **Status:** Pass
 
 **Related Jira Defect:** None
+
+
+### TC-14-07: Prevent Unauthenticated Listing Status Changes
+
+**Use Case:** UC-14
+
+**Test Type:** Automated Functional / Security Testing
+
+**Objective:**
+
+Verify that an unauthenticated user cannot mark an existing listing as sold or modify its database record.
+
+**Preconditions:**
+- The OmniBuy application and test database are available.
+- A temporary user account and active listing exist.
+- The HTTP client has not authenticated as a user.
+
+**Test Data:**
+- Temporary seller account
+- Active listing owned by the temporary seller
+- Unauthenticated HTTP session
+- Valid guest-session CSRF token
+- Mark as Sold POST request
+
+**Test Steps:**
+1. Create a temporary seller account and active listing.
+2. Verify that the listing initially has an `active` status.
+3. Create a new HTTP client without logging in.
+4. Obtain a valid CSRF token from the login page.
+5. Submit a Mark as Sold POST request for the listing.
+6. Verify that the request redirects to the login page.
+7. Query the database to confirm the listing remains active and its ownership is unchanged.
+8. Attempt to access My Listings without authentication and verify that access is redirected to login.
+
+**Expected Result:**
+
+The application should reject unauthenticated attempts to mark a listing as sold by redirecting the user to the login page. The listing must remain active, its ownership and information must remain unchanged, and unauthenticated users must not be allowed to access My Listings.
+
+**Actual Result:**
+The functional test successfully created a temporary seller account and an active listing, then attempted to mark the listing as sold using an unauthenticated HTTP session with a valid CSRF token. The application rejected the request and returned the expected HTTP 302 redirect to the login page. A subsequent database query confirmed that the listing remained active, with its original ownership and item information unchanged. The test also verified that an unauthenticated attempt to access the My Listings page resulted in a redirect to login. All assertions passed, confirming that authentication is required to modify listing statuses.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
 ## UC-15: Renew Old Listing
 ### TC-15-01: Renew an Eligible Listing
 

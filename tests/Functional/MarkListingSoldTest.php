@@ -740,6 +740,119 @@ final class MarkListingSoldTest extends TestCase
 
 
     // =========================================
+    // TC-14-07: PREVENT UNAUTHENTICATED STATUS CHANGES
+    // =========================================
+
+    public function testUnauthenticatedUserCannotMarkListingAsSold(): void
+    {
+        // Create a temporary listing owner.
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC14 Unauthenticated Test '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Confirm the listing initially belongs to the seller
+        // and has an active status.
+        $this->assertSame(
+            'active',
+            $this->listingStatus($listingId)
+        );
+
+        // Create a separate HTTP client without logging in.
+        // This simulates an unauthenticated visitor.
+        $guest = HttpClient::fromEnvironment();
+
+        // Obtain a valid guest-session CSRF token.
+        // This isolates authentication as the reason
+        // the listing update must be rejected.
+        $loginPage = $guest->get('/pages/login.php');
+
+        $this->assertSame(200, $loginPage['status']);
+
+        $token = HttpClient::csrfToken(
+            $loginPage['body']
+        );
+
+        // Attempt to mark the listing as sold without logging in.
+        $response = $guest->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'mark_sold',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        // The application should redirect the visitor to login.
+        $this->assertSame(
+            302,
+            $response['status'],
+            $response['body']
+        );
+
+        $this->assertSame(
+            '/pages/login.php',
+            $response['location']
+        );
+
+        // Verify the listing was not modified.
+        $this->assertSame(
+            'active',
+            $this->listingStatus($listingId)
+        );
+
+        // Verify the listing still belongs to its original owner.
+        $stmt = $this->pdo->prepare(
+            'SELECT seller_user_id, item_name, listing_status
+             FROM listings
+             WHERE listing_id = ?'
+        );
+
+        $stmt->execute([$listingId]);
+        $listing = $stmt->fetch();
+
+        $this->assertIsArray($listing);
+
+        $this->assertSame(
+            $seller['id'],
+            (int) $listing['seller_user_id']
+        );
+
+        $this->assertSame(
+            $listingName,
+            $listing['item_name']
+        );
+
+        $this->assertSame(
+            'active',
+            $listing['listing_status']
+        );
+
+        // The unauthenticated visitor should also be
+        // unable to access the My Listings page.
+        $pageResponse = $guest->get(
+            '/pages/my-listings.php'
+        );
+
+        $this->assertSame(
+            302,
+            $pageResponse['status']
+        );
+
+        $this->assertSame(
+            '/pages/login.php',
+            $pageResponse['location']
+        );
+    }
+
+    // =========================================
     // TEST DATA HELPERS
     // =========================================
 
