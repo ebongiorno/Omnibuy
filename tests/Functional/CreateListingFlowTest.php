@@ -77,9 +77,14 @@ final class CreateListingFlowTest extends TestCase
         ], ['photos[0]' => $this->photo]);
         $this->assertSame('create-listing-details.php', $step1['location']);
 
-        $category = (string) $this->pdo->query('SELECT category_id FROM categories ORDER BY category_id LIMIT 1')->fetchColumn();
+        $category = $this->pdo->query('
+            SELECT category_id, parent_category_id FROM categories
+            WHERE parent_category_id IS NOT NULL
+            ORDER BY category_id LIMIT 1
+        ')->fetch();
         $step2 = $this->browser->post('/pages/create-listing-details.php', [
-            'category' => $category,
+            'main_category' => (string) $category['parent_category_id'],
+            'category' => (string) $category['category_id'],
             'condition' => 'good',
             'quantity' => '1',
             'fulfillment_type' => 'shipping',
