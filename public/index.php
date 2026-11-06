@@ -14,7 +14,7 @@ $sortOptions = [
     'price_high' => 'l.price DESC, l.created_at DESC'
 ];
 
-if (!array_key_exists($sort, $sortOptions)) {
+if (!is_string($sort) || !array_key_exists($sort, $sortOptions)) {
     $sort = 'recent';
 }
 
@@ -24,12 +24,15 @@ $sql = "SELECT l.listing_id, l.`condition`, l.item_name,
             l.price, l.category_id, l.fulfillment_type,
             li.image_url, c.category_name
             FROM listings as l
+            INNER JOIN users AS u
+                ON u.user_id = l.seller_user_id
             LEFT JOIN listing_images as li
                 ON l.listing_id = li.listing_id
                 AND li.display_order = 1
             LEFT JOIN categories as c
                 ON l.category_id = c.category_id
-            WHERE listing_status = 'active'
+            WHERE l.listing_status = 'active'
+                AND u.account_status = 'active'
             ORDER BY $sortType
             LIMIT 10";
 
@@ -343,6 +346,7 @@ try {
 
     </main>
 
+    <script src="/assets/js/image-fallback.js" defer></script>
     <!-- =========================================
          MOBILE NAVIGATION AND ACCOUNT MENU
          Same script the shared footer loads on every other page.

@@ -3075,9 +3075,11 @@ returns meetup listings within the specified distance.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that filtering meetup listings within 10 miles of ZIP code 92831 returned the expected results. A temporary nearby meetup listing was created to verify that eligible listings were included. The returned listing IDs matched the MySQL distance query, confirming that listings outside the radius and shipping-only listings were excluded. The ZIP code, radius, and delivery method selections remained applied, and the page loaded without PHP or database errors. The temporary listing was removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, entering ZIP code 92831, and choosing a 10-mile radius. The search results displayed the expected empty state because the existing seed data contained no eligible meetup listings within that distance. The selected filters remained applied, and the page displayed no PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3117,9 +3119,11 @@ are excluded from the search results.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that meetup listings located more than 10 miles from ZIP code 92831 were excluded from the search results. The test retrieved active meetup listings outside the selected radius from MySQL and verified that they appeared when no radius was applied. After applying the 10-mile radius filter, all identified distant listings were excluded, while a temporary nearby meetup listing remained visible. The page loaded successfully without PHP or database errors, and the temporary listing was removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, entering ZIP code 92831, and applying a 10-mile radius. Distant meetup listings that were visible without the radius filter were no longer displayed after applying it. The page displayed the expected no-results message with the existing seed data, and no PHP or database errors occurred.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3159,9 +3163,9 @@ are included and listings just beyond it are excluded.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that the meetup radius filter correctly handled listings at and around the 10-mile boundary of ZIP code 92831. Three temporary meetup listings were created at approximately 9.99, 10.00, and 10.01 miles from the selected location. The distances were calculated independently using PHP before being tested against the search page. The listing within the radius and the listing at the closest representable boundary coordinate were included in the results, while the listing beyond 10 miles was excluded. The page loaded successfully without PHP or database errors, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3200,9 +3204,11 @@ produces an appropriate validation error.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that selecting a 10-mile meetup radius without entering a buyer ZIP code produced the expected validation error. The test first verified that active meetup listings were available without a radius filter. When the radius was applied with a blank ZIP code, the application displayed the "Invalid Meetup Location" message requesting a valid five-digit ZIP code. No listing cards were returned, and the result count remained zero, confirming that the application did not display unfiltered results. The ZIP field remained blank, the 10-mile radius selection was preserved, and no PHP or database errors occurred.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, leaving the ZIP-code field blank, and applying a 10-mile radius. The search results displayed the expected validation message instead of returning unfiltered listings. No listings were displayed, and the page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3246,9 +3252,11 @@ missing from the reference table are handled appropriately.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that the meetup radius filter correctly rejected both invalid ZIP-code formats and ZIP codes missing from the reference database. The test submitted 12A45 to verify format validation and confirmed that 00000 was absent from the zip_code_locations table before testing the unknown ZIP scenario. Both inputs produced their corresponding validation messages, and no unfiltered listing results were returned. The result count remained zero, the entered ZIP codes and selected 10-mile radius were preserved, and the page loaded without PHP or database errors.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup and applying a 10-mile radius with invalid location information. Entering 12A45 was rejected by the browser's ZIP-code validation, and a direct request confirmed that the PHP backend also displayed the appropriate five-digit ZIP-code error. Entering the unknown ZIP code 00000 displayed the expected ZIP-code-not-found message. Neither scenario returned unfiltered listings, and the page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3291,9 +3299,11 @@ meetup listings based on distance.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that all four supported meetup radius selections (5, 10, 25, and 50 miles) returned the expected listings for ZIP code 92831. Five temporary meetup listings were created at approximately 3, 8, 20, 40, and 55 miles to verify the behavior of each radius option. The returned listing IDs matched the corresponding MySQL distance queries, confirming that eligible listings were included and listings beyond each selected radius were excluded. The test also verified that increasing the radius did not remove listings previously included at smaller distances. All requests completed without PHP or database errors, and the temporary listings were removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, entering ZIP code 92831, and testing each supported radius individually. The displayed listings were compared against their known distances, and increasing the radius preserved previously eligible results while including additional listings when available. Listings outside the selected distance were excluded, and the page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3335,9 +3345,11 @@ method is selected.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that applying a 10-mile radius to ZIP code 92831 without selecting a delivery method preserved all active shipping listings while restricting meetup listings based on distance. Three temporary listings were created at approximately 3, 20, and 40 miles to verify the behavior of nearby meetup, distant meetup, and distant shipping listings. The nearby meetup and distant shipping listings appeared in the results, while the meetup listing outside the radius was excluded. The returned listing IDs matched the expected MySQL query results, confirming that the radius did not restrict shipping listings. The ZIP code and radius selections remained applied, neither delivery method was selected, and the page loaded without PHP or database errors. All temporary listings were removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by leaving both delivery methods unselected, entering ZIP code 92831, and applying a 10-mile radius. Active shipping listings remained visible, while meetup listings beyond the selected distance were excluded. The selected ZIP code and radius were preserved, and the page displayed no PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3380,9 +3392,9 @@ coordinates are not incorrectly included in radius results.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that meetup listings with missing latitude or longitude coordinates were correctly excluded from radius-filtered search results. Three temporary meetup listings were created for testing: one with a NULL latitude, one with a NULL longitude, and one with valid coordinates corresponding to ZIP code 92831. The test first verified that all three listings appeared when no radius filter was applied. After applying a 10-mile meetup radius, both listings with missing coordinates were excluded, while the valid nearby listing remained visible. The page loaded successfully without PHP or database errors, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3425,9 +3437,9 @@ results for known geographic coordinates.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that OmniBuy's meetup distance calculations produced accurate and consistent results for known geographic coordinates. Four temporary meetup listings were created at predetermined locations relative to ZIP code 92831, with expected distances of approximately 0, 3.4547, 17.9510, and 22.9428 miles. The test used MySQL's ST_Distance_Sphere function to calculate distances in meters, converted the results to miles, and compared them against independently calculated reference distances. All calculated values fell within the defined 0.02-mile tolerance. Repeating the calculations with identical coordinates produced consistent results, confirming that the distance calculations were repeatable. No PHP or database errors occurred, and all temporary test listings were removed after testing.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -3475,9 +3487,11 @@ condition filtering and distance sorting.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated testing using PHPUnit confirmed that meetup radius filtering worked correctly alongside condition filtering, delivery method filtering, and distance sorting. Seven temporary listings were created with different distances, conditions, delivery methods, and statuses to verify the combined behavior. Applying the Meetup and Good condition filters with a 25-mile radius from ZIP code 92831 returned only eligible active listings. Listings outside the radius, listings with other conditions, shipping listings, and inactive listings were excluded. After selecting Distance: Near to Far, the returned listing IDs matched the expected MySQL results in ascending distance order. All selected filters remained preserved, no PHP or database errors occurred, and the temporary test listings were removed after testing.
 
-**Status:** Not Run
+Manual testing was performed through the local OmniBuy website by selecting Meetup, Good condition, ZIP code 92831, and a 25-mile radius before changing the sort order to Distance: Near to Far. The search results reflected the selected filters, and the selections remained applied after sorting. Available results were checked for eligibility and correct ordering where multiple matching listings were present. The page remained functional without PHP or database errors.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 ## UC-24: Sort Results
