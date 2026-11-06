@@ -168,6 +168,14 @@ include $header;
 
         <?php endif; ?>
 
+        <?php if (($_GET['sold'] ?? '') === '1'): ?>
+
+            <p class="my-listings-success" role="status">
+                Your listing was marked as sold successfully!
+            </p>
+
+        <?php endif; ?>
+
         <?php if (empty($listings)): ?>
 
             <div class="my-listings-message">
