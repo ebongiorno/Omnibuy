@@ -447,9 +447,9 @@ Verify that a seller can mark their own active listing as sold.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and an active listing, then authenticated as the listing owner. The My Listings page displayed the listing and its Mark as Sold button. After submitting the Mark as Sold request with a valid CSRF token, the application returned the expected redirect, and the database confirmed that the listing status changed from active to sold. The updated page continued displaying the listing, showed the success confirmation, and no longer displayed the Mark as Sold button. All assertions passed.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

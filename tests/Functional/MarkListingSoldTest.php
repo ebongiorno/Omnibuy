@@ -1,0 +1,308 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OmniBuy\Tests\Functional;
+
+use OmniBuy\Tests\Support\HttpClient;
+use PDO;
+use PHPUnit\Framework\TestCase;
+
+final class MarkListingSoldTest extends TestCase
+{
+    private const PASSWORD = 'Sup3rSecret!';
+
+    private PDO $pdo;
+    private HttpClient $browser;
+
+    private array $createdUserIds = [];
+    private array $createdListingIds = [];
+    private ?int $createdCategoryId = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pdo = new PDO(
+            sprintf(
+                'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+                getenv('DB_HOST') ?: 'db',
+                (int) (getenv('DB_PORT') ?: 3306),
+                getenv('DB_NAME') ?: 'omnibuy'
+            ),
+            getenv('DB_USER') ?: '',
+            getenv('DB_PASSWORD') ?: '',
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]
+        );
+
+        $this->browser = HttpClient::fromEnvironment();
+    }
+
+    protected function tearDown(): void
+    {
+        try {
+            if (isset($this->pdo)) {
+                // Functional HTTP tests require committed fixtures,
+                // so remove only the records created by this test.
+                foreach (array_reverse($this->createdListingIds) as $id) {
+                    $this->pdo->prepare(
+                        'DELETE FROM listings WHERE listing_id = ?'
+                    )->execute([$id]);
+                }
+
+                if ($this->createdCategoryId !== null) {
+                    $this->pdo->prepare(
+                        'DELETE FROM categories WHERE category_id = ?'
+                    )->execute([$this->createdCategoryId]);
+                }
+
+                foreach (array_reverse($this->createdUserIds) as $id) {
+                    $this->pdo->prepare(
+                        'DELETE FROM seller_profiles WHERE user_id = ?'
+                    )->execute([$id]);
+
+                    $this->pdo->prepare(
+                        'DELETE FROM users WHERE user_id = ?'
+                    )->execute([$id]);
+                }
+            }
+        } finally {
+            parent::tearDown();
+        }
+    }
+
+    // =========================================
+    // TC-14-01: MARK AN ACTIVE LISTING AS SOLD
+    // =========================================
+
+    public function testSellerCanMarkOwnActiveListingAsSold(): void
+    {
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC14 Active Listing '
+            . bin2hex(random_bytes(4));
+
+        $listingId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Confirm the listing starts as active.
+        $this->assertSame(
+            'active',
+            $this->listingStatus($listingId)
+        );
+
+        // Log in as the listing owner.
+        $token = $this->logInAs($seller['email']);
+
+        // Verify the seller can see the listing and button.
+        $before = $this->browser->get('/pages/my-listings.php');
+
+        $this->assertSame(200, $before['status']);
+        $this->assertStringContainsString(
+            $listingName,
+            $before['body']
+        );
+        $this->assertStringContainsString(
+            'Mark as Sold',
+            $before['body']
+        );
+
+        // Submit the Mark as Sold form.
+        $result = $this->browser->post('/pages/my-listings.php', [
+            'action' => 'mark_sold',
+            'listing_id' => (string) $listingId,
+            'csrf_token' => $token,
+        ]);
+
+        // Verify the redirect and database update.
+        $this->assertSame(303, $result['status'], $result['body']);
+        $this->assertSame(
+            '/pages/my-listings.php?sold=1',
+            $result['location']
+        );
+
+        $this->assertSame(
+            'sold',
+            $this->listingStatus($listingId)
+        );
+
+        // Verify the updated page displays the sold listing.
+        $after = $this->browser->get($result['location']);
+
+        $this->assertSame(200, $after['status']);
+
+        $this->assertStringContainsString(
+            $listingName,
+            $after['body']
+        );
+
+        $this->assertStringContainsString(
+            'Your listing was marked as sold successfully!',
+            $after['body']
+        );
+
+        // A sold listing should no longer offer this action.
+        $this->assertStringNotContainsString(
+            'Mark as Sold',
+            $after['body']
+        );
+    }
+
+    // =========================================
+    // TEST DATA HELPERS
+    // =========================================
+
+    private function createSeller(): array
+    {
+        $suffix = bin2hex(random_bytes(6));
+        $username = "uc14_$suffix";
+        $email = "uc14_$suffix@example.test";
+
+        $this->pdo->prepare('
+            INSERT INTO users (
+                first_name,
+                last_name,
+                username,
+                email,
+                password_hash,
+                phone_number,
+                birth_date,
+                is_email_verified
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ')->execute([
+            'UC14',
+            'Fixture',
+            $username,
+            $email,
+            password_hash(self::PASSWORD, PASSWORD_BCRYPT),
+            '555-0000',
+            '2000-01-01',
+            1,
+        ]);
+
+        $userId = (int) $this->pdo->lastInsertId();
+        $this->createdUserIds[] = $userId;
+
+        // Required by the listings table's foreign key.
+        // This is not a separate buyer/seller account type.
+        $this->pdo->prepare('
+            INSERT INTO seller_profiles (
+                user_id,
+                store_name,
+                payout_account_reference
+            ) VALUES (?, ?, ?)
+        ')->execute([
+            $userId,
+            "UC14 Store $suffix",
+            "UC14_$suffix",
+        ]);
+
+        return [
+            'id' => $userId,
+            'email' => $email,
+        ];
+    }
+
+    private function createCategory(): int
+    {
+        $name = 'UC14 Category '
+            . bin2hex(random_bytes(6));
+
+        $this->pdo->prepare(
+            'INSERT INTO categories (category_name) VALUES (?)'
+        )->execute([$name]);
+
+        $this->createdCategoryId =
+            (int) $this->pdo->lastInsertId();
+
+        return $this->createdCategoryId;
+    }
+
+    private function createListing(
+        int $sellerId,
+        int $categoryId,
+        string $name
+    ): int {
+        $this->pdo->prepare('
+            INSERT INTO listings (
+                seller_user_id,
+                category_id,
+                item_name,
+                item_description,
+                sale_type,
+                fulfillment_type,
+                price,
+                `condition`,
+                quantity,
+                listing_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ')->execute([
+            $sellerId,
+            $categoryId,
+            $name,
+            'UC-14 temporary test listing',
+            'fixed_price',
+            'shipping',
+            25.00,
+            'good',
+            1,
+            'active',
+        ]);
+
+        $listingId = (int) $this->pdo->lastInsertId();
+        $this->createdListingIds[] = $listingId;
+
+        return $listingId;
+    }
+
+    private function logInAs(string $email): string
+    {
+        $loginPage = $this->browser->get('/pages/login.php');
+
+        $this->assertSame(200, $loginPage['status']);
+
+        $csrfToken = HttpClient::csrfToken(
+            $loginPage['body']
+        );
+
+        $response = $this->browser->post('/pages/login.php', [
+            'identifier' => $email,
+            'password' => self::PASSWORD,
+            'csrf_token' => $csrfToken,
+            'redirect' => '/pages/my-listings.php',
+        ]);
+
+        $this->assertSame(
+            302,
+            $response['status'],
+            $response['body']
+        );
+
+        $this->assertSame(
+            '/pages/my-listings.php',
+            $response['location']
+        );
+
+        return $csrfToken;
+    }
+
+    private function listingStatus(int $listingId): string
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT listing_status
+             FROM listings
+             WHERE listing_id = ?'
+        );
+
+        $stmt->execute([$listingId]);
+
+        return (string) $stmt->fetchColumn();
+    }
+}
