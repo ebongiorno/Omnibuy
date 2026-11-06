@@ -172,7 +172,7 @@ final class CategoryFilterTest extends DatabaseTestCase
     public function testRemovingCategoryFilterRestoresBrowseAllResults(): void
     {
         // Simulates selecting "All Categories" while browsing all listings.
-        $response = \httpGet('/pages/search.php', [
+        $response = $this->allSearchPages([
             'browse' => 'all',
             'search_type' => 'items',
             'category' => '',
@@ -189,7 +189,7 @@ final class CategoryFilterTest extends DatabaseTestCase
         );
 
         $count = (int) $this->pdo->query("
-            SELECT COUNT(*) FROM listings WHERE listing_status = 'active'
+            SELECT COUNT(*) FROM listings AS l INNER JOIN users AS u ON u.user_id = l.seller_user_id WHERE l.listing_status = 'active' AND u.account_status = 'active'
         ")->fetchColumn();
         $this->assertResultCount($response, $count);
     }
@@ -197,10 +197,11 @@ final class CategoryFilterTest extends DatabaseTestCase
     /** @param array<string, string> $additionalParams */
     private function searchCategory(int $categoryId, array $additionalParams = []): string
     {
-        return \httpGet('/pages/search.php', array_merge([
+        $params = array_merge([
             'category' => (string) $categoryId,
             'search_type' => 'items',
-        ], $additionalParams));
+        ], $additionalParams);
+        return $this->allSearchPages($params);
     }
 
     private function categoryId(string $categoryName): int
@@ -223,9 +224,11 @@ final class CategoryFilterTest extends DatabaseTestCase
     {
         $stmt = $this->pdo->prepare("
             SELECT item_name
-            FROM listings
-            WHERE listing_status = 'active' AND category_id = :category_id
-            ORDER BY listing_id ASC
+            FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active' AND u.account_status = 'active'
+              AND l.category_id = :category_id
+            ORDER BY l.created_at DESC, l.listing_id DESC
             LIMIT 1
         ");
         $stmt->execute(['category_id' => $categoryId]);
@@ -240,8 +243,9 @@ final class CategoryFilterTest extends DatabaseTestCase
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*)
             FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
             LEFT JOIN categories AS c ON c.category_id = l.category_id
-            WHERE l.listing_status = 'active'
+            WHERE l.listing_status = 'active' AND u.account_status = 'active'
               AND (l.category_id = :category_id OR c.parent_category_id = :parent_id)
         ");
         $stmt->execute([
@@ -250,6 +254,30 @@ final class CategoryFilterTest extends DatabaseTestCase
         ]);
 
         return (int) $stmt->fetchColumn();
+    }
+
+
+    /**
+     * Evaluate listing visibility across the complete paginated result set.
+     * The first response retains the total-result label used by count checks.
+     * Each subsequent request is a real, bounded search page.
+     *
+     * @param array<string, mixed> $params
+     */
+    private function allSearchPages(array $params): string
+    {
+        unset($params['page']);
+        $first = \httpGet('/pages/search.php', $params);
+        if (!preg_match('/class="search-results__count"\s*>\s*(\d+)\s+results?\b/s', $first, $matches)) {
+            return $first;
+        }
+        $totalPages = (int) ceil((int) $matches[1] / 12);
+        for ($page = 2; $page <= $totalPages && $page <= 1000; $page++) {
+            $response = \httpGet('/pages/search.php', $params + ['page' => (string) $page]);
+            self::assertStringNotContainsString('Unable to retrieve search results', $response);
+            $first .= "\n" . $response;
+        }
+        return $first;
     }
 
     private function decodedHtml(string $html): string

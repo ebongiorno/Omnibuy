@@ -80,9 +80,10 @@ final class PriceRangeFilterTest extends DatabaseTestCase
         // Choose a real active listing price, rather than assuming a fixed seed price.
         $stmt = $this->pdo->query("
             SELECT item_name, price
-            FROM listings
-            WHERE listing_status = 'active'
-            ORDER BY listing_id ASC
+            FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active' AND u.account_status = 'active'
+            ORDER BY l.created_at DESC, l.listing_id DESC
             LIMIT 1
         ");
         $listing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -264,9 +265,18 @@ final class PriceRangeFilterTest extends DatabaseTestCase
     /** @param array<string, string> $params */
     private function searchByPrice(array $params): string
     {
-        return \httpGet('/pages/search.php', array_merge([
-            'search_type' => 'items',
-        ], $params));
+        $request = array_merge(['search_type' => 'items'], $params);
+        $first = \httpGet('/pages/search.php', $request);
+        if (!preg_match('/class="search-results__count"\s*>\s*(\d+)\s+results?\b/s', $first, $matches)) {
+            return $first;
+        }
+        $pages = (int) ceil((int) $matches[1] / 12);
+        for ($page = 2; $page <= $pages && $page <= 1000; $page++) {
+            $next = \httpGet('/pages/search.php', $request + ['page' => (string) $page]);
+            self::assertStringNotContainsString('Unable to retrieve search results', $next);
+            $first .= "\n" . $next;
+        }
+        return $first;
     }
 
     /**
@@ -279,8 +289,9 @@ final class PriceRangeFilterTest extends DatabaseTestCase
     {
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*)
-            FROM listings
-            WHERE listing_status = 'active' AND {$whereSql}
+            FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active' AND u.account_status = 'active' AND {$whereSql}
         ");
         $stmt->execute($params);
 
@@ -293,10 +304,11 @@ final class PriceRangeFilterTest extends DatabaseTestCase
     private function activeListingNameWhere(string $whereSql, array $params): string
     {
         $stmt = $this->pdo->prepare("
-            SELECT item_name
-            FROM listings
-            WHERE listing_status = 'active' AND {$whereSql}
-            ORDER BY listing_id ASC
+            SELECT l.item_name
+            FROM listings AS l
+            INNER JOIN users AS u ON u.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active' AND u.account_status = 'active' AND {$whereSql}
+            ORDER BY l.created_at DESC, l.listing_id DESC
             LIMIT 1
         ");
         $stmt->execute($params);

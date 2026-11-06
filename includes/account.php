@@ -528,3 +528,25 @@ function deleteAccount(PDO $pdo, int $userId, string $password, string $confirma
 
     return [];
 }
+
+/**
+ * Every account can sell, but a listing must belong to a seller_profiles row
+ * (listings.seller_user_id references it). Creates that row the first time
+ * the account publishes, with the username as the store name (plus the user
+ * ID if another store already has that name) and a placeholder payout
+ * reference. Does nothing if the account already has one.
+ */
+function ensureSellerProfile(PDO $pdo, int $userId): void
+{
+    $pdo->prepare("
+        INSERT INTO seller_profiles (user_id, store_name, payout_account_reference)
+        SELECT u.user_id,
+               IF(EXISTS (SELECT 1 FROM seller_profiles sp WHERE sp.store_name = u.username),
+                  CONCAT(u.username, '-', u.user_id),
+                  u.username),
+               CONCAT('pending-', u.user_id)
+        FROM users u
+        WHERE u.user_id = :id
+          AND NOT EXISTS (SELECT 1 FROM seller_profiles sp WHERE sp.user_id = u.user_id)
+    ")->execute(['id' => $userId]);
+}
