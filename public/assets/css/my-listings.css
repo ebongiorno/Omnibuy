@@ -107,3 +107,28 @@
         flex-direction: column;
     }
 }
+
+/* =========================================
+   UC-14: MARK LISTING AS SOLD
+   ========================================= */
+
+.my-listings__mark-sold {
+    margin-top: 12px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-primary, #2563eb);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.my-listings__mark-sold:hover {
+    filter: brightness(0.9);
+}
+
+.my-listings__mark-sold:focus-visible {
+    outline: 3px solid var(--color-primary, #2563eb);
+    outline-offset: 3px;
+}
