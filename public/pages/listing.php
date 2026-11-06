@@ -209,6 +209,7 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
     <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
     <link rel="stylesheet" href="/assets/css/shared-navigation.css">
     <link rel="stylesheet" href="/assets/css/listing-detail.css">
+    <link rel="stylesheet" href="/assets/css/listing-wishlist.css">
 </head>
 <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -389,11 +390,15 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                                         type="button"
                                         class="listing-detail__action listing-detail__action--secondary"
                                         data-add-to-wishlist
+                                        aria-pressed="false"
                                         disabled
-                                        title="Wishlist integration is pending"
-                                    ><span aria-hidden="true">&#9825;</span> Add to Wishlist</button>
+                                    >
+                                        <span data-wishlist-icon aria-hidden="true">&#9825;</span>
+                                        <span data-wishlist-label>Checking Wishlist...</span>
+                                    </button>
                                 </div>
-                                <p class="listing-detail__integration-note" role="note">Cart and Wishlist buttons are visual placeholders. Your selection will not be saved or submitted until those features are connected by the team.</p>
+                                <p class="listing-detail__purchase-note" data-wishlist-feedback role="status" aria-live="polite"></p>
+                                <p class="listing-detail__integration-note" role="note">Add to Cart is not yet connected.</p>
                             </section>
                         </div>
                     </div>
@@ -512,5 +517,6 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
     <script src="/assets/js/shared-navigation.js" defer></script>
     <script src="/assets/js/listing-gallery.js" defer></script>
     <script src="/assets/js/listing-purchase-ui.js" defer></script>
+    <script src="/assets/js/listing-wishlist.js" defer></script>
 </body>
 </html>
