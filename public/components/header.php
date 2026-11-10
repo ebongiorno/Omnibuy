@@ -5,7 +5,7 @@
  *
  * Optional variables before include:
  *   $pageTitle       string
- *   $activeNav       string: home|electronics|collectibles|clothing|home-garden|sporting-goods
+ *   $activeNav       string: home|electronics|collectibles|clothing|home-furniture|books
  *   $isLoggedIn      bool
  *   $currentUser     array with username, avatar_url, is_seller
  *   $cartCount       int
@@ -46,9 +46,16 @@ function navActive(string $key, string $activeNav): string
   <link rel="stylesheet" href="/assets/css/shared-navigation.css">
 
 
+<?php if (!empty($extraStylesheets) && is_array($extraStylesheets)): ?>
+  <?php foreach ($extraStylesheets as $stylesheet): ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars((string)$stylesheet, ENT_QUOTES, 'UTF-8') ?>">
+  <?php endforeach; ?>
+<?php endif; ?>
 <?php if (!empty($pageStylesheet)): ?>
   <link rel="stylesheet" href="<?= htmlspecialchars($pageStylesheet, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
+
+
 
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -58,7 +65,7 @@ function navActive(string $key, string $activeNav): string
 
 <header class="site-header">
   <div class="site-header__top shell">
-    <a class="brand" href="../index.php" aria-label="OmniBuy home">
+    <a class="brand" href="/" aria-label="OmniBuy home">
       <span class="brand__name">
         OmniBuy
         <i class="fa-solid fa-box-open"></i>
@@ -102,12 +109,12 @@ function navActive(string $key, string $activeNav): string
     </form>
 
     <nav class="header-actions" aria-label="Account and shopping">
-      <a class="icon-link" href="../pages/wishlist.php" aria-label="Wishlist">
+      <a class="icon-link" href="/pages/wishlist.php" aria-label="Wishlist">
         <i class="fa-solid fa-heart"></i>
         <span class="icon-link__label">Wishlist</span>
       </a>
 
-      <a class="icon-link" href="../pages/messaging.php" aria-label="Messages">
+      <a class="icon-link" href="/pages/messaging.php" aria-label="Messages">
         <i class="fa-regular fa-message"></i>
         <span class="icon-link__label">Messages</span>
         <?php if ($unreadCount > 0): ?>
@@ -163,24 +170,23 @@ function navActive(string $key, string $activeNav): string
       <a class="primary-nav__link<?= navActive(
           'electronics',
           $activeNav,
-      ) ?>" href="/category.php?category=electronics">Electronics</a>
+      ) ?>" href="/pages/category.php?category=electronics">Electronics</a>
       <a class="primary-nav__link<?= navActive(
           'collectibles',
           $activeNav,
-      ) ?>" href="/category.php?category=collectibles">Collectibles</a>
+      ) ?>" href="/pages/category.php?category=collectibles">Collectibles</a>
       <a class="primary-nav__link<?= navActive(
           'clothing',
           $activeNav,
-      ) ?>" href="/category.php?category=clothing">Clothing, Shoes & Accessories</a>
+      ) ?>" href="/pages/category.php?category=clothing">Clothing, Shoes & Accessories</a>
       <a class="primary-nav__link<?= navActive(
-          'home-garden',
+          'home-furniture',
           $activeNav,
-      ) ?>" href="/category.php?category=home-garden">Home & Garden</a>
+      ) ?>" href="/pages/category.php?category=home-furniture">Home & Furniture</a>
       <a class="primary-nav__link<?= navActive(
-          'sporting-goods',
+          'books',
           $activeNav,
-      ) ?>" href="/category.php?category=sporting-goods">Books</a>
-      <a class="primary-nav__link" href="/categories.php">More</a>
+      ) ?>" href="/pages/category.php?category=books">Books</a>
 
       <!-- Phones: the header hides the account links, so the menu shows them instead. -->
       <div class="primary-nav__account">

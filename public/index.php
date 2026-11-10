@@ -1,10 +1,16 @@
 <?php
-    require_once __DIR__ . '/../includes/auth.php';
-    startSession();
-
-    $header = 'components/header.php';
-    include $header;
+require_once __DIR__ . '/../includes/auth.php';
+startSession();
 require_once __DIR__ . '/../db_connect.php';
+$activeNav = 'home';
+$pageTitle = 'OmniBuy';
+$pageStylesheet = '/assets/css/homepage.css';
+$extraStylesheets = [
+    '/assets/css/listing-card.css',
+    '/assets/css/homepage-category-layout.css'
+];
+
+
 
 $sort = $_GET['sort'] ?? 'recent';
 
@@ -47,31 +53,14 @@ try {
     $feedError = true;
 }
 
+
+include __DIR__ . '/components/header.php';
 ?>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- CSS Stylesheets -->
-    <link rel="stylesheet" href="assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="assets/css/homepage.css">
-    <link rel="stylesheet" href="/assets/css/listing-card.css">
-
-    <!-- Enables the use of Font Awesome's Icons -->
-    <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
-
-    <title>OmniBuy</title>
-</head>
-<body>
-    <!-- =========================================
+<!-- =========================================
          HOMEPAGE
          ========================================= -->
 
-    <main class="page-main" id="main-content">
+    
 
 
         <!-- =====================================
@@ -138,12 +127,6 @@ try {
                         </h2>
                     </div>
 
-                    <a
-                        class="text-link"
-                        href="categories.php"
-                    >
-                        View all categories
-                    </a>
                 </div>
 
 
@@ -151,10 +134,10 @@ try {
 
                     <a
                         class="category-card"
-                        href="category.php?id=1"
+                        href="/pages/category.php?category=electronics"
                     >
                         <div class="category-card__image">
-                            <img src="assets/images/category/category-parent-electronics.jpg">
+                            <img src="assets/images/category/category-parent-electronics.jpg" alt="Electronics">
                         </div>
 
                         <h3>Electronics</h3>
@@ -163,10 +146,10 @@ try {
 
                     <a
                         class="category-card"
-                        href="category.php?id=2"
+                        href="/pages/category.php?category=home-furniture"
                     >
                         <div class="category-card__image">
-                            <img src="assets/images/category/category-parent-home-furniture.jpg">
+                            <img src="assets/images/category/category-parent-home-furniture.jpg" alt="Furniture">
                         </div>
 
                         <h3>Home & Furniture</h3>
@@ -175,10 +158,10 @@ try {
 
                     <a
                         class="category-card"
-                        href="category.php?id=3"
+                        href="/pages/category.php?category=clothing"
                     >
                         <div class="category-card__image">
-                            <img src="assets/images/category/category-parent-clothing.jpg">
+                            <img src="assets/images/category/category-parent-clothing.jpg" alt="Clothing">
                         </div>
 
                         <h3>Clothing</h3>
@@ -187,10 +170,22 @@ try {
 
                     <a
                         class="category-card"
-                        href="category.php?id=4"
+                        href="/pages/category.php?category=collectibles"
                     >
                         <div class="category-card__image">
-                            <img src="assets/images/category/category-parent-books.jpg">
+                            <img src="assets/images/category/category-parent-collectibles.jpg" alt="Collectibles">
+                        </div>
+
+                        <h3>Collectibles</h3>
+                    </a>
+
+
+                    <a
+                        class="category-card"
+                        href="/pages/category.php?category=books"
+                    >
+                        <div class="category-card__image">
+                            <img src="assets/images/category/category-parent-books.jpg" alt="Books">
                         </div>
 
                         <h3>Books</h3>
