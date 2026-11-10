@@ -183,7 +183,6 @@ $bannerImages = [
     'home-furniture' => '/assets/images/category/category-parent-home-furniture.jpg',
     'clothing' => '/assets/images/category/category-parent-clothing.jpg',
     'books' => '/assets/images/category/category-parent-books.jpg',
-    // Add your actual collectibles hero image path here if it differs.
     'collectibles' => '/assets/images/category/category-parent-collectibles.jpg',
 ];
 $heroSlug = $category ? ( $aliases[categorySlug((string)$category['category_name'])] ?? categorySlug((string)$category['category_name'])) : '';
@@ -193,9 +192,9 @@ $heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ??
     <?php if ($error): ?>
         <div class="category-notice" role="alert"><h1>Category temporarily unavailable</h1><p>Please try again later.</p></div>
     <?php elseif ($notFound): ?>
-        <div class="category-notice"><h1>Category not found</h1><p>That category does not exist.</p><a href="/categories.php">Browse categories</a></div>
+        <div class="category-notice"><h1>Category not found</h1><p>That category does not exist.</p><a href="/">Return home</a></div>
     <?php else: ?>
-        <nav class="category-breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/categories.php">Categories</a><span>›</span><span aria-current="page"><?= categoryEscape($category['category_name']) ?></span></nav>
+        <nav class="category-breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><span aria-current="page"><?= categoryEscape($category['category_name']) ?></span></nav>
         <section class="category-hero" aria-labelledby="category-heading">
             <div class="category-hero__content"><p class="category-eyebrow">Explore this category</p><h1 id="category-heading"><?= categoryEscape($category['category_name']) ?></h1><p><?= categoryEscape($category['description'] ?: 'Browse new and pre-owned finds from OmniBuy sellers.') ?></p></div>
             <div class="category-hero__media"><img src="<?= categoryEscape($heroImage) ?>" alt="" onerror="this.onerror=null;this.src='/assets/images/homepage-image.jpg'"></div>

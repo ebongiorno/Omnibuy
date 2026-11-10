@@ -55,6 +55,10 @@ function navActive(string $key, string $activeNav): string
   <link rel="stylesheet" href="<?= htmlspecialchars($pageStylesheet, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 
+<?php foreach (($extraStylesheets ?? []) as $stylesheet): ?>
+  <link rel="stylesheet" href="<?= htmlspecialchars($stylesheet, ENT_QUOTES, 'UTF-8') ?>">
+<?php endforeach; ?>
+
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
 </head>
