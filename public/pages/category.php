@@ -1,18 +1,18 @@
 <?php
 /**
  * Reusable category and subcategory browsing page.
- * Place in public/category.php (alongside index.php).
+ * Place in public/pages/category.php (alongside search.php).
  * Requires MySQL 8+, public/components/header.php and the existing listing-card component.
  */
-require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../../includes/auth.php';
 startSession();
-require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../../db_connect.php';
 
 function categoryEscape($value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function categoryUrl(array $params): string {
-    return '/category.php?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    return '/pages/category.php?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 }
 function categorySlug(string $name): string {
     $name = strtolower(trim($name));
@@ -176,7 +176,8 @@ if ($category) {
     $activeNav = '';
 }
 $pageStylesheet = '/assets/css/category.css';
-include __DIR__ . '/components/header.php';
+$extraStylesheets = ['/assets/css/listing-card.css'];
+include __DIR__ . '/../components/header.php';
 
 $bannerImages = [
     'electronics' => '/assets/images/category/category-parent-electronics.jpg',
@@ -211,7 +212,7 @@ $heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ??
         <?php endif; ?>
         <div class="category-results-layout">
             <aside class="category-filter-panel" aria-label="Listing filters">
-                <form action="/category.php" method="get">
+                <form action="/pages/category.php" method="get">
                     <input type="hidden" name="id" value="<?= (int)$category['category_id'] ?>">
                     <div class="category-filters-heading"><h2>Filters</h2><a href="<?= categoryEscape(categoryUrl(['id' => (int)$category['category_id']])) ?>">Clear</a></div>
                     <fieldset><legend>Price range</legend><div class="category-price-inputs"><label>Min <input name="min_price" type="number" min="0" step="0.01" placeholder="$ Min" value="<?= categoryEscape($minPriceRaw) ?>"></label><label>Max <input name="max_price" type="number" min="0" step="0.01" placeholder="$ Max" value="<?= categoryEscape($maxPriceRaw) ?>"></label></div></fieldset>
@@ -223,10 +224,10 @@ $heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ??
             </aside>
             <section class="category-results" aria-labelledby="category-results-heading">
                 <div class="category-results-heading"><div><h2 id="category-results-heading"><?= categoryEscape($category['category_name']) ?> Listings</h2><p><?= $priceError === null ? number_format($total) . ' results' : 'Correct the price range to view results' ?></p></div>
-                <form method="get" action="/category.php" class="category-sort-form"><input type="hidden" name="id" value="<?= (int)$category['category_id'] ?>"><input type="hidden" name="min_price" value="<?= categoryEscape($minPriceRaw) ?>"><input type="hidden" name="max_price" value="<?= categoryEscape($maxPriceRaw) ?>"><?php foreach ($conditions as $condition): ?><input type="hidden" name="condition[]" value="<?= categoryEscape($condition) ?>"><?php endforeach; ?><?php foreach ($fulfillments as $fulfillment): ?><input type="hidden" name="fulfillment[]" value="<?= categoryEscape($fulfillment) ?>"><?php endforeach; ?><label for="category-sort">Sort by</label><select name="sort" id="category-sort" onchange="this.form.submit()"><option value="recent" <?= $sort==='recent'?'selected':'' ?>>Newest</option><option value="price_low" <?= $sort==='price_low'?'selected':'' ?>>Price: Low to High</option><option value="price_high" <?= $sort==='price_high'?'selected':'' ?>>Price: High to Low</option></select><noscript><button type="submit">Sort</button></noscript></form></div>
+                <form method="get" action="/pages/category.php" class="category-sort-form"><input type="hidden" name="id" value="<?= (int)$category['category_id'] ?>"><input type="hidden" name="min_price" value="<?= categoryEscape($minPriceRaw) ?>"><input type="hidden" name="max_price" value="<?= categoryEscape($maxPriceRaw) ?>"><?php foreach ($conditions as $condition): ?><input type="hidden" name="condition[]" value="<?= categoryEscape($condition) ?>"><?php endforeach; ?><?php foreach ($fulfillments as $fulfillment): ?><input type="hidden" name="fulfillment[]" value="<?= categoryEscape($fulfillment) ?>"><?php endforeach; ?><label for="category-sort">Sort by</label><select name="sort" id="category-sort" onchange="this.form.submit()"><option value="recent" <?= $sort==='recent'?'selected':'' ?>>Newest</option><option value="price_low" <?= $sort==='price_low'?'selected':'' ?>>Price: Low to High</option><option value="price_high" <?= $sort==='price_high'?'selected':'' ?>>Price: High to Low</option></select><noscript><button type="submit">Sort</button></noscript></form></div>
                 <?php if ($priceError !== null): ?><div class="category-notice" role="alert"><?= categoryEscape($priceError) ?></div>
                 <?php elseif (!$listings): ?><div class="category-notice"><h3>No listings found</h3><p>Try clearing some filters or browsing another category.</p></div>
-                <?php else: ?><div class="listing-grid category-listing-grid"><?php foreach ($listings as $listing): ?><?php include __DIR__ . '/components/listing-card-component.php'; ?><?php endforeach; ?></div>
+                <?php else: ?><div class="listing-grid category-listing-grid"><?php foreach ($listings as $listing): ?><?php include __DIR__ . '/../components/listing-card-component.php'; ?><?php endforeach; ?></div>
                     <?php if ($totalPages > 1): ?><nav class="category-pagination" aria-label="Listing pages">
                         <?php if ($page > 1): ?><a href="<?= categoryEscape(categoryUrl(array_merge(categoryParams(), ['id'=>$categoryId, 'page'=>$page-1]))) ?>">‹ Previous</a><?php endif; ?>
                         <?php for ($p = max(1,$page-2); $p <= min($totalPages,$page+2); $p++): ?><a href="<?= categoryEscape(categoryUrl(array_merge(categoryParams(), ['id'=>$categoryId, 'page'=>$p]))) ?>" <?= $p === $page ? 'aria-current="page"' : '' ?>><?= $p ?></a><?php endfor; ?>

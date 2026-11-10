@@ -55,9 +55,7 @@ function navActive(string $key, string $activeNav): string
   <link rel="stylesheet" href="<?= htmlspecialchars($pageStylesheet, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 
-<?php foreach (($extraStylesheets ?? []) as $stylesheet): ?>
-  <link rel="stylesheet" href="<?= htmlspecialchars($stylesheet, ENT_QUOTES, 'UTF-8') ?>">
-<?php endforeach; ?>
+
 
   <!-- Enables the use of Font Awesome's Icons -->
   <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
@@ -172,23 +170,23 @@ function navActive(string $key, string $activeNav): string
       <a class="primary-nav__link<?= navActive(
           'electronics',
           $activeNav,
-      ) ?>" href="/category.php?category=electronics">Electronics</a>
+      ) ?>" href="/pages/category.php?category=electronics">Electronics</a>
       <a class="primary-nav__link<?= navActive(
           'collectibles',
           $activeNav,
-      ) ?>" href="/category.php?category=collectibles">Collectibles</a>
+      ) ?>" href="/pages/category.php?category=collectibles">Collectibles</a>
       <a class="primary-nav__link<?= navActive(
           'clothing',
           $activeNav,
-      ) ?>" href="/category.php?category=clothing">Clothing, Shoes & Accessories</a>
+      ) ?>" href="/pages/category.php?category=clothing">Clothing, Shoes & Accessories</a>
       <a class="primary-nav__link<?= navActive(
           'home-furniture',
           $activeNav,
-      ) ?>" href="/category.php?category=home-furniture">Home & Furniture</a>
+      ) ?>" href="/pages/category.php?category=home-furniture">Home & Furniture</a>
       <a class="primary-nav__link<?= navActive(
           'books',
           $activeNav,
-      ) ?>" href="/category.php?category=books">Books</a>
+      ) ?>" href="/pages/category.php?category=books">Books</a>
 
       <!-- Phones: the header hides the account links, so the menu shows them instead. -->
       <div class="primary-nav__account">

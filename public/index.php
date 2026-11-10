@@ -131,7 +131,7 @@ include __DIR__ . '/components/header.php';
 
                     <a
                         class="category-card"
-                        href="/category.php?category=electronics"
+                        href="/pages/category.php?category=electronics"
                     >
                         <div class="category-card__image">
                             <img src="assets/images/category/category-parent-electronics.jpg" alt="Electronics">
@@ -143,7 +143,7 @@ include __DIR__ . '/components/header.php';
 
                     <a
                         class="category-card"
-                        href="/category.php?category=home-furniture"
+                        href="/pages/category.php?category=home-furniture"
                     >
                         <div class="category-card__image">
                             <img src="assets/images/category/category-parent-home-furniture.jpg" alt="Furniture">
@@ -155,7 +155,7 @@ include __DIR__ . '/components/header.php';
 
                     <a
                         class="category-card"
-                        href="/category.php?category=clothing"
+                        href="/pages/category.php?category=clothing"
                     >
                         <div class="category-card__image">
                             <img src="assets/images/category/category-parent-clothing.jpg" alt="Clothing">
@@ -167,7 +167,7 @@ include __DIR__ . '/components/header.php';
 
                     <a
                         class="category-card"
-                        href="/category.php?category=collectibles"
+                        href="/pages/category.php?category=collectibles"
                     >
                         <div class="category-card__image">
                             <img src="assets/images/category/category-parent-collectibles.jpg" alt="Collectibles">
@@ -179,7 +179,7 @@ include __DIR__ . '/components/header.php';
 
                     <a
                         class="category-card"
-                        href="/category.php?category=books"
+                        href="/pages/category.php?category=books"
                     >
                         <div class="category-card__image">
                             <img src="assets/images/category/category-parent-books.jpg" alt="Books">
