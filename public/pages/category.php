@@ -185,6 +185,14 @@ $bannerImages = [
     'clothing' => '/assets/images/category/category-parent-clothing.jpg',
     'books' => '/assets/images/category/category-parent-books.jpg',
     'collectibles' => '/assets/images/category/category-parent-collectibles.jpg',
+    'audio' => '/assets/images/category/subcategory-audio.jpg',
+    'computers' => '/assets/images/category/subcategory-computers.jpg',
+    'furniture' => '/assets/images/category/subcategory-furniture.jpg',
+    'kitchen' => '/assets/images/category/subcategory-kitchen.jpg',
+    'mens-clothing' => '/assets/images/category/subcategory-mens-clothing.jpg',
+    'womens-clothing' => '/assets/images/category/subcategory-womens-clothing.jpg',
+    'trading-cards' => '/assets/images/category/subcategory-trading-cards.jpg',
+    'action-figures' => '/assets/images/category/subcategory-action-figures.jpg'
 ];
 $heroSlug = $category ? ( $aliases[categorySlug((string)$category['category_name'])] ?? categorySlug((string)$category['category_name'])) : '';
 $heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ?? '/assets/images/homepage-image.jpg')) : '';
