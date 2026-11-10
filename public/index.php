@@ -5,7 +5,10 @@ require_once __DIR__ . '/../db_connect.php';
 $activeNav = 'home';
 $pageTitle = 'OmniBuy';
 $pageStylesheet = '/assets/css/homepage.css';
-$extraStylesheets = ['/assets/css/listing-card.css'];
+$extraStylesheets = [
+    '/assets/css/listing-card.css',
+    '/assets/css/homepage-category-layout.css'
+];
 
 
 

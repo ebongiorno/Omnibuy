@@ -175,7 +175,7 @@ if ($category) {
     $pageTitle = 'Category not found | OmniBuy';
     $activeNav = '';
 }
-$pageStylesheet = '/assets/css/category.css';
+$pageStylesheet = '/assets/css/category.css?v=20261109-banner-fix';
 $extraStylesheets = ['/assets/css/listing-card.css'];
 include __DIR__ . '/../components/header.php';
 
@@ -188,6 +188,31 @@ $bannerImages = [
 ];
 $heroSlug = $category ? ( $aliases[categorySlug((string)$category['category_name'])] ?? categorySlug((string)$category['category_name'])) : '';
 $heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ?? '/assets/images/homepage-image.jpg')) : '';
+
+// Font Awesome icons for known subcategories. Add new slugs here as the
+// category table grows. Unknown categories use their image or a tag icon.
+$subcategoryIconClasses = [
+    'audio' => 'fa-headphones',
+    'computers' => 'fa-laptop',
+    'computers-laptops' => 'fa-laptop',
+    'phones-accessories' => 'fa-mobile-screen-button',
+    'gaming' => 'fa-gamepad',
+    'cameras-photography' => 'fa-camera',
+    'furniture' => 'fa-couch',
+    'kitchen' => 'fa-utensils',
+    'home-decor' => 'fa-house',
+    'mens-clothing' => 'fa-shirt',
+    'men-s-clothing' => 'fa-shirt',
+    'womens-clothing' => 'fa-person-dress',
+    'women-s-clothing' => 'fa-person-dress',
+    'shoes' => 'fa-shoe-prints',
+    'action-figures' => 'fa-robot',
+    'trading-cards' => 'fa-layer-group',
+    'collectible-coins' => 'fa-coins',
+    'comics' => 'fa-book-open',
+    'fiction' => 'fa-book-open',
+    'nonfiction' => 'fa-book',
+];
 ?>
 <div class="category-layout shell">
     <?php if ($error): ?>
@@ -203,8 +228,30 @@ $heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ??
         <?php if ($children): ?>
             <section class="category-subcategories" aria-labelledby="subcategory-heading"><h2 id="subcategory-heading">Subcategories</h2><div class="category-subcategory-grid">
                 <?php foreach ($children as $child): ?>
-                    <a class="category-subcategory-card" href="<?= categoryEscape(categoryUrl(['id' => (int)$child['category_id']])) ?>">
-                        <?php if (!empty($child['image_url'])): ?><img src="<?= categoryEscape($child['image_url']) ?>" alt="" loading="lazy"><?php else: ?><span class="category-subcategory-icon" aria-hidden="true">⌕</span><?php endif; ?>
+                    <?php
+                        $childSlug = categorySlug((string)$child['category_name']);
+                        $iconClass = $subcategoryIconClasses[$childSlug] ?? null;
+                    ?>
+                    <a
+                        class="category-subcategory-card"
+                        href="<?= categoryEscape(categoryUrl(['id' => (int)$child['category_id']])) ?>"
+                    >
+                        <?php if ($iconClass !== null): ?>
+                            <span class="category-subcategory-icon" aria-hidden="true">
+                                <i class="fa-solid <?= categoryEscape($iconClass) ?>"></i>
+                            </span>
+                        <?php elseif (!empty($child['image_url'])): ?>
+                            <img
+                                src="<?= categoryEscape($child['image_url']) ?>"
+                                alt=""
+                                loading="lazy"
+                            >
+                        <?php else: ?>
+                            <span class="category-subcategory-icon" aria-hidden="true">
+                                <i class="fa-solid fa-tag"></i>
+                            </span>
+                        <?php endif; ?>
+
                         <span><?= categoryEscape($child['category_name']) ?></span>
                     </a>
                 <?php endforeach; ?>
