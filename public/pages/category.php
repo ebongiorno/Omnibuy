@@ -11,6 +11,18 @@ require_once __DIR__ . '/../../db_connect.php';
 function categoryEscape($value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
+/** Display-friendly breadcrumb label without changing database category names. */
+function categoryBreadcrumbLabel(array $category): string {
+    if (
+        $category['parent_category_id'] === null
+        && (string)$category['category_name'] === 'Home'
+    ) {
+        return 'Home & Furniture';
+    }
+
+    return (string)$category['category_name'];
+}
+
 function categoryUrl(array $params): string {
     return '/pages/category.php?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 }
@@ -28,6 +40,7 @@ function categoryParams(array $changes = []): array {
 }
 
 $aliases = [
+    'home' => 'home-furniture',
     'home-garden' => 'home-furniture',
     'home-and-garden' => 'home-furniture',
     'home-and-furniture' => 'home-furniture',
@@ -43,6 +56,7 @@ if ($requestedSlug !== null && !preg_match('/^[a-z0-9-]{1,100}$/', $requestedSlu
 
 $category = null;
 $children = [];
+$breadcrumbAncestors = [];
 $listings = [];
 $total = 0;
 $error = false;
@@ -103,6 +117,37 @@ try {
         http_response_code(404);
     } else {
         $categoryId = (int)$category['category_id'];
+
+        // Build breadcrumbs from the database hierarchy, nearest parent first.
+        // Each ancestor becomes a link, while the current category stays plain text.
+        $parentId = $category['parent_category_id'] !== null
+            ? (int)$category['parent_category_id']
+            : null;
+        $visitedCategoryIds = [$categoryId => true];
+        $ancestorStmt = $pdo->prepare('
+            SELECT category_id, parent_category_id, category_name
+            FROM categories
+            WHERE category_id = :id
+        ');
+
+        while ($parentId !== null && !isset($visitedCategoryIds[$parentId])) {
+            $visitedCategoryIds[$parentId] = true;
+            $ancestorStmt->execute(['id' => $parentId]);
+            $ancestor = $ancestorStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$ancestor) {
+                break;
+            }
+
+            $breadcrumbAncestors[] = $ancestor;
+            $parentId = $ancestor['parent_category_id'] !== null
+                ? (int)$ancestor['parent_category_id']
+                : null;
+        }
+
+        // Breadcrumbs should display the root category before its descendants.
+        $breadcrumbAncestors = array_reverse($breadcrumbAncestors);
+
         $childrenStmt = $pdo->prepare('SELECT category_id, category_name, description, image_url FROM categories WHERE parent_category_id = :id ORDER BY category_name');
         $childrenStmt->execute(['id' => $categoryId]);
         $children = $childrenStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -187,20 +232,56 @@ $bannerImages = [
     'collectibles' => '/assets/images/category/category-parent-collectibles.jpg',
     'audio' => '/assets/images/category/subcategory-audio.jpg',
     'computers' => '/assets/images/category/subcategory-computers.jpg',
+    'phones' => '/assets/images/category/subcategory-phones.jpg',
+    'tvs' => '/assets/images/category/subcategory-tvs.jpg',
+    'video-games' => '/assets/images/category/subcategory-video-games.jpg',
+    'cameras' => '/assets/images/category/subcategory-cameras.jpg',
     'furniture' => '/assets/images/category/subcategory-furniture.jpg',
     'kitchen' => '/assets/images/category/subcategory-kitchen.jpg',
+    'bathroom' => '/assets/images/category/subcategory-bathroom.jpg',
+    'home-decor' => '/assets/images/category/subcategory-home-decor.jpg',
+    'bedding' => '/assets/images/category/subcategory-bedding.jpg',
     'mens-clothing' => '/assets/images/category/subcategory-mens-clothing.jpg',
     'womens-clothing' => '/assets/images/category/subcategory-womens-clothing.jpg',
+    'shoes' => '/assets/images/category/subcategory-shoes.jpg',
+    'accessories' => '/assets/images/category/subcategory-accessories.jpg',
     'trading-cards' => '/assets/images/category/subcategory-trading-cards.jpg',
     'action-figures' => '/assets/images/category/subcategory-action-figures.jpg'
 ];
-$heroSlug = $category ? ( $aliases[categorySlug((string)$category['category_name'])] ?? categorySlug((string)$category['category_name'])) : '';
-$heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ?? '/assets/images/homepage-image.jpg')) : '';
+$heroSlug = $category
+    ? ($aliases[categorySlug((string) $category['category_name'])]
+        ?? categorySlug((string) $category['category_name']))
+    : '';
+
+// Optional banner images follow the existing subcategory-[slug] convention.
+// This automatically supports future subcategories without editing PHP again.
+if ($category && !isset($bannerImages[$heroSlug])) {
+    foreach (['jpg', 'jpeg', 'png', 'webp'] as $extension) {
+        $filename = 'subcategory-' . $heroSlug . '.' . $extension;
+        $imagePath = __DIR__ . '/../assets/images/category/' . $filename;
+
+        if (is_file($imagePath)) {
+            $bannerImages[$heroSlug] = '/assets/images/category/' . $filename;
+            break;
+        }
+    }
+}
+
+$heroImage = $category
+    ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ?? '/assets/images/homepage-image.jpg'))
+    : '';
 
 // Font Awesome icons for known subcategories. Add new slugs here as the
 // category table grows. Unknown categories use their image or a tag icon.
 $subcategoryIconClasses = [
     'audio' => 'fa-headphones',
+    'accessories' => 'fa-bag-shopping',
+    'bedding' => 'fa-bed',
+    'bathroom' => 'fa-bath',
+    'cameras' => 'fa-camera',
+    'video-games' => 'fa-gamepad',
+    'tvs' => 'fa-tv',
+    'phones' => 'fa-mobile-screen-button',
     'computers' => 'fa-laptop',
     'computers-laptops' => 'fa-laptop',
     'phones-accessories' => 'fa-mobile-screen-button',
@@ -228,7 +309,19 @@ $subcategoryIconClasses = [
     <?php elseif ($notFound): ?>
         <div class="category-notice"><h1>Category not found</h1><p>That category does not exist.</p><a href="/">Return home</a></div>
     <?php else: ?>
-        <nav class="category-breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><span aria-current="page"><?= categoryEscape($category['category_name']) ?></span></nav>
+        <nav class="category-breadcrumbs" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+
+            <?php foreach ($breadcrumbAncestors as $ancestor): ?>
+                <span aria-hidden="true">›</span>
+                <a href="<?= categoryEscape(categoryUrl(['id' => (int)$ancestor['category_id']])) ?>">
+                    <?= categoryEscape(categoryBreadcrumbLabel($ancestor)) ?>
+                </a>
+            <?php endforeach; ?>
+
+            <span aria-hidden="true">›</span>
+            <span aria-current="page"><?= categoryEscape(categoryBreadcrumbLabel($category)) ?></span>
+        </nav>
         <section class="category-hero" aria-labelledby="category-heading">
             <div class="category-hero__content"><p class="category-eyebrow">Explore this category</p><h1 id="category-heading"><?= categoryEscape($category['category_name']) ?></h1><p><?= categoryEscape($category['description'] ?: 'Browse new and pre-owned finds from OmniBuy sellers.') ?></p></div>
             <div class="category-hero__media"><img src="<?= categoryEscape($heroImage) ?>" alt="" onerror="this.onerror=null;this.src='/assets/images/homepage-image.jpg'"></div>
