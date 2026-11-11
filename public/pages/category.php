@@ -28,6 +28,7 @@ function categoryParams(array $changes = []): array {
 }
 
 $aliases = [
+    'home' => 'home-furniture',
     'home-garden' => 'home-furniture',
     'home-and-garden' => 'home-furniture',
     'home-and-furniture' => 'home-furniture',
@@ -194,13 +195,40 @@ $bannerImages = [
     'trading-cards' => '/assets/images/category/subcategory-trading-cards.jpg',
     'action-figures' => '/assets/images/category/subcategory-action-figures.jpg'
 ];
-$heroSlug = $category ? ( $aliases[categorySlug((string)$category['category_name'])] ?? categorySlug((string)$category['category_name'])) : '';
-$heroImage = $category ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ?? '/assets/images/homepage-image.jpg')) : '';
+$heroSlug = $category
+    ? ($aliases[categorySlug((string) $category['category_name'])]
+        ?? categorySlug((string) $category['category_name']))
+    : '';
+
+// Optional banner images follow the existing subcategory-[slug] convention.
+// This automatically supports future subcategories without editing PHP again.
+if ($category && !isset($bannerImages[$heroSlug])) {
+    foreach (['jpg', 'jpeg', 'png', 'webp'] as $extension) {
+        $filename = 'subcategory-' . $heroSlug . '.' . $extension;
+        $imagePath = __DIR__ . '/../assets/images/category/' . $filename;
+
+        if (is_file($imagePath)) {
+            $bannerImages[$heroSlug] = '/assets/images/category/' . $filename;
+            break;
+        }
+    }
+}
+
+$heroImage = $category
+    ? ($category['image_url'] ?: ($bannerImages[$heroSlug] ?? '/assets/images/homepage-image.jpg'))
+    : '';
 
 // Font Awesome icons for known subcategories. Add new slugs here as the
 // category table grows. Unknown categories use their image or a tag icon.
 $subcategoryIconClasses = [
     'audio' => 'fa-headphones',
+    'accessories' => 'fa-bag-shopping',
+    'bedding' => 'fa-bed',
+    'bathroom' => 'fa-bath',
+    'cameras' => 'fa-camera',
+    'video-games' => 'fa-gamepad',
+    'tvs' => 'fa-tv',
+    'phones' => 'fa-mobile-screen-button',
     'computers' => 'fa-laptop',
     'computers-laptops' => 'fa-laptop',
     'phones-accessories' => 'fa-mobile-screen-button',
