@@ -23,10 +23,14 @@ if (!$isLoggedIn) {
     exit;
 }
 
-// Mark as sold logic
+// Listing management actions: Mark as Sold and Renew Listing.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (($_POST['action'] ?? null) !== 'mark_sold') {
+    // Identify and validate the requested action.
+    $action = $_POST['action'] ?? null;
+
+    if (!is_string($action) ||
+        !in_array($action, ['mark_sold', 'renew_listing'], true)) {
         http_response_code(400);
         exit('Invalid action.');
     }
@@ -51,28 +55,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit('Invalid listing ID.');
     }
 
-    // Update only an active listing owned by this seller.
-    $stmt = $pdo->prepare(
-        "UPDATE listings
-         SET listing_status = 'sold'
-         WHERE listing_id = :listing_id
-           AND seller_user_id = :seller_id
-           AND listing_status = 'active'"
-    );
+    // -----------------------------------------
+    // UC-14: MARK LISTING AS SOLD
+    // -----------------------------------------
 
-    $stmt->execute([
-        'listing_id' => $listingId,
-        'seller_id' => $currentSellerId
-    ]);
+    if ($action === 'mark_sold') {
 
-    if ($stmt->rowCount() !== 1) {
-        http_response_code(404);
-        exit('Listing not found or unavailable for this action.');
+        $stmt = $pdo->prepare(
+            "UPDATE listings
+             SET listing_status = 'sold'
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status = 'active'"
+        );
+
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for this action.');
+        }
+
+        header('Location: /pages/my-listings.php?sold=1', true, 303);
+        exit;
     }
 
-    // Redirect to avoid resubmitting the form on refresh.
-    header('Location: /pages/my-listings.php?sold=1', true, 303);
-    exit;
+    // -----------------------------------------
+    // UC-15: RENEW LISTING
+    // -----------------------------------------
+
+    if ($action === 'renew_listing') {
+
+        // Renew only an active listing owned by this user.
+        $stmt = $pdo->prepare(
+            "UPDATE listings
+             SET renewed_at = CURRENT_TIMESTAMP
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status = 'active'"
+        );
+
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for renewal.');
+        }
+
+        // Redirect after successful renewal.
+        header('Location: /pages/my-listings.php?renewed=1', true, 303);
+        exit;
+    }
 }
 
 $currentUser = [
