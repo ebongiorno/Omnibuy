@@ -45,7 +45,7 @@ function httpGet(
     string $path,
     array $params = []
 ): string {
-    $url = 'http://127.0.0.1' . $path;
+    $url = rtrim(getenv('APP_URL') ?: 'http://127.0.0.1', '/') . $path;
 
     if (!empty($params)) {
         $url .= '?' . http_build_query($params);
