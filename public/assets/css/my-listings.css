@@ -132,3 +132,49 @@
     outline: 3px solid var(--color-primary, #2563eb);
     outline-offset: 3px;
 }
+
+/* =========================================
+   UC-15: RENEW LISTING
+   ========================================= */
+
+/* Keep listing action buttons side by side. */
+.my-listings__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* Remove default spacing around the forms. */
+.my-listings__actions form {
+    margin: 0;
+}
+
+/* Align the existing Mark as Sold button. */
+.my-listings__actions .my-listings__mark-sold {
+    margin-top: 0;
+}
+
+/* Style the Renew Listing button. */
+.my-listings__renew {
+    padding: 10px 16px;
+    border: 1px solid var(--color-primary, #2563eb);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-primary, #2563eb);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Highlight the button when hovered over. */
+.my-listings__renew:hover {
+    background: #eff6ff;
+}
+
+/* Show a visible outline for keyboard navigation. */
+.my-listings__renew:focus-visible {
+    outline: 3px solid var(--color-primary, #2563eb);
+    outline-offset: 3px;
+}
