@@ -135,8 +135,6 @@ if ($isLoggedIn) {
             quantity,
             fulfillment_type,
             listing_status,
-            created_at
-            listing_status,
             created_at,
             renewed_at
          FROM listings
