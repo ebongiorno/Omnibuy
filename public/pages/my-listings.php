@@ -136,6 +136,9 @@ if ($isLoggedIn) {
             fulfillment_type,
             listing_status,
             created_at
+            listing_status,
+            created_at,
+            renewed_at
          FROM listings
          WHERE seller_user_id = :seller_user_id
          ORDER BY created_at DESC, listing_id DESC"
@@ -213,6 +216,12 @@ include $header;
                 Your listing was marked as sold successfully!
             </p>
 
+        <?php endif; ?>
+
+        <?php if (($_GET['renewed'] ?? '') === '1'): ?>
+            <p class="my-listings-success" role="status">
+                Your listing was renewed successfully!
+            </p>
         <?php endif; ?>
 
         <?php if (empty($listings)): ?>
