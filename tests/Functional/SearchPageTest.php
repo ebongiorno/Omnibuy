@@ -3617,6 +3617,22 @@ final class SearchPageTest extends TestCase
 
         $this->assertGreaterThanOrEqual(2, count($expectedIds));
 
+        // Prevent a false positive where every listing has the same price.
+        $distinctValues = (int) $pdo->query("
+            SELECT COUNT(DISTINCT l.price)
+            FROM listings AS l
+            INNER JOIN users AS eligible_seller
+                ON eligible_seller.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active'
+              AND eligible_seller.account_status = 'active'
+        ")->fetchColumn();
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            $distinctValues,
+            'Test data needs at least two different active listing prices.'
+        );
+
         [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
             ['browse' => 'all', 'sort' => 'price_high']
@@ -3667,6 +3683,22 @@ final class SearchPageTest extends TestCase
         ")->fetchAll(\PDO::FETCH_COLUMN));
 
         $this->assertGreaterThanOrEqual(2, count($expectedIds));
+
+        // Prevent a false positive where every listing has the same created_at.
+        $distinctValues = (int) $pdo->query("
+            SELECT COUNT(DISTINCT l.created_at)
+            FROM listings AS l
+            INNER JOIN users AS eligible_seller
+                ON eligible_seller.user_id = l.seller_user_id
+            WHERE l.listing_status = 'active'
+              AND eligible_seller.account_status = 'active'
+        ")->fetchColumn();
+
+        $this->assertGreaterThanOrEqual(
+            2,
+            $distinctValues,
+            'Test data needs at least two different active listing creation timestamps.'
+        );
 
         [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
@@ -4255,6 +4287,11 @@ final class SearchPageTest extends TestCase
         );
         $this->assertSame(200, $status);
         $this->assertStringNotContainsString('Unable to retrieve search results', $body);
+        // Retain the original regression check for the result-count UI.
+        $this->assertMatchesRegularExpression(
+            '/class="search-results__count"[^>]*>\s*\d+\s+results?\b/',
+            $body
+        );
         $this->assertMatchesRegularExpression(
             '/<option\b(?=[^>]*value="recent")(?=[^>]*\bselected\b)[^>]*>/s',
             $body
@@ -4269,11 +4306,17 @@ final class SearchPageTest extends TestCase
     }
 
 
-    /** Extract listing IDs from listing cards in rendered order. @return int[] */
+    /**
+     * Extract listing IDs in displayed order, regardless of HTML attribute order.
+     * Each listing's image link is counted once; unrelated links are ignored.
+     *
+     * @return int[]
+     */
     private function displayedListingIds(string $html): array
     {
         preg_match_all(
-            '/class="listing-card__image-link"\s+href="\/pages\/listing\.php\?id=(\d+)"/',
+            '~<a\b(?=[^>]*\bclass="[^"]*\blisting-card__image-link\b[^"]*")' .
+            '(?=[^>]*\bhref="(?:/pages/)?listing\.php\?id=(\d+)(?:&amp;[^"]*)?")[^>]*>~i',
             $html,
             $matches
         );
