@@ -396,6 +396,18 @@ include $header;
                             ) ?>
                         </p>
 
+                        <?php if (!empty($listing['renewed_at'])): ?>
+                            <p>
+                                <strong>Last Renewed:</strong>
+
+                                <?= htmlspecialchars(
+                                    (string) $listing['renewed_at'],
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </p>
+                        <?php endif; ?>
+
                     </article>
 
                 <?php endforeach; ?>
