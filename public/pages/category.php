@@ -11,6 +11,18 @@ require_once __DIR__ . '/../../db_connect.php';
 function categoryEscape($value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
+/** Display-friendly breadcrumb label without changing database category names. */
+function categoryBreadcrumbLabel(array $category): string {
+    if (
+        $category['parent_category_id'] === null
+        && (string)$category['category_name'] === 'Home'
+    ) {
+        return 'Home & Furniture';
+    }
+
+    return (string)$category['category_name'];
+}
+
 function categoryUrl(array $params): string {
     return '/pages/category.php?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 }
@@ -303,12 +315,12 @@ $subcategoryIconClasses = [
             <?php foreach ($breadcrumbAncestors as $ancestor): ?>
                 <span aria-hidden="true">›</span>
                 <a href="<?= categoryEscape(categoryUrl(['id' => (int)$ancestor['category_id']])) ?>">
-                    <?= categoryEscape($ancestor['category_name']) ?>
+                    <?= categoryEscape(categoryBreadcrumbLabel($ancestor)) ?>
                 </a>
             <?php endforeach; ?>
 
             <span aria-hidden="true">›</span>
-            <span aria-current="page"><?= categoryEscape($category['category_name']) ?></span>
+            <span aria-current="page"><?= categoryEscape(categoryBreadcrumbLabel($category)) ?></span>
         </nav>
         <section class="category-hero" aria-labelledby="category-heading">
             <div class="category-hero__content"><p class="category-eyebrow">Explore this category</p><h1 id="category-heading"><?= categoryEscape($category['category_name']) ?></h1><p><?= categoryEscape($category['description'] ?: 'Browse new and pre-owned finds from OmniBuy sellers.') ?></p></div>
