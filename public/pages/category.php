@@ -44,6 +44,7 @@ if ($requestedSlug !== null && !preg_match('/^[a-z0-9-]{1,100}$/', $requestedSlu
 
 $category = null;
 $children = [];
+$breadcrumbAncestors = [];
 $listings = [];
 $total = 0;
 $error = false;
@@ -104,6 +105,37 @@ try {
         http_response_code(404);
     } else {
         $categoryId = (int)$category['category_id'];
+
+        // Build breadcrumbs from the database hierarchy, nearest parent first.
+        // Each ancestor becomes a link, while the current category stays plain text.
+        $parentId = $category['parent_category_id'] !== null
+            ? (int)$category['parent_category_id']
+            : null;
+        $visitedCategoryIds = [$categoryId => true];
+        $ancestorStmt = $pdo->prepare('
+            SELECT category_id, parent_category_id, category_name
+            FROM categories
+            WHERE category_id = :id
+        ');
+
+        while ($parentId !== null && !isset($visitedCategoryIds[$parentId])) {
+            $visitedCategoryIds[$parentId] = true;
+            $ancestorStmt->execute(['id' => $parentId]);
+            $ancestor = $ancestorStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$ancestor) {
+                break;
+            }
+
+            $breadcrumbAncestors[] = $ancestor;
+            $parentId = $ancestor['parent_category_id'] !== null
+                ? (int)$ancestor['parent_category_id']
+                : null;
+        }
+
+        // Breadcrumbs should display the root category before its descendants.
+        $breadcrumbAncestors = array_reverse($breadcrumbAncestors);
+
         $childrenStmt = $pdo->prepare('SELECT category_id, category_name, description, image_url FROM categories WHERE parent_category_id = :id ORDER BY category_name');
         $childrenStmt->execute(['id' => $categoryId]);
         $children = $childrenStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -265,7 +297,19 @@ $subcategoryIconClasses = [
     <?php elseif ($notFound): ?>
         <div class="category-notice"><h1>Category not found</h1><p>That category does not exist.</p><a href="/">Return home</a></div>
     <?php else: ?>
-        <nav class="category-breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><span aria-current="page"><?= categoryEscape($category['category_name']) ?></span></nav>
+        <nav class="category-breadcrumbs" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+
+            <?php foreach ($breadcrumbAncestors as $ancestor): ?>
+                <span aria-hidden="true">›</span>
+                <a href="<?= categoryEscape(categoryUrl(['id' => (int)$ancestor['category_id']])) ?>">
+                    <?= categoryEscape($ancestor['category_name']) ?>
+                </a>
+            <?php endforeach; ?>
+
+            <span aria-hidden="true">›</span>
+            <span aria-current="page"><?= categoryEscape($category['category_name']) ?></span>
+        </nav>
         <section class="category-hero" aria-labelledby="category-heading">
             <div class="category-hero__content"><p class="category-eyebrow">Explore this category</p><h1 id="category-heading"><?= categoryEscape($category['category_name']) ?></h1><p><?= categoryEscape($category['description'] ?: 'Browse new and pre-owned finds from OmniBuy sellers.') ?></p></div>
             <div class="category-hero__media"><img src="<?= categoryEscape($heroImage) ?>" alt="" onerror="this.onerror=null;this.src='/assets/images/homepage-image.jpg'"></div>
