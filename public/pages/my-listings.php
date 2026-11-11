@@ -314,38 +314,75 @@ include $header;
                         </p>
 
                         <?php if ($listing['listing_status'] === 'active'): ?>
-
-                            <form
-                                action="/pages/my-listings.php"
-                                method="POST"
-                                onsubmit="return confirm('Are you sure you want to mark this listing as sold?');"
-                            >
-                                <input
-                                    type="hidden"
-                                    name="action"
-                                    value="mark_sold"
+                            <div class="my-listings__actions">
+                                <form
+                                    action="/pages/my-listings.php"
+                                    method="POST"
+                                    onsubmit="return confirm('Are you sure you want to mark this listing as sold?');"
                                 >
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="mark_sold"
+                                    >
 
-                                <input
-                                    type="hidden"
-                                    name="listing_id"
-                                    value="<?= (int) $listing['listing_id'] ?>"
+                                    <input
+                                        type="hidden"
+                                        name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= htmlspecialchars(
+                                            csrfToken(),
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
+                                    >
+
+                                    <button type="submit" class="my-listings__mark-sold">
+                                        Mark as Sold
+                                    </button>
+                                </form>
+
+
+                                <form
+                                    action="/pages/my-listings.php"
+                                    method="POST"
+                                    onsubmit="return confirm('Are you sure you want to renew this listing?');"
                                 >
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="renew_listing"
+                                    >
 
-                                <input
-                                    type="hidden"
-                                    name="csrf_token"
-                                    value="<?= htmlspecialchars(
-                                        csrfToken(),
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    ) ?>"
-                                >
+                                    <input
+                                        type="hidden"
+                                        name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>"
+                                    >
 
-                                <button type="submit" class="my-listings__mark-sold">
-                                    Mark as Sold
-                                </button>
-                            </form>
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= htmlspecialchars(
+                                            csrfToken(),
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="my-listings__renew"
+                                    >
+                                        Renew Listing
+                                    </button>
+                                </form>
+                            </div>
 
                         <?php endif; ?>
 
