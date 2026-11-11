@@ -476,31 +476,32 @@ VALUES
     (4, NULL, 'Books', 'Books and educational materials.', NULL),
     (11, NULL, 'Collectibles', 'Collectible items, memorabilia, and trading cards.', NULL),
 
+    -- Electronics Subcategories
     (5, 1, 'Computers', 'Computers and computer accessories.', NULL),
     (6, 1, 'Audio', 'Headphones, speakers, and audio equipment.', NULL),
-
-    (7, 2, 'Furniture', 'Desks, chairs, tables, and other furniture.', NULL),
-    (8, 2, 'Kitchen', 'Kitchen tools and appliances.', NULL),
-
-    (9, 3, 'Mens Clothing', 'Clothing and accessories for men.', NULL),
-    (10, 3, 'Womens Clothing', 'Clothing and accessories for women.', NULL),
-
-    (12, 11, 'Trading Cards', 'Collectible trading cards including sports and gaming cards.', NULL),
-    (13, 11, 'Action Figures',
-    'Collectible action figures featuring characters from movies, television, comics, and popular franchises.',
-    NULL),
-
     (25, 1, 'Phones', 'Smartphones and mobile phones.', NULL),
     (26, 1, 'TVs', 'Televisions and home entertainment displays.', NULL),
     (27, 1, 'Video Games', 'Video game consoles, games, and accessories.', NULL),
     (28, 1, 'Cameras', 'Digital cameras and photography equipment.', NULL),
 
+    -- Home & Furniture Subcategories
+    (7, 2, 'Furniture', 'Desks, chairs, tables, and other furniture.', NULL),
+    (8, 2, 'Kitchen', 'Kitchen tools and appliances.', NULL),
     (29, 2, 'Bathroom', 'Bathroom accessories and supplies.', NULL),
     (30, 2, 'Home Decor', 'Decorations and home accessories.', NULL),
     (31, 2, 'Bedding', 'Sheets, pillows, and bedding.', NULL),
 
+    -- Clothing Subcategories
+    (9, 3, 'Mens Clothing', 'Clothing and accessories for men.', NULL),
+    (10, 3, 'Womens Clothing', 'Clothing and accessories for women.', NULL),
     (32, 3, 'Shoes', 'Footwear and shoes.', NULL),
-    (33, 3, 'Accessories', 'Fashion accessories.', NULL);
+    (33, 3, 'Accessories', 'Fashion accessories.', NULL),
+
+    -- Collectibles Subcategories
+    (12, 11, 'Trading Cards', 'Collectible trading cards including sports and gaming cards.', NULL),
+    (13, 11, 'Action Figures',
+    'Collectible action figures featuring characters from movies, television, comics, and popular franchises.',
+    NULL);
 
 
 
@@ -633,7 +634,7 @@ VALUES
     ),
 
     (
-        5, 1, 5,
+        5, 1, 27,
         'Nintendo Switch 2 Charging Dock',
         'Dock includes AC power adapter, USB ports, and controller.',
         'fixed_price',
@@ -656,7 +657,7 @@ VALUES
     ),
 
     (
-        17, 3, 10,
+        17, 3, 32,
         'Leather Doc Martens Boots Shoes',
         'Brown leather ankle boots with minimal wear. Comfortable everyday boots in excellent condition.',
         'fixed_price',
@@ -954,7 +955,7 @@ VALUES
     (
         32,
         1,
-        5,
+        28,
         'Logitech C920 HD Webcam',
         'Logitech C920 webcam, 1080p video and built-in microphone tested. Clip mount is intact.',
         'fixed_price',
@@ -2050,7 +2051,7 @@ VALUES
     ),
 
     (
-        10, 3, 9,
+        10, 3, 32,
         'Running Shoes',
         'Lightweight running shoes.',
         'fixed_price',
@@ -2274,7 +2275,7 @@ VALUES
     (
         36,
         18,
-        7,
+        30,
         'Round Wall Mirror with Wooden Frame',
         'Round wall mirror with a simple natural-wood frame, about 24 inches across. Glass is clear with no chips. Hanger attached on the back.',
         'fixed_price',
@@ -2399,7 +2400,7 @@ VALUES
     (
         49,
         16,
-        9,
+        32,
         'Converse Chuck Taylor High-Top Sneakers',
         'Black high-top Converse in mens size 9. Soles show normal use; laces and eyelets are intact. Happy to meet locally so you can check the fit and condition before purchasing.',
         'fixed_price',
@@ -2424,7 +2425,7 @@ VALUES
     (
         53,
         10,
-        10,
+        32,
         'Nike Women''s Air Force 1 Sneakers',
         'White Air Force 1 low-top sneakers, womens size 8. Creases on the toe boxes and minor discoloration around the soles, but still plenty of wear left.',
         'fixed_price',
@@ -2449,7 +2450,7 @@ VALUES
     (
         56,
         14,
-        10,
+        33,
         'Kate Spade Small Crossbody Handbag',
         'Small black Kate Spade crossbody with adjustable strap and gold-tone hardware. Interior is clean; slight rubbing on two corners. Includes dust bag but no original receipt.',
         'fixed_price',
@@ -2680,7 +2681,7 @@ VALUES
     -- =====================================
 
     (
-        12, 2, 7,
+        12, 2, 30,
         'Floor Lamp',
         'Standing lamp previously sold.',
         'fixed_price',
@@ -2707,7 +2708,7 @@ VALUES
     -- =====================================
 
     (
-        13, 3, 10,
+        13, 3, 33,
         'Canvas Backpack',
         'Older listing kept for seller history.',
         'fixed_price',
