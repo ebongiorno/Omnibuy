@@ -471,7 +471,7 @@ INSERT INTO categories (
 )
 VALUES
     (1, NULL, 'Electronics', 'Electronic devices and accessories.', NULL),
-    (2, NULL, 'Home and Furniture', 'Furniture, decor, and household products.', NULL),
+    (2, NULL, 'Home', 'Furniture, decor, and household products.', NULL),
     (3, NULL, 'Clothing', 'Clothing, shoes, and fashion accessories.', NULL),
     (4, NULL, 'Books', 'Books and educational materials.', NULL),
     (11, NULL, 'Collectibles', 'Collectible items, memorabilia, and trading cards.', NULL),
@@ -487,15 +487,27 @@ VALUES
 
     (12, 11, 'Trading Cards', 'Collectible trading cards including sports and gaming cards.', NULL),
     (13, 11, 'Action Figures',
-     'Collectible action figures featuring characters from movies, television, comics, and popular franchises.',
-     NULL);
+    'Collectible action figures featuring characters from movies, television, comics, and popular franchises.',
+    NULL),
+
+    (25, 1, 'Phones', 'Smartphones and mobile phones.', NULL),
+    (26, 1, 'TVs', 'Televisions and home entertainment displays.', NULL),
+    (27, 1, 'Video Games', 'Video game consoles, games, and accessories.', NULL),
+    (28, 1, 'Cameras', 'Digital cameras and photography equipment.', NULL),
+
+    (29, 2, 'Bathroom', 'Bathroom accessories and supplies.', NULL),
+    (30, 2, 'Home Decor', 'Decorations and home accessories.', NULL),
+    (31, 2, 'Bedding', 'Sheets, pillows, and bedding.', NULL),
+
+    (32, 3, 'Shoes', 'Footwear and shoes.', NULL),
+    (33, 3, 'Accessories', 'Fashion accessories.', NULL);
 
 
 
 -- =========================================
 -- LISTINGS
 -- =========================================
--- 76 active listings (16 original + 60 new), plus listings in
+-- 85 active listings (76 existing + 9 Sprint 5), plus listings in
 -- other states so feed filtering can be tested.
 
 INSERT INTO listings (
@@ -1789,6 +1801,158 @@ VALUES
         NULL
     ),
 
+    -- SPRINT 5 / NEW SUBCATEGORY SHIPPING LISTINGS
+
+    (
+        81,
+        1,
+        25,
+        'Samsung Galaxy S23',
+        'Samsung Galaxy S23 smartphone, fully functional with minor signs of use.',
+        'fixed_price',
+        'shipping',
+        8.99,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        325.00,
+        'good',
+        1,
+        'active',
+        '2026-11-10 10:00:00',
+        '2026-11-10 10:00:00',
+        NULL
+    ),
+
+    (
+        82,
+        1,
+        28,
+        'Canon EOS Rebel T7 Camera',
+        'Canon DSLR camera with lens, battery, and charger.',
+        'fixed_price',
+        'shipping',
+        12.99,
+        5,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        275.00,
+        'excellent',
+        1,
+        'active',
+        '2026-11-10 10:05:00',
+        '2026-11-10 10:05:00',
+        NULL
+    ),
+
+    (
+        83,
+        2,
+        29,
+        'Bathroom Organizer Set',
+        'Bathroom countertop organizer with storage compartments.',
+        'fixed_price',
+        'shipping',
+        5.99,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        18.00,
+        'like_new',
+        1,
+        'active',
+        '2026-11-10 10:10:00',
+        '2026-11-10 10:10:00',
+        NULL
+    ),
+
+    (
+        84,
+        2,
+        31,
+        'Queen Comforter Set',
+        'Queen size comforter set with matching pillowcases.',
+        'fixed_price',
+        'shipping',
+        9.99,
+        5,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        45.00,
+        'excellent',
+        1,
+        'active',
+        '2026-11-10 10:15:00',
+        '2026-11-10 10:15:00',
+        NULL
+    ),
+
+    (
+        85,
+        3,
+        32,
+        'Nike Running Shoes',
+        'Nike running shoes in good condition with minimal wear.',
+        'fixed_price',
+        'shipping',
+        7.99,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        55.00,
+        'good',
+        1,
+        'active',
+        '2026-11-10 10:20:00',
+        '2026-11-10 10:20:00',
+        NULL
+    ),
+
+    (
+        86,
+        3,
+        33,
+        'Leather Crossbody Bag',
+        'Brown leather crossbody bag with adjustable shoulder strap.',
+        'fixed_price',
+        'shipping',
+        6.99,
+        4,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        38.00,
+        'excellent',
+        1,
+        'active',
+        '2026-11-10 10:25:00',
+        '2026-11-10 10:25:00',
+        NULL
+    ),
+
     -- =====================================
     -- ACTIVE / MEETUP
     -- =====================================
@@ -2407,6 +2571,83 @@ VALUES
         NULL
     ),
 
+    -- SPRINT 5 / NEW SUBCATEGORY MEETUP LISTINGS
+
+    (
+        87,
+        1,
+        26,
+        'Samsung 55 Inch Smart TV',
+        'Samsung 55 inch smart television in excellent working condition.',
+        'fixed_price',
+        'meetup',
+        NULL,
+        NULL,
+        '92507',
+        33.975100,
+        -117.325400,
+        'parking_lot',
+        15,
+        NULL,
+        225.00,
+        'excellent',
+        1,
+        'active',
+        '2026-11-10 10:30:00',
+        '2026-11-10 10:30:00',
+        NULL
+    ),
+
+    (
+        88,
+        1,
+        27,
+        'PlayStation 5 Console',
+        'PlayStation 5 gaming console with controller and power cable.',
+        'fixed_price',
+        'meetup',
+        NULL,
+        NULL,
+        '92507',
+        33.975100,
+        -117.325400,
+        'parking_lot',
+        15,
+        NULL,
+        350.00,
+        'like_new',
+        1,
+        'active',
+        '2026-11-10 10:35:00',
+        '2026-11-10 10:35:00',
+        NULL
+    ),
+
+    (
+        89,
+        2,
+        30,
+        'Decorative Wall Mirror',
+        'Modern decorative wall mirror with wooden frame.',
+        'fixed_price',
+        'meetup',
+        NULL,
+        NULL,
+        '92507',
+        33.975100,
+        -117.325400,
+        'parking_lot',
+        15,
+        NULL,
+        65.00,
+        'good',
+        1,
+        'active',
+        '2026-11-10 10:40:00',
+        '2026-11-10 10:40:00',
+        NULL
+    ),
+
     -- =====================================
     -- HIDDEN LISTING
     -- =====================================
@@ -2615,7 +2856,18 @@ VALUES
     (79, 77, '/assets/images/listing/listing-pink-ranger-figure.jpg', 1),
     (80, 78, '/assets/images/listing/listing-surf-pikachu-card.jpg', 1),
     (81, 79, '/assets/images/listing/listing-mewtwo-card.jpg', 1),
-    (82, 80, '/assets/images/listing/listing-eevee-card.jpg', 1);
+    (82, 80, '/assets/images/listing/listing-eevee-card.jpg', 1),
+
+    -- Sprint 5 subcategory listing images
+    (83, 81, '/assets/images/listing/listing-samsung-galaxy-s23.jpg', 1),
+    (84, 82, '/assets/images/listing/listing-canon-eos-rebel-t7.jpg', 1),
+    (85, 83, '/assets/images/listing/listing-bathroom-organizer.jpg', 1),
+    (86, 84, '/assets/images/listing/listing-queen-comforter.jpg', 1),
+    (87, 85, '/assets/images/listing/listing-nike-running-shoes.jpg', 1),
+    (88, 86, '/assets/images/listing/listing-leather-crossbody-bag.jpg', 1),
+    (89, 87, '/assets/images/listing/listing-samsung-smart-tv.jpg', 1),
+    (90, 88, '/assets/images/listing/listing-playstation-5.jpg', 1),
+    (91, 89, '/assets/images/listing/listing-decorative-wall-mirror.jpg', 1);
 
 
 -- =========================================

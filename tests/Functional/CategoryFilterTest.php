@@ -79,7 +79,7 @@ final class CategoryFilterTest extends DatabaseTestCase
 
     public function testEveryMainCategoryHasTheExpectedNumberOfActiveListings(): void
     {
-        foreach (['Electronics', 'Home and Furniture', 'Clothing', 'Books', 'Collectibles'] as $name) {
+        foreach (['Electronics', 'Home', 'Clothing', 'Books', 'Collectibles'] as $name) {
             $id = $this->categoryId($name);
             $response = $this->searchCategory($id);
 

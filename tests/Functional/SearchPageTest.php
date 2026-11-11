@@ -3591,128 +3591,49 @@ final class SearchPageTest extends TestCase
 
     public function testPriceHighToLowSorting(): void
     {
-        // Connect to MySQL.
         $dsn = sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
             getenv('DB_HOST') ?: 'db',
-            (int)(getenv('DB_PORT') ?: 3306),
+            (int) (getenv('DB_PORT') ?: 3306),
             getenv('DB_NAME') ?: 'omnibuy'
         );
-
         $pdo = new \PDO(
             $dsn,
             getenv('DB_USER') ?: '',
             getenv('DB_PASSWORD') ?: '',
-            [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
-            ]
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
         );
 
-        // Retrieve active listings with unique item names.
-        $stmt = $pdo->query("
-            SELECT
-                l.item_name,
-                l.price
+        // Compare unique listing IDs, including listings with duplicate names.
+        $expectedIds = array_map('intval', $pdo->query("
+            SELECT l.listing_id
             FROM listings AS l
-                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
+            INNER JOIN users AS eligible_seller
+                ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
-            AND eligible_seller.account_status = 'active'
-                AND (
-                    SELECT COUNT(*)
-                    FROM listings AS other
-                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
-                    WHERE other.listing_status = 'active'
-                    AND other_eligible_seller.account_status = 'active'
-                        AND other.item_name = l.item_name
-                ) = 1
-        ");
+              AND eligible_seller.account_status = 'active'
+            ORDER BY l.price DESC, l.listing_id DESC
+        ")->fetchAll(\PDO::FETCH_COLUMN));
 
-        $expectedListings = $stmt->fetchAll(
-            \PDO::FETCH_ASSOC
-        );
+        $this->assertGreaterThanOrEqual(2, count($expectedIds));
 
-        // Require enough test data.
-        $this->assertGreaterThanOrEqual(
-            2,
-            count($expectedListings),
-            'Test data needs at least two uniquely named active listings.'
-        );
-
-        $distinctPrices = array_unique(
-            array_column($expectedListings, 'price')
-        );
-
-        $this->assertGreaterThanOrEqual(
-            2,
-            count($distinctPrices),
-            'Test data needs at least two different prices.'
-        );
-
-        // Request the search page with descending price sorting.
         [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
-            [
-                'browse' => 'all',
-                'sort' => 'price_high'
-            ]
+            ['browse' => 'all', 'sort' => 'price_high']
         );
-
-        // Verify the page loads.
         $this->assertSame(200, $status);
-
-        // Verify no search error occurred.
-        $this->assertStringNotContainsString(
-            'Unable to retrieve search results',
-            $body
-        );
-
-        // Verify Price High to Low remains selected.
+        $this->assertStringNotContainsString('Unable to retrieve search results', $body);
         $this->assertMatchesRegularExpression(
             '/<option\b(?=[^>]*value="price_high")(?=[^>]*\bselected\b)[^>]*>/s',
             $body
         );
 
-        // Find each listing's position in the HTML.
-        $displayedListings = [];
-
-        foreach ($expectedListings as $listing) {
-
-            $itemName = htmlspecialchars(
-                $listing['item_name'],
-                ENT_QUOTES,
-                'UTF-8'
-            );
-
-            $position = strpos($body, $itemName);
-
-            $this->assertNotFalse(
-                $position,
-                'Listing not found in search results: ' . $itemName
-            );
-
-            $displayedListings[] = [
-                'price' => (float)$listing['price'],
-                'position' => $position
-            ];
-        }
-
-        // Sort listings by their position on the page.
-        usort(
-            $displayedListings,
-            fn($a, $b) => $a['position'] <=> $b['position']
+        $displayedIds = $this->displayedListingIds($body);
+        $this->assertSame(
+            $expectedIds,
+            $displayedIds,
+            'Displayed listing IDs must match the database sort order.'
         );
-
-        // Verify prices never increase as we move down.
-        for ($i = 1; $i < count($displayedListings); $i++) {
-
-            $previousPrice = $displayedListings[$i - 1]['price'];
-            $currentPrice = $displayedListings[$i]['price'];
-
-            $this->assertTrue(
-                $previousPrice >= $currentPrice,
-                'Listings are not sorted from highest to lowest price.'
-            );
-        }
     }
 
     // =========================================
@@ -3721,123 +3642,49 @@ final class SearchPageTest extends TestCase
 
     public function testNewestSorting(): void
     {
-        // Connect to MySQL.
         $dsn = sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
             getenv('DB_HOST') ?: 'db',
-            (int)(getenv('DB_PORT') ?: 3306),
+            (int) (getenv('DB_PORT') ?: 3306),
             getenv('DB_NAME') ?: 'omnibuy'
         );
-
         $pdo = new \PDO(
             $dsn,
             getenv('DB_USER') ?: '',
             getenv('DB_PASSWORD') ?: '',
-            [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
-            ]
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
         );
 
-        // Retrieve active listings in the expected order.
-        // Unique item names help us identify them in the HTML.
-        $stmt = $pdo->query("
-            SELECT
-                l.listing_id,
-                l.item_name,
-                l.created_at
+        // Compare unique listing IDs, including listings with duplicate names.
+        $expectedIds = array_map('intval', $pdo->query("
+            SELECT l.listing_id
             FROM listings AS l
-                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
+            INNER JOIN users AS eligible_seller
+                ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
-            AND eligible_seller.account_status = 'active'
-                AND (
-                    SELECT COUNT(*)
-                    FROM listings AS other
-                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
-                    WHERE other.listing_status = 'active'
-                    AND other_eligible_seller.account_status = 'active'
-                        AND other.item_name = l.item_name
-                ) = 1
-            ORDER BY
-                l.created_at DESC,
-                l.listing_id DESC
-        ");
+              AND eligible_seller.account_status = 'active'
+            ORDER BY l.created_at DESC, l.listing_id DESC
+        ")->fetchAll(\PDO::FETCH_COLUMN));
 
-        $expectedListings = $stmt->fetchAll(
-            \PDO::FETCH_ASSOC
-        );
+        $this->assertGreaterThanOrEqual(2, count($expectedIds));
 
-        // Require enough test data.
-        $this->assertGreaterThanOrEqual(
-            2,
-            count($expectedListings),
-            'Test data needs at least two uniquely named active listings.'
-        );
-
-        // Verify listings have different creation timestamps.
-        $distinctDates = array_unique(
-            array_column($expectedListings, 'created_at')
-        );
-
-        $this->assertGreaterThanOrEqual(
-            2,
-            count($distinctDates),
-            'Test data needs at least two different creation timestamps.'
-        );
-
-        // Request Browse All with Newest sorting.
         [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
-            [
-                'browse' => 'all',
-                'sort' => 'recent'
-            ]
+            ['browse' => 'all', 'sort' => 'recent']
         );
-
-        // Verify the page loads.
         $this->assertSame(200, $status);
-
-        // Verify no search error occurred.
-        $this->assertStringNotContainsString(
-            'Unable to retrieve search results',
-            $body
-        );
-
-        // Verify Newest remains selected.
+        $this->assertStringNotContainsString('Unable to retrieve search results', $body);
         $this->assertMatchesRegularExpression(
             '/<option\b(?=[^>]*value="recent")(?=[^>]*\bselected\b)[^>]*>/s',
             $body
         );
 
-        // Track the position of each listing in the HTML.
-        $previousPosition = -1;
-
-        foreach ($expectedListings as $listing) {
-
-            $itemName = htmlspecialchars(
-                $listing['item_name'],
-                ENT_QUOTES,
-                'UTF-8'
-            );
-
-            // Find this listing in the displayed results.
-            $position = strpos($body, $itemName);
-
-            $this->assertNotFalse(
-                $position,
-                'Listing not found in search results: ' . $itemName
-            );
-
-            // The SQL query is already sorted newest first.
-            // Each next listing must appear later in the HTML.
-            $this->assertGreaterThan(
-                $previousPosition,
-                $position,
-                'Listings are not displayed in newest-first order. ' .
-                'Check listing ID: ' . $listing['listing_id']
-            );
-
-            $previousPosition = $position;
-        }
+        $displayedIds = $this->displayedListingIds($body);
+        $this->assertSame(
+            $expectedIds,
+            $displayedIds,
+            'Displayed listing IDs must match the database sort order.'
+        );
     }
 
     // =========================================
@@ -4376,128 +4223,66 @@ final class SearchPageTest extends TestCase
 
     public function testInvalidSortFallsBackToNewest(): void
     {
-        // Connect to MySQL.
         $dsn = sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
             getenv('DB_HOST') ?: 'db',
-            (int)(getenv('DB_PORT') ?: 3306),
+            (int) (getenv('DB_PORT') ?: 3306),
             getenv('DB_NAME') ?: 'omnibuy'
         );
-
         $pdo = new \PDO(
             $dsn,
             getenv('DB_USER') ?: '',
             getenv('DB_PASSWORD') ?: '',
-            [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
-            ]
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
         );
 
-        // Get active listings in the default Newest order.
-        // Use unique item names for HTML comparisons.
-        $stmt = $pdo->query("
-            SELECT
-                l.listing_id,
-                l.item_name,
-                l.created_at
+        // Compare unique listing IDs, including listings with duplicate names.
+        $expectedIds = array_map('intval', $pdo->query("
+            SELECT l.listing_id
             FROM listings AS l
-                INNER JOIN users AS eligible_seller ON eligible_seller.user_id = l.seller_user_id
+            INNER JOIN users AS eligible_seller
+                ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
-            AND eligible_seller.account_status = 'active'
-                AND (
-                    SELECT COUNT(*)
-                    FROM listings AS other
-                    INNER JOIN users AS other_eligible_seller ON other_eligible_seller.user_id = other.seller_user_id
-                    WHERE other.listing_status = 'active'
-                    AND other_eligible_seller.account_status = 'active'
-                        AND other.item_name = l.item_name
-                ) = 1
-            ORDER BY
-                l.created_at DESC,
-                l.listing_id DESC
-        ");
+              AND eligible_seller.account_status = 'active'
+            ORDER BY l.created_at DESC, l.listing_id DESC
+        ")->fetchAll(\PDO::FETCH_COLUMN));
 
-        $expectedListings = $stmt->fetchAll(
-            \PDO::FETCH_ASSOC
-        );
+        $this->assertGreaterThanOrEqual(2, count($expectedIds));
 
-        // Require enough data to verify the sorting.
-        $this->assertGreaterThanOrEqual(
-            2,
-            count($expectedListings),
-            'Test data needs at least two uniquely named active listings.'
-        );
-
-        // Request the search page with an invalid sort value.
         [$status, $body] = $this->getAllSearchPages(
             '/pages/search.php',
-            [
-                'browse' => 'all',
-                'sort' => 'invalid_option'
-            ]
+            ['browse' => 'all', 'sort' => 'invalid_option']
         );
-
-        // Verify the page loads.
         $this->assertSame(200, $status);
-
-        // Verify no search error occurred.
-        $this->assertStringNotContainsString(
-            'Unable to retrieve search results',
+        $this->assertStringNotContainsString('Unable to retrieve search results', $body);
+        $this->assertMatchesRegularExpression(
+            '/<option\b(?=[^>]*value="recent")(?=[^>]*\bselected\b)[^>]*>/s',
             $body
         );
 
-        // Verify the results count is still displayed.
-        $this->assertMatchesRegularExpression(
-            '/class="search-results__count"[^>]*>\s*\d+\s+results?\b/',
-            $body
-        );
-
-        // Check the position of each listing in the HTML.
-        $previousPosition = -1;
-
-        foreach ($expectedListings as $listing) {
-
-            $itemName = htmlspecialchars(
-                $listing['item_name'],
-                ENT_QUOTES,
-                'UTF-8'
-            );
-
-            $position = strpos($body, $itemName);
-
-            // Every expected listing should be present.
-            $this->assertNotFalse(
-                $position,
-                'Listing not found: ' . $itemName
-            );
-
-            // Listings should follow the default Newest order.
-            $this->assertGreaterThan(
-                $previousPosition,
-                $position,
-                'Invalid sort did not fall back to Newest order. ' .
-                'Check listing ID: ' . $listing['listing_id']
-            );
-
-            $previousPosition = $position;
-        }
-
-        // Verify the fallback sorting option is Newest.
-        $this->assertMatchesRegularExpression(
-            '/<option\b(?=[^>]*value="recent")' .
-            '(?=[^>]*\bselected\b)[^>]*>/s',
-            $body,
-            'Newest should be selected after an invalid sort.'
+        $displayedIds = $this->displayedListingIds($body);
+        $this->assertSame(
+            $expectedIds,
+            $displayedIds,
+            'Displayed listing IDs must match the database sort order.'
         );
     }
 
 
+    /** Extract listing IDs from listing cards in rendered order. @return int[] */
+    private function displayedListingIds(string $html): array
+    {
+        preg_match_all(
+            '/class="listing-card__image-link"\s+href="\/pages\/listing\.php\?id=(\d+)"/',
+            $html,
+            $matches
+        );
+
+        return array_map('intval', $matches[1]);
+    }
+
     /**
-     * Earlier functional cases inspect the complete matching set. With MD-SEC-08,
-     * obtain each actual HTTP page instead of assuming page 1 contains everything.
-     * The first page's total-result label is preserved for other assertions.
-     * This does NOT bypass or raise the application-level page size.
-     *
+     * Fetch all paginated search results without changing the page-size limit.
      * @param array<string, mixed> $query
      * @return array{int, string}
      */
