@@ -405,6 +405,216 @@ final class RenewListingTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-15-03: VERIFY RENEWAL AFFECTS LISTING SORTING
+    // =========================================
+
+    public function testRenewedListingMovesUpInNewestSearchResults(): void
+    {
+        // Create a temporary seller and category.
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Use a unique search term to isolate these listings.
+        $searchTerm = 'UC15Sort' . bin2hex(random_bytes(6));
+
+        $olderName = $searchTerm . ' Older Listing';
+        $newerName = $searchTerm . ' Newer Listing';
+
+        // Create two active listings for the same seller.
+        $olderId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $olderName
+        );
+
+        $newerId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $newerName
+        );
+
+        // -----------------------------------------
+        // 1. Give the listings different creation dates.
+        // -----------------------------------------
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE listings
+             SET created_at = DATE_SUB(
+                 CURRENT_TIMESTAMP, INTERVAL 30 DAY
+             )
+             WHERE listing_id = ?"
+        );
+
+        $stmt->execute([$olderId]);
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE listings
+             SET created_at = DATE_SUB(
+                 CURRENT_TIMESTAMP, INTERVAL 1 DAY
+             )
+             WHERE listing_id = ?"
+        );
+
+        $stmt->execute([$newerId]);
+
+        // Neither listing has been renewed yet.
+        $this->assertNull(
+            $this->listingRecord($olderId)['renewed_at']
+        );
+
+        $this->assertNull(
+            $this->listingRecord($newerId)['renewed_at']
+        );
+
+        // -----------------------------------------
+        // 2. Search for both listings using Newest sorting.
+        // -----------------------------------------
+
+        $searchUrl = '/pages/search.php?' . http_build_query([
+            'q' => $searchTerm,
+            'search_type' => 'items',
+            'sort' => 'recent',
+        ]);
+
+        $beforeSearch = $this->browser->get($searchUrl);
+
+        $this->assertSame(
+            200,
+            $beforeSearch['status']
+        );
+
+        // Confirm both listings appear in the results.
+        $this->assertStringContainsString(
+            $olderName,
+            $beforeSearch['body']
+        );
+
+        $this->assertStringContainsString(
+            $newerName,
+            $beforeSearch['body']
+        );
+
+        // Find the positions of their listing links.
+        $olderLink = 'href="/pages/listing.php?id='
+            . $olderId . '"';
+
+        $newerLink = 'href="/pages/listing.php?id='
+            . $newerId . '"';
+
+        $beforeOlderPosition = strpos(
+            $beforeSearch['body'],
+            $olderLink
+        );
+
+        $beforeNewerPosition = strpos(
+            $beforeSearch['body'],
+            $newerLink
+        );
+
+        $this->assertNotFalse($beforeOlderPosition);
+        $this->assertNotFalse($beforeNewerPosition);
+
+        // The newer listing should appear first.
+        $this->assertLessThan(
+            $beforeOlderPosition,
+            $beforeNewerPosition
+        );
+
+        // -----------------------------------------
+        // 3. Authenticate and renew the older listing.
+        // -----------------------------------------
+
+        $token = $this->logInAs($seller['email']);
+
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $olderId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(
+            303,
+            $response['status'],
+            $response['body']
+        );
+
+        $this->assertSame(
+            '/pages/my-listings.php?renewed=1',
+            $response['location']
+        );
+
+        // -----------------------------------------
+        // 4. Verify the renewal timestamp was updated.
+        // -----------------------------------------
+
+        $olderAfter = $this->listingRecord($olderId);
+        $newerAfter = $this->listingRecord($newerId);
+
+        $this->assertNotNull(
+            $olderAfter['renewed_at']
+        );
+
+        $this->assertNull(
+            $newerAfter['renewed_at']
+        );
+
+        $this->assertSame(
+            'active',
+            $olderAfter['listing_status']
+        );
+
+        $this->assertSame(
+            'active',
+            $newerAfter['listing_status']
+        );
+
+        // -----------------------------------------
+        // 5. Search again after renewing the older listing.
+        // -----------------------------------------
+
+        $afterSearch = $this->browser->get($searchUrl);
+
+        $this->assertSame(
+            200,
+            $afterSearch['status']
+        );
+
+        // Both listings should still be visible.
+        $this->assertStringContainsString(
+            $olderName,
+            $afterSearch['body']
+        );
+
+        $this->assertStringContainsString(
+            $newerName,
+            $afterSearch['body']
+        );
+
+        // Find their new positions in the search results.
+        $afterOlderPosition = strpos(
+            $afterSearch['body'],
+            $olderLink
+        );
+
+        $afterNewerPosition = strpos(
+            $afterSearch['body'],
+            $newerLink
+        );
+
+        $this->assertNotFalse($afterOlderPosition);
+        $this->assertNotFalse($afterNewerPosition);
+
+        // The renewed older listing should now appear first.
+        $this->assertLessThan(
+            $afterNewerPosition,
+            $afterOlderPosition
+        );
+    }
+
 
     // =========================================
     // TEST DATA HELPER: CREATE SELLER

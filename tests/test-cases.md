@@ -811,9 +811,9 @@ according to the team's agreed renewal-ordering rules.
 - No unrelated listing records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings containing a unique search term. The listings were assigned different creation dates, with one listing created 30 days earlier and the other one day earlier. Initial keyword search results using Newest sorting confirmed that the more recently created listing appeared first. After authenticating as the listing owner and renewing the older listing, the application returned the expected HTTP 303 redirect, and the database confirmed that the older listing received a renewal timestamp while both listings remained active. Subsequent keyword search results confirmed that the renewed listing moved ahead of the newer listing, demonstrating that Newest sorting correctly uses the renewal timestamp when available. All assertions passed, both individually and when TC-15-03 was executed alongside TC-15-01 and TC-15-02.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
