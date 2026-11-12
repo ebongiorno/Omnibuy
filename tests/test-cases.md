@@ -767,9 +767,9 @@ renewal timestamp without changing unrelated listing data.
 - Unrelated listing data should remain unchanged.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings belonging to that seller. The target listing was assigned an original creation date 30 days in the past and an existing renewal timestamp seven days in the past. After authenticating as the listing owner and submitting a valid Renew Listing request, the application returned the expected HTTP 303 redirect. A subsequent database query confirmed that the target listing's renewed_at timestamp had changed to a more recent value within the recorded database request window. The listing's original creation date, listing ID, ownership, name, and active status remained unchanged. The unrelated control listing also retained all its original database values, confirming that only the intended listing was updated. All assertions passed, both when TC-15-02 was executed individually and when it was run together with TC-15-01.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

@@ -237,6 +237,174 @@ final class RenewListingTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-15-02: VERIFY RENEWAL TIMESTAMP UPDATE
+    // =========================================
+
+    public function testRenewalUpdatesTimestampWithoutChangingOtherData(): void
+    {
+        // Create a temporary seller and category.
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Create two active listings for the same seller.
+        $targetName = 'UC15 Timestamp Test '
+            . bin2hex(random_bytes(6));
+
+        $controlName = 'UC15 Unchanged Control '
+            . bin2hex(random_bytes(6));
+
+        $targetId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $targetName
+        );
+
+        $controlId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $controlName
+        );
+
+        // -----------------------------------------
+        // 1. Give the target listing an older
+        //    creation date and renewal timestamp.
+        // -----------------------------------------
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE listings
+             SET created_at = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 DAY),
+                 renewed_at = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+             WHERE listing_id = ?"
+        );
+
+        $stmt->execute([$targetId]);
+
+        // Retrieve both original database records.
+        $before = $this->listingRecord($targetId);
+        $controlBefore = $this->listingRecord($controlId);
+
+        // Confirm the target has an existing renewal date.
+        $this->assertNotNull($before['renewed_at']);
+
+        $this->assertSame(
+            'active',
+            $before['listing_status']
+        );
+
+        // -----------------------------------------
+        // 2. Authenticate as the listing owner.
+        // -----------------------------------------
+
+        $token = $this->logInAs($seller['email']);
+
+        // Record database time immediately before renewal.
+        $requestStartedAt = (string) $this->pdo
+            ->query('SELECT CURRENT_TIMESTAMP')
+            ->fetchColumn();
+
+        // -----------------------------------------
+        // 3. Submit the renewal request.
+        // -----------------------------------------
+
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $targetId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        // Record database time immediately after renewal.
+        $requestEndedAt = (string) $this->pdo
+            ->query('SELECT CURRENT_TIMESTAMP')
+            ->fetchColumn();
+
+        $this->assertSame(
+            303,
+            $response['status'],
+            $response['body']
+        );
+
+        $this->assertSame(
+            '/pages/my-listings.php?renewed=1',
+            $response['location']
+        );
+
+        // -----------------------------------------
+        // 4. Verify the updated renewal timestamp.
+        // -----------------------------------------
+
+        $after = $this->listingRecord($targetId);
+
+        $this->assertNotNull($after['renewed_at']);
+
+        // Renewal must replace the older timestamp.
+        $this->assertNotSame(
+            $before['renewed_at'],
+            $after['renewed_at']
+        );
+
+        // The new timestamp must be more recent.
+        $this->assertGreaterThan(
+            strtotime($before['renewed_at']),
+            strtotime($after['renewed_at'])
+        );
+
+        // The renewal must occur within the database
+        // time window surrounding the POST request.
+        $this->assertGreaterThanOrEqual(
+            $requestStartedAt,
+            $after['renewed_at']
+        );
+
+        $this->assertLessThanOrEqual(
+            $requestEndedAt,
+            $after['renewed_at']
+        );
+
+        // -----------------------------------------
+        // 5. Verify original listing data is preserved.
+        // -----------------------------------------
+
+        $this->assertSame(
+            $before['listing_id'],
+            $after['listing_id']
+        );
+
+        $this->assertSame(
+            $before['seller_user_id'],
+            $after['seller_user_id']
+        );
+
+        $this->assertSame(
+            $before['item_name'],
+            $after['item_name']
+        );
+
+        $this->assertSame(
+            $before['listing_status'],
+            $after['listing_status']
+        );
+
+        $this->assertSame(
+            $before['created_at'],
+            $after['created_at']
+        );
+
+        // -----------------------------------------
+        // 6. Verify the unrelated listing is unchanged.
+        // -----------------------------------------
+
+        $controlAfter = $this->listingRecord($controlId);
+
+        $this->assertSame(
+            $controlBefore,
+            $controlAfter
+        );
+    }
+
 
     // =========================================
     // TEST DATA HELPER: CREATE SELLER
