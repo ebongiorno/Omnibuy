@@ -727,9 +727,9 @@ Verify that a seller can successfully renew an eligible listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. After authenticating as the listing owner, the test confirmed that the listing appeared on the My Listings page with the Renew Listing button available. The seller submitted a valid renewal request, and the application returned the expected HTTP 303 redirect to the renewal confirmation page. A subsequent database query confirmed that the listing's renewed_at field was populated while its original creation date, listing status, ownership, and item name remained unchanged. The test also verified that the application displayed the renewal success message and Last Renewed field. All assertions passed.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

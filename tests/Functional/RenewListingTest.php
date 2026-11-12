@@ -78,7 +78,165 @@ final class RenewListingTest extends TestCase
         }
     }
 
-    
+    // =========================================
+    // TC-15-01: RENEW AN ELIGIBLE LISTING
+    // =========================================
+
+    public function testSellerCanRenewOwnActiveListing(): void
+    {
+        // Create a temporary seller, category, and listing.
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC15 Renewal Test '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // -----------------------------------------
+        // 1. Verify the original listing information.
+        // -----------------------------------------
+
+        $before = $this->listingRecord($listingId);
+
+        $this->assertSame(
+            'active',
+            $before['listing_status']
+        );
+
+        $this->assertNull(
+            $before['renewed_at']
+        );
+
+        $this->assertSame(
+            $seller['id'],
+            (int) $before['seller_user_id']
+        );
+
+        // -----------------------------------------
+        // 2. Authenticate as the listing owner.
+        // -----------------------------------------
+
+        $token = $this->logInAs($seller['email']);
+
+        // -----------------------------------------
+        // 3. Confirm the Renew Listing button appears.
+        // -----------------------------------------
+
+        $page = $this->browser->get(
+            '/pages/my-listings.php'
+        );
+
+        $this->assertSame(
+            200,
+            $page['status']
+        );
+
+        $this->assertStringContainsString(
+            $listingName,
+            $page['body']
+        );
+
+        $this->assertStringContainsString(
+            'Renew Listing',
+            $page['body']
+        );
+
+        // -----------------------------------------
+        // 4. Submit a valid renewal request.
+        // -----------------------------------------
+
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        // Verify successful renewal redirects the seller.
+        $this->assertSame(
+            303,
+            $response['status'],
+            $response['body']
+        );
+
+        $this->assertSame(
+            '/pages/my-listings.php?renewed=1',
+            $response['location']
+        );
+
+        // -----------------------------------------
+        // 5. Verify the database after renewal.
+        // -----------------------------------------
+
+        $after = $this->listingRecord($listingId);
+
+        // The listing should now have a renewal timestamp.
+        $this->assertNotNull(
+            $after['renewed_at']
+        );
+
+        // The listing must still be active.
+        $this->assertSame(
+            'active',
+            $after['listing_status']
+        );
+
+        // The original creation date must not change.
+        $this->assertSame(
+            $before['created_at'],
+            $after['created_at']
+        );
+
+        // The listing must retain its original owner.
+        $this->assertSame(
+            $seller['id'],
+            (int) $after['seller_user_id']
+        );
+
+        // The listing name must remain unchanged.
+        $this->assertSame(
+            $listingName,
+            $after['item_name']
+        );
+
+        // -----------------------------------------
+        // 6. Verify the renewal confirmation message.
+        // -----------------------------------------
+
+        $successPage = $this->browser->get(
+            '/pages/my-listings.php?renewed=1'
+        );
+
+        $this->assertSame(
+            200,
+            $successPage['status']
+        );
+
+        $this->assertStringContainsString(
+            'Your listing was renewed successfully!',
+            $successPage['body']
+        );
+
+        // The renewed listing should still appear.
+        $this->assertStringContainsString(
+            $listingName,
+            $successPage['body']
+        );
+
+        // The page should display the Last Renewed field.
+        $this->assertStringContainsString(
+            'Last Renewed:',
+            $successPage['body']
+        );
+    }
+
 
     // =========================================
     // TEST DATA HELPER: CREATE SELLER
