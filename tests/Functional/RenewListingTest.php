@@ -1021,6 +1021,193 @@ final class RenewListingTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-15-07: HANDLE INVALID RENEWAL REQUESTS
+    // =========================================
+
+    public function testInvalidRenewalRequestsAreRejected(): void
+    {
+        // -----------------------------------------
+        // 1. Create a temporary seller and listing.
+        // -----------------------------------------
+
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC15 Invalid Request Test '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // -----------------------------------------
+        // 2. Verify the original database record.
+        // -----------------------------------------
+
+        $before = $this->listingRecord($listingId);
+
+        $this->assertSame(
+            'active',
+            $before['listing_status']
+        );
+
+        $this->assertNull(
+            $before['renewed_at']
+        );
+
+        // -----------------------------------------
+        // 3. Authenticate as the listing owner.
+        // -----------------------------------------
+
+        $token = $this->logInAs($seller['email']);
+
+        // -----------------------------------------
+        // 4. Submit an invalid listing ID.
+        // -----------------------------------------
+
+        $invalidIdResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => 'invalid-id',
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(
+            400,
+            $invalidIdResponse['status'],
+            $invalidIdResponse['body']
+        );
+
+        // Verify the listing remains unchanged.
+        $this->assertSame(
+            $before,
+            $this->listingRecord($listingId)
+        );
+
+        // -----------------------------------------
+        // 5. Submit a missing CSRF token.
+        // -----------------------------------------
+
+        $missingTokenResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $listingId,
+            ]
+        );
+
+        $this->assertSame(
+            403,
+            $missingTokenResponse['status'],
+            $missingTokenResponse['body']
+        );
+
+        $this->assertSame(
+            $before,
+            $this->listingRecord($listingId)
+        );
+
+        // -----------------------------------------
+        // 6. Submit an incorrect CSRF token.
+        // -----------------------------------------
+
+        $invalidTokenResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => 'invalid-security-token',
+            ]
+        );
+
+        $this->assertSame(
+            403,
+            $invalidTokenResponse['status'],
+            $invalidTokenResponse['body']
+        );
+
+        $this->assertSame(
+            $before,
+            $this->listingRecord($listingId)
+        );
+
+        // -----------------------------------------
+        // 7. Submit an unsupported action.
+        // -----------------------------------------
+
+        $invalidActionResponse = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'invalid_action',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        $this->assertSame(
+            400,
+            $invalidActionResponse['status'],
+            $invalidActionResponse['body']
+        );
+
+        $this->assertSame(
+            $before,
+            $this->listingRecord($listingId)
+        );
+
+        // -----------------------------------------
+        // 8. Attempt renewal using GET instead of POST.
+        // -----------------------------------------
+
+        $getResponse = $this->browser->get(
+            '/pages/my-listings.php?' . http_build_query([
+                'action' => 'renew_listing',
+                'listing_id' => $listingId,
+            ])
+        );
+
+        // GET should display the page normally
+        // without processing the renewal.
+        $this->assertSame(
+            200,
+            $getResponse['status'],
+            $getResponse['body']
+        );
+
+        // -----------------------------------------
+        // 9. Verify final database information.
+        // -----------------------------------------
+
+        $after = $this->listingRecord($listingId);
+
+        // The listing must remain active.
+        $this->assertSame(
+            'active',
+            $after['listing_status']
+        );
+
+        // No renewal should have occurred.
+        $this->assertNull(
+            $after['renewed_at']
+        );
+
+        // The listing must retain its original owner.
+        $this->assertSame(
+            $seller['id'],
+            (int) $after['seller_user_id']
+        );
+
+        // All retrieved listing fields must be unchanged.
+        $this->assertSame(
+            $before,
+            $after
+        );
+    }
 
     // =========================================
     // TEST DATA HELPER: CREATE SELLER

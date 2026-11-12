@@ -942,8 +942,68 @@ Verify that an unauthenticated user cannot renew an existing active listing or m
 - No unauthorized database modifications should occur.
 
 **Actual Result:**
-
 The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. The test then established a separate unauthenticated HTTP session and obtained a valid guest-session CSRF token. When the unauthenticated visitor submitted a renewal request, the application rejected the action and returned the expected HTTP 302 redirect to the login page. A subsequent database query confirmed that the listing remained active, its `renewed_at` timestamp remained `NULL`, and its original ownership and other retrieved information were unchanged. The test also verified that an unauthenticated visitor attempting to access the My Listings page was redirected to login. All assertions passed, confirming that authentication is required to renew a listing.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-15-07: Handle Invalid Renewal Requests
+
+**Use Case:** UC-15
+
+**Test Type:** Automated Functional / Security Testing / Negative Testing
+
+**Objective:**
+
+Verify that the application rejects invalid or malformed listing renewal requests, including invalid listing IDs, missing or incorrect CSRF tokens, unsupported actions, and attempts to perform renewal through GET requests, without modifying listing records.
+
+**Preconditions:**
+- The OmniBuy application and test database are available.
+- A temporary seller account and active listing exist.
+- The listing has not previously been renewed.
+- The seller is authenticated.
+- A valid CSRF token is available for the authenticated session.
+
+**Test Data:**
+- Temporary authenticated seller account
+- Active listing belonging to the seller
+- Known valid listing ID
+- Invalid listing ID (`invalid-id`)
+- Valid CSRF token
+- Missing CSRF token
+- Incorrect CSRF token (`invalid-security-token`)
+- Unsupported action (`invalid_action`)
+- GET request containing renewal parameters
+
+**Test Steps:**
+1. Create a temporary seller account and active listing.
+2. Retrieve the listing's original database record and verify that its status is `active` and its `renewed_at` timestamp is `NULL`.
+3. Authenticate as the listing owner and obtain a valid CSRF token.
+4. Submit a renewal request containing an invalid listing ID and verify that the application returns HTTP 400.
+5. Query the database to confirm that the listing remains unchanged.
+6. Submit a renewal request without a CSRF token and verify that the application returns HTTP 403.
+7. Confirm that the listing's database record remains unchanged.
+8. Submit a renewal request with an incorrect CSRF token and verify that the application returns HTTP 403.
+9. Confirm that the listing's database record remains unchanged.
+10. Submit a POST request containing an unsupported action and verify that the application returns HTTP 400.
+11. Confirm that the listing's database record remains unchanged.
+12. Attempt to renew the listing through a GET request and verify that the application returns HTTP 200 without processing the renewal.
+13. Retrieve the final database record and compare it against the original values.
+14. Verify that the listing remains active, its `renewed_at` timestamp remains `NULL`, its ownership is unchanged, and no unauthorized modifications occurred.
+
+**Expected Result:**
+- Requests containing an invalid listing ID should be rejected with HTTP 400.
+- Requests containing missing or incorrect CSRF tokens should be rejected with HTTP 403.
+- Requests containing unsupported actions should be rejected with HTTP 400.
+- GET requests should not trigger listing renewal or modify database records.
+- The listing should remain `active` throughout the test.
+- The listing's `renewed_at` timestamp should remain `NULL`.
+- The listing's ownership, creation date, and other stored information should remain unchanged.
+- No invalid renewal request should modify the listing or cause unintended database changes.
+
+**Actual Result:**
+The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. After authenticating as the listing owner, the test submitted several invalid renewal requests to verify the application's input validation and security protections. A request containing an invalid listing ID was rejected with HTTP 400, while requests containing missing or incorrect CSRF tokens were rejected with HTTP 403. An unsupported action was also rejected with HTTP 400. The test additionally confirmed that attempting to renew a listing through a GET request returned HTTP 200 without processing the renewal. Database queries performed after each invalid request verified that the listing remained unchanged. Final verification confirmed that the listing retained its active status, original ownership, creation date, and other stored information, while its renewed_at timestamp remained NULL. All assertions passed.
 
 **Status:** Pass
 
