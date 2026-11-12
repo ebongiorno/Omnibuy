@@ -852,9 +852,9 @@ belonging to another seller.
 - No unrelated database records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created two temporary seller accounts and an active listing belonging to Seller A. After confirming the listing's original ownership, active status, and empty renewal timestamp, the test authenticated as Seller B and submitted a renewal request targeting Seller A's listing. The application rejected the unauthorized request with the expected HTTP 404 response. A subsequent database query confirmed that the listing remained active, its ownership was unchanged, and its renewed_at timestamp remained NULL. All retrieved listing fields matched their original values. The test also verified that Seller A's listing was not displayed on Seller B's My Listings page. All assertions passed, both individually and when executed alongside TC-15-01 through TC-15-03.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

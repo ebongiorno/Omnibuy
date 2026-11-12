@@ -614,6 +614,129 @@ final class RenewListingTest extends TestCase
             $afterOlderPosition
         );
     }
+    
+    // =========================================
+    // TC-15-04: PREVENT UNAUTHORIZED LISTING RENEWAL
+    // =========================================
+
+    public function testUserCannotRenewAnotherUsersListing(): void
+    {
+        // -----------------------------------------
+        // 1. Create two separate sellers.
+        // -----------------------------------------
+
+        $sellerA = $this->createSeller();
+        $sellerB = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Create an active listing owned by Seller A.
+        $listingName = 'UC15 Protected Listing '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $sellerA['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // -----------------------------------------
+        // 2. Verify the original listing information.
+        // -----------------------------------------
+
+        $before = $this->listingRecord($listingId);
+
+        // Seller A must own the listing.
+        $this->assertSame(
+            $sellerA['id'],
+            (int) $before['seller_user_id']
+        );
+
+        // The listing must initially be active.
+        $this->assertSame(
+            'active',
+            $before['listing_status']
+        );
+
+        // The listing has never been renewed.
+        $this->assertNull(
+            $before['renewed_at']
+        );
+
+        // -----------------------------------------
+        // 3. Authenticate as Seller B.
+        // -----------------------------------------
+
+        // Seller B is NOT the listing owner.
+        $token = $this->logInAs($sellerB['email']);
+
+        // -----------------------------------------
+        // 4. Attempt to renew Seller A's listing.
+        // -----------------------------------------
+
+        $response = $this->browser->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        // The backend should reject the unauthorized request.
+        $this->assertSame(
+            404,
+            $response['status'],
+            $response['body']
+        );
+
+        // -----------------------------------------
+        // 5. Verify the database was not modified.
+        // -----------------------------------------
+
+        $after = $this->listingRecord($listingId);
+
+        // Seller A must still own the listing.
+        $this->assertSame(
+            $sellerA['id'],
+            (int) $after['seller_user_id']
+        );
+
+        // The listing must remain active.
+        $this->assertSame(
+            'active',
+            $after['listing_status']
+        );
+
+        // The renewal timestamp must remain NULL.
+        $this->assertNull(
+            $after['renewed_at']
+        );
+
+        // All retrieved listing fields must be unchanged.
+        $this->assertSame(
+            $before,
+            $after
+        );
+
+        // -----------------------------------------
+        // 6. Verify Seller B cannot see Seller A's
+        //    listing on their My Listings page.
+        // -----------------------------------------
+
+        $myListings = $this->browser->get(
+            '/pages/my-listings.php'
+        );
+
+        $this->assertSame(
+            200,
+            $myListings['status']
+        );
+
+        $this->assertStringNotContainsString(
+            $listingName,
+            $myListings['body']
+        );
+    }
 
 
     // =========================================
