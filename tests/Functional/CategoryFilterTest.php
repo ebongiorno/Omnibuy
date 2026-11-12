@@ -228,7 +228,7 @@ final class CategoryFilterTest extends DatabaseTestCase
             INNER JOIN users AS u ON u.user_id = l.seller_user_id
             WHERE l.listing_status = 'active' AND u.account_status = 'active'
               AND l.category_id = :category_id
-            ORDER BY l.created_at DESC, l.listing_id DESC
+            ORDER BY COALESCE(l.renewed_at, l.created_at) DESC, l.listing_id DESC
             LIMIT 1
         ");
         $stmt->execute(['category_id' => $categoryId]);

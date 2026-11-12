@@ -23,10 +23,14 @@ if (!$isLoggedIn) {
     exit;
 }
 
-// Mark as sold logic
+// Listing management actions: Mark as Sold and Renew Listing.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (($_POST['action'] ?? null) !== 'mark_sold') {
+    // Identify and validate the requested action.
+    $action = $_POST['action'] ?? null;
+
+    if (!is_string($action) ||
+        !in_array($action, ['mark_sold', 'renew_listing'], true)) {
         http_response_code(400);
         exit('Invalid action.');
     }
@@ -51,28 +55,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit('Invalid listing ID.');
     }
 
-    // Update only an active listing owned by this seller.
-    $stmt = $pdo->prepare(
-        "UPDATE listings
-         SET listing_status = 'sold'
-         WHERE listing_id = :listing_id
-           AND seller_user_id = :seller_id
-           AND listing_status = 'active'"
-    );
+    // -----------------------------------------
+    // UC-14: MARK LISTING AS SOLD
+    // -----------------------------------------
 
-    $stmt->execute([
-        'listing_id' => $listingId,
-        'seller_id' => $currentSellerId
-    ]);
+    if ($action === 'mark_sold') {
 
-    if ($stmt->rowCount() !== 1) {
-        http_response_code(404);
-        exit('Listing not found or unavailable for this action.');
+        $stmt = $pdo->prepare(
+            "UPDATE listings
+             SET listing_status = 'sold'
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status = 'active'"
+        );
+
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for this action.');
+        }
+
+        header('Location: /pages/my-listings.php?sold=1', true, 303);
+        exit;
     }
 
-    // Redirect to avoid resubmitting the form on refresh.
-    header('Location: /pages/my-listings.php?sold=1', true, 303);
-    exit;
+    // -----------------------------------------
+    // UC-15: RENEW LISTING
+    // -----------------------------------------
+
+    if ($action === 'renew_listing') {
+
+        // Renew only an active listing owned by this user.
+        $stmt = $pdo->prepare(
+            "UPDATE listings
+             SET renewed_at = CURRENT_TIMESTAMP
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status = 'active'"
+        );
+
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for renewal.');
+        }
+
+        // Redirect after successful renewal.
+        header('Location: /pages/my-listings.php?renewed=1', true, 303);
+        exit;
+    }
 }
 
 $currentUser = [
@@ -96,7 +135,8 @@ if ($isLoggedIn) {
             quantity,
             fulfillment_type,
             listing_status,
-            created_at
+            created_at,
+            renewed_at
          FROM listings
          WHERE seller_user_id = :seller_user_id
          ORDER BY created_at DESC, listing_id DESC"
@@ -174,6 +214,12 @@ include $header;
                 Your listing was marked as sold successfully!
             </p>
 
+        <?php endif; ?>
+
+        <?php if (($_GET['renewed'] ?? '') === '1'): ?>
+            <p class="my-listings-success" role="status">
+                Your listing was renewed successfully!
+            </p>
         <?php endif; ?>
 
         <?php if (empty($listings)): ?>
@@ -266,38 +312,75 @@ include $header;
                         </p>
 
                         <?php if ($listing['listing_status'] === 'active'): ?>
-
-                            <form
-                                action="/pages/my-listings.php"
-                                method="POST"
-                                onsubmit="return confirm('Are you sure you want to mark this listing as sold?');"
-                            >
-                                <input
-                                    type="hidden"
-                                    name="action"
-                                    value="mark_sold"
+                            <div class="my-listings__actions">
+                                <form
+                                    action="/pages/my-listings.php"
+                                    method="POST"
+                                    onsubmit="return confirm('Are you sure you want to mark this listing as sold?');"
                                 >
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="mark_sold"
+                                    >
 
-                                <input
-                                    type="hidden"
-                                    name="listing_id"
-                                    value="<?= (int) $listing['listing_id'] ?>"
+                                    <input
+                                        type="hidden"
+                                        name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= htmlspecialchars(
+                                            csrfToken(),
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
+                                    >
+
+                                    <button type="submit" class="my-listings__mark-sold">
+                                        Mark as Sold
+                                    </button>
+                                </form>
+
+
+                                <form
+                                    action="/pages/my-listings.php"
+                                    method="POST"
+                                    onsubmit="return confirm('Are you sure you want to renew this listing?');"
                                 >
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="renew_listing"
+                                    >
 
-                                <input
-                                    type="hidden"
-                                    name="csrf_token"
-                                    value="<?= htmlspecialchars(
-                                        csrfToken(),
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    ) ?>"
-                                >
+                                    <input
+                                        type="hidden"
+                                        name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>"
+                                    >
 
-                                <button type="submit" class="my-listings__mark-sold">
-                                    Mark as Sold
-                                </button>
-                            </form>
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= htmlspecialchars(
+                                            csrfToken(),
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="my-listings__renew"
+                                    >
+                                        Renew Listing
+                                    </button>
+                                </form>
+                            </div>
 
                         <?php endif; ?>
 
@@ -310,6 +393,18 @@ include $header;
                                 'UTF-8'
                             ) ?>
                         </p>
+
+                        <?php if (!empty($listing['renewed_at'])): ?>
+                            <p>
+                                <strong>Last Renewed:</strong>
+
+                                <?= htmlspecialchars(
+                                    (string) $listing['renewed_at'],
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </p>
+                        <?php endif; ?>
 
                     </article>
 

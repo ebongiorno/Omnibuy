@@ -128,7 +128,7 @@ $browseAll =
     && ($_GET['browse'] ?? '') === 'all';
 
 $allowedSortOptions = [
-    'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'recent' => 'COALESCE(l.renewed_at, l.created_at) DESC, l.listing_id DESC',
     'oldest' => 'l.created_at ASC, l.listing_id ASC',
     'price_low' => 'l.price ASC, l.listing_id DESC',
     'price_high' => 'l.price DESC, l.listing_id DESC',

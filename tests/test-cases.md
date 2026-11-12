@@ -727,9 +727,9 @@ Verify that a seller can successfully renew an eligible listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. After authenticating as the listing owner, the test confirmed that the listing appeared on the My Listings page with the Renew Listing button available. The seller submitted a valid renewal request, and the application returned the expected HTTP 303 redirect to the renewal confirmation page. A subsequent database query confirmed that the listing's renewed_at field was populated while its original creation date, listing status, ownership, and item name remained unchanged. The test also verified that the application displayed the renewal success message and Last Renewed field. All assertions passed.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -767,9 +767,9 @@ renewal timestamp without changing unrelated listing data.
 - Unrelated listing data should remain unchanged.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings belonging to that seller. The target listing was assigned an original creation date 30 days in the past and an existing renewal timestamp seven days in the past. After authenticating as the listing owner and submitting a valid Renew Listing request, the application returned the expected HTTP 303 redirect. A subsequent database query confirmed that the target listing's renewed_at timestamp had changed to a more recent value within the recorded database request window. The listing's original creation date, listing ID, ownership, name, and active status remained unchanged. The unrelated control listing also retained all its original database values, confirming that only the intended listing was updated. All assertions passed, both when TC-15-02 was executed individually and when it was run together with TC-15-01.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -811,9 +811,9 @@ according to the team's agreed renewal-ordering rules.
 - No unrelated listing records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and two active listings containing a unique search term. The listings were assigned different creation dates, with one listing created 30 days earlier and the other one day earlier. Initial keyword search results using Newest sorting confirmed that the more recently created listing appeared first. After authenticating as the listing owner and renewing the older listing, the application returned the expected HTTP 303 redirect, and the database confirmed that the older listing received a renewal timestamp while both listings remained active. Subsequent keyword search results confirmed that the renewed listing moved ahead of the newer listing, demonstrating that Newest sorting correctly uses the renewal timestamp when available. All assertions passed, both individually and when TC-15-03 was executed alongside TC-15-01 and TC-15-02.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -852,9 +852,9 @@ belonging to another seller.
 - No unrelated database records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created two temporary seller accounts and an active listing belonging to Seller A. After confirming the listing's original ownership, active status, and empty renewal timestamp, the test authenticated as Seller B and submitted a renewal request targeting Seller A's listing. The application rejected the unauthorized request with the expected HTTP 404 response. A subsequent database query confirmed that the listing remained active, its ownership was unchanged, and its renewed_at timestamp remained NULL. All retrieved listing fields matched their original values. The test also verified that Seller A's listing was not displayed on Seller B's My Listings page. All assertions passed, both individually and when executed alongside TC-15-01 through TC-15-03.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -892,9 +892,120 @@ requirements cannot be renewed.
 - No unrelated database records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and multiple listings to verify that ineligible listings could not be renewed. After authenticating as the listing owner, the test attempted to renew listings with sold, archived, hidden, and draft statuses. Each renewal request was rejected with the expected HTTP 404 response. Subsequent database queries confirmed that every listing retained its original status, ownership, and other retrieved information, while its renewed_at timestamp remained NULL. An unrelated active control listing also remained unchanged, confirming that the rejected requests did not affect other records. All assertions passed, both when TC-15-05 was executed individually and when it was run alongside TC-15-01 through TC-15-04.
 
-**Status:** Not Run
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-15-06: Prevent Unauthenticated Listing Renewal
+
+**Use Case:** UC-15
+
+**Test Type:** Automated Functional / Security Testing
+
+**Objective:**
+
+Verify that an unauthenticated user cannot renew an existing active listing or modify its database record, even when submitting a valid CSRF token.
+
+**Preconditions:**
+- The OmniBuy application and test database are available.
+- A temporary seller account and active listing exist.
+- The listing has not previously been renewed.
+- A separate HTTP client is available without an authenticated user session.
+
+**Test Data:**
+- Temporary seller account
+- Active listing belonging to the temporary seller
+- Known listing ID
+- Unauthenticated HTTP session
+- Valid guest-session CSRF token
+- Renew Listing POST request
+
+**Test Steps:**
+1. Create a temporary seller account and active listing.
+2. Retrieve the listing's initial database record and verify that its status is `active`, its `renewed_at` timestamp is `NULL`, and its ownership is correct.
+3. Create a separate HTTP client without authenticating as any user.
+4. Visit the login page and obtain a valid CSRF token for the unauthenticated session.
+5. Submit a Renew Listing POST request targeting the active listing.
+6. Verify that the application rejects the request and redirects the unauthenticated visitor to the login page.
+7. Retrieve the listing's database record and compare it against the original values.
+8. Verify that the listing remains active, its renewal timestamp remains `NULL`, and its ownership and other information are unchanged.
+9. Attempt to access the My Listings page without authentication and verify that the visitor is redirected to login.
+
+**Expected Result:**
+- The application should reject unauthenticated renewal requests with an HTTP 302 redirect to the login page.
+- The listing's `renewed_at` timestamp should remain `NULL`.
+- The listing should retain its original status, ownership, creation date, and other stored information.
+- Unauthenticated visitors should not be permitted to access the My Listings page.
+- No unauthorized database modifications should occur.
+
+**Actual Result:**
+The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. The test then established a separate unauthenticated HTTP session and obtained a valid guest-session CSRF token. When the unauthenticated visitor submitted a renewal request, the application rejected the action and returned the expected HTTP 302 redirect to the login page. A subsequent database query confirmed that the listing remained active, its `renewed_at` timestamp remained `NULL`, and its original ownership and other retrieved information were unchanged. The test also verified that an unauthenticated visitor attempting to access the My Listings page was redirected to login. All assertions passed, confirming that authentication is required to renew a listing.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-15-07: Handle Invalid Renewal Requests
+
+**Use Case:** UC-15
+
+**Test Type:** Automated Functional / Security Testing / Negative Testing
+
+**Objective:**
+
+Verify that the application rejects invalid or malformed listing renewal requests, including invalid listing IDs, missing or incorrect CSRF tokens, unsupported actions, and attempts to perform renewal through GET requests, without modifying listing records.
+
+**Preconditions:**
+- The OmniBuy application and test database are available.
+- A temporary seller account and active listing exist.
+- The listing has not previously been renewed.
+- The seller is authenticated.
+- A valid CSRF token is available for the authenticated session.
+
+**Test Data:**
+- Temporary authenticated seller account
+- Active listing belonging to the seller
+- Known valid listing ID
+- Invalid listing ID (`invalid-id`)
+- Valid CSRF token
+- Missing CSRF token
+- Incorrect CSRF token (`invalid-security-token`)
+- Unsupported action (`invalid_action`)
+- GET request containing renewal parameters
+
+**Test Steps:**
+1. Create a temporary seller account and active listing.
+2. Retrieve the listing's original database record and verify that its status is `active` and its `renewed_at` timestamp is `NULL`.
+3. Authenticate as the listing owner and obtain a valid CSRF token.
+4. Submit a renewal request containing an invalid listing ID and verify that the application returns HTTP 400.
+5. Query the database to confirm that the listing remains unchanged.
+6. Submit a renewal request without a CSRF token and verify that the application returns HTTP 403.
+7. Confirm that the listing's database record remains unchanged.
+8. Submit a renewal request with an incorrect CSRF token and verify that the application returns HTTP 403.
+9. Confirm that the listing's database record remains unchanged.
+10. Submit a POST request containing an unsupported action and verify that the application returns HTTP 400.
+11. Confirm that the listing's database record remains unchanged.
+12. Attempt to renew the listing through a GET request and verify that the application returns HTTP 200 without processing the renewal.
+13. Retrieve the final database record and compare it against the original values.
+14. Verify that the listing remains active, its `renewed_at` timestamp remains `NULL`, its ownership is unchanged, and no unauthorized modifications occurred.
+
+**Expected Result:**
+- Requests containing an invalid listing ID should be rejected with HTTP 400.
+- Requests containing missing or incorrect CSRF tokens should be rejected with HTTP 403.
+- Requests containing unsupported actions should be rejected with HTTP 400.
+- GET requests should not trigger listing renewal or modify database records.
+- The listing should remain `active` throughout the test.
+- The listing's `renewed_at` timestamp should remain `NULL`.
+- The listing's ownership, creation date, and other stored information should remain unchanged.
+- No invalid renewal request should modify the listing or cause unintended database changes.
+
+**Actual Result:**
+The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. After authenticating as the listing owner, the test submitted several invalid renewal requests to verify the application's input validation and security protections. A request containing an invalid listing ID was rejected with HTTP 400, while requests containing missing or incorrect CSRF tokens were rejected with HTTP 403. An unsupported action was also rejected with HTTP 400. The test additionally confirmed that attempting to renew a listing through a GET request returned HTTP 200 without processing the renewal. Database queries performed after each invalid request verified that the listing remained unchanged. Final verification confirmed that the listing retained its active status, original ownership, creation date, and other stored information, while its renewed_at timestamp remained NULL. All assertions passed.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 

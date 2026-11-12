@@ -15,7 +15,7 @@ $extraStylesheets = [
 $sort = $_GET['sort'] ?? 'recent';
 
 $sortOptions = [
-    'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'recent' => 'COALESCE(l.renewed_at, l.created_at) DESC, l.listing_id DESC',
     'price_low' => 'l.price ASC, l.created_at DESC',
     'price_high' => 'l.price DESC, l.created_at DESC'
 ];

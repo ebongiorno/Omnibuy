@@ -3679,14 +3679,18 @@ final class SearchPageTest extends TestCase
                 ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
               AND eligible_seller.account_status = 'active'
-            ORDER BY l.created_at DESC, l.listing_id DESC
+            ORDER BY
+                COALESCE(l.renewed_at, l.created_at) DESC,
+                l.listing_id DESC
         ")->fetchAll(\PDO::FETCH_COLUMN));
 
         $this->assertGreaterThanOrEqual(2, count($expectedIds));
 
         // Prevent a false positive where every listing has the same created_at.
         $distinctValues = (int) $pdo->query("
-            SELECT COUNT(DISTINCT l.created_at)
+            SELECT COUNT(DISTINCT
+                COALESCE(l.renewed_at, l.created_at)
+            )
             FROM listings AS l
             INNER JOIN users AS eligible_seller
                 ON eligible_seller.user_id = l.seller_user_id
@@ -3697,7 +3701,7 @@ final class SearchPageTest extends TestCase
         $this->assertGreaterThanOrEqual(
             2,
             $distinctValues,
-            'Test data needs at least two different active listing creation timestamps.'
+            'Test data needs at least two different active listing sorting timestamps.'
         );
 
         [$status, $body] = $this->getAllSearchPages(
@@ -4276,7 +4280,9 @@ final class SearchPageTest extends TestCase
                 ON eligible_seller.user_id = l.seller_user_id
             WHERE l.listing_status = 'active'
               AND eligible_seller.account_status = 'active'
-            ORDER BY l.created_at DESC, l.listing_id DESC
+            ORDER BY
+                COALESCE(l.renewed_at, l.created_at) DESC,
+                l.listing_id DESC
         ")->fetchAll(\PDO::FETCH_COLUMN));
 
         $this->assertGreaterThanOrEqual(2, count($expectedIds));

@@ -65,7 +65,7 @@ $perPage = 8;
 $page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
 $page = min($page, 100000);
 $sortOptions = [
-    'recent' => 'l.created_at DESC, l.listing_id DESC',
+    'recent' => 'COALESCE(l.renewed_at, l.created_at) DESC, l.listing_id DESC',
     'price_low' => 'l.price ASC, l.listing_id ASC',
     'price_high' => 'l.price DESC, l.listing_id DESC',
 ];
