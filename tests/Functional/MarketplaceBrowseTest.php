@@ -19,7 +19,9 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
             FROM listings AS l
             INNER JOIN users AS u ON u.user_id = l.seller_user_id
             WHERE l.listing_status = 'active' AND u.account_status = 'active'
-            ORDER BY l.created_at DESC, l.listing_id DESC
+            ORDER BY
+                COALESCE(l.renewed_at, l.created_at) DESC,
+                l.listing_id DESC
             LIMIT 1
         ");
 
@@ -66,7 +68,9 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
             FROM listings AS l
             INNER JOIN users AS u ON u.user_id = l.seller_user_id
             WHERE l.listing_status = 'active' AND u.account_status = 'active'
-            ORDER BY l.created_at DESC, l.listing_id DESC
+            ORDER BY
+                COALESCE(l.renewed_at, l.created_at) DESC,
+                l.listing_id DESC
             LIMIT 1
         ");
 
@@ -122,8 +126,21 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
             self::assertCount(1, $imageLinks);
             self::assertCount(1, $titleLinks);
 
-            $imageUrl = $imageLinks->item(0)->getAttribute('href');
-            $titleUrl = $titleLinks->item(0)->getAttribute('href');
+            $imageLink = $imageLinks->item(0);
+            $titleLink = $titleLinks->item(0);
+
+            // Verify that both links are valid DOM elements.
+            if (!$imageLink instanceof \DOMElement) {
+                $this->fail('Expected the listing image link to be a DOM element.');
+            }
+
+            if (!$titleLink instanceof \DOMElement) {
+                $this->fail('Expected the listing title link to be a DOM element.');
+            }
+
+            // Safely retrieve the href attributes.
+            $imageUrl = $imageLink->getAttribute('href');
+            $titleUrl = $titleLink->getAttribute('href');
 
             self::assertSame($imageUrl, $titleUrl);
 
