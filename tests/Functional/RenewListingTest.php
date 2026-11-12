@@ -884,6 +884,145 @@ final class RenewListingTest extends TestCase
     }
 
     // =========================================
+    // TC-15-06: PREVENT UNAUTHENTICATED LISTING RENEWAL
+    // =========================================
+
+    public function testUnauthenticatedUserCannotRenewListing(): void
+    {
+        // -----------------------------------------
+        // 1. Create a temporary seller and listing.
+        // -----------------------------------------
+
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC15 Unauthenticated Test '
+            . bin2hex(random_bytes(6));
+
+        $listingId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // -----------------------------------------
+        // 2. Verify the original listing information.
+        // -----------------------------------------
+
+        $before = $this->listingRecord($listingId);
+
+        $this->assertSame(
+            'active',
+            $before['listing_status']
+        );
+
+        $this->assertNull(
+            $before['renewed_at']
+        );
+
+        $this->assertSame(
+            $seller['id'],
+            (int) $before['seller_user_id']
+        );
+
+        // -----------------------------------------
+        // 3. Create an unauthenticated HTTP session.
+        // -----------------------------------------
+
+        // This client has not logged in as any user.
+        $guest = HttpClient::fromEnvironment();
+
+        // Visit the login page to obtain a valid
+        // CSRF token for the guest session.
+        $loginPage = $guest->get(
+            '/pages/login.php'
+        );
+
+        $this->assertSame(
+            200,
+            $loginPage['status']
+        );
+
+        $token = HttpClient::csrfToken(
+            $loginPage['body']
+        );
+
+        // -----------------------------------------
+        // 4. Attempt to renew without logging in.
+        // -----------------------------------------
+
+        $response = $guest->post(
+            '/pages/my-listings.php',
+            [
+                'action' => 'renew_listing',
+                'listing_id' => (string) $listingId,
+                'csrf_token' => $token,
+            ]
+        );
+
+        // The application should redirect the
+        // unauthenticated visitor to login.
+        $this->assertSame(
+            302,
+            $response['status'],
+            $response['body']
+        );
+
+        $this->assertSame(
+            '/pages/login.php',
+            $response['location']
+        );
+
+        // -----------------------------------------
+        // 5. Verify the listing was not modified.
+        // -----------------------------------------
+
+        $after = $this->listingRecord($listingId);
+
+        // The listing must remain active.
+        $this->assertSame(
+            'active',
+            $after['listing_status']
+        );
+
+        // The renewal timestamp must remain NULL.
+        $this->assertNull(
+            $after['renewed_at']
+        );
+
+        // The listing must retain its original owner.
+        $this->assertSame(
+            $seller['id'],
+            (int) $after['seller_user_id']
+        );
+
+        // All retrieved listing fields must be unchanged.
+        $this->assertSame(
+            $before,
+            $after
+        );
+
+        // -----------------------------------------
+        // 6. Verify the guest cannot access My Listings.
+        // -----------------------------------------
+
+        $pageResponse = $guest->get(
+            '/pages/my-listings.php'
+        );
+
+        $this->assertSame(
+            302,
+            $pageResponse['status']
+        );
+
+        $this->assertSame(
+            '/pages/login.php',
+            $pageResponse['location']
+        );
+    }
+
+
+    // =========================================
     // TEST DATA HELPER: CREATE SELLER
     // =========================================
 

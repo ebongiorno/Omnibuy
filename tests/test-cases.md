@@ -898,6 +898,57 @@ The functional test successfully created a temporary seller account and multiple
 
 **Related Jira Defect:** None
 
+
+### TC-15-06: Prevent Unauthenticated Listing Renewal
+
+**Use Case:** UC-15
+
+**Test Type:** Automated Functional / Security Testing
+
+**Objective:**
+
+Verify that an unauthenticated user cannot renew an existing active listing or modify its database record, even when submitting a valid CSRF token.
+
+**Preconditions:**
+- The OmniBuy application and test database are available.
+- A temporary seller account and active listing exist.
+- The listing has not previously been renewed.
+- A separate HTTP client is available without an authenticated user session.
+
+**Test Data:**
+- Temporary seller account
+- Active listing belonging to the temporary seller
+- Known listing ID
+- Unauthenticated HTTP session
+- Valid guest-session CSRF token
+- Renew Listing POST request
+
+**Test Steps:**
+1. Create a temporary seller account and active listing.
+2. Retrieve the listing's initial database record and verify that its status is `active`, its `renewed_at` timestamp is `NULL`, and its ownership is correct.
+3. Create a separate HTTP client without authenticating as any user.
+4. Visit the login page and obtain a valid CSRF token for the unauthenticated session.
+5. Submit a Renew Listing POST request targeting the active listing.
+6. Verify that the application rejects the request and redirects the unauthenticated visitor to the login page.
+7. Retrieve the listing's database record and compare it against the original values.
+8. Verify that the listing remains active, its renewal timestamp remains `NULL`, and its ownership and other information are unchanged.
+9. Attempt to access the My Listings page without authentication and verify that the visitor is redirected to login.
+
+**Expected Result:**
+- The application should reject unauthenticated renewal requests with an HTTP 302 redirect to the login page.
+- The listing's `renewed_at` timestamp should remain `NULL`.
+- The listing should retain its original status, ownership, creation date, and other stored information.
+- Unauthenticated visitors should not be permitted to access the My Listings page.
+- No unauthorized database modifications should occur.
+
+**Actual Result:**
+
+The functional test successfully created a temporary seller account and an active listing with no previous renewal timestamp. The test then established a separate unauthenticated HTTP session and obtained a valid guest-session CSRF token. When the unauthenticated visitor submitted a renewal request, the application rejected the action and returned the expected HTTP 302 redirect to the login page. A subsequent database query confirmed that the listing remained active, its `renewed_at` timestamp remained `NULL`, and its original ownership and other retrieved information were unchanged. The test also verified that an unauthenticated visitor attempting to access the My Listings page was redirected to login. All assertions passed, confirming that authentication is required to renew a listing.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-16: Browse Marketplace Feed
 ### TC-16-01: Display Active Listings in Browse Feed
 
