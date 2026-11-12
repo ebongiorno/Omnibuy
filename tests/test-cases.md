@@ -892,9 +892,9 @@ requirements cannot be renewed.
 - No unrelated database records should change.
 
 **Actual Result:**
-Not yet recorded.
+The functional test successfully created a temporary seller account and multiple listings to verify that ineligible listings could not be renewed. After authenticating as the listing owner, the test attempted to renew listings with sold, archived, hidden, and draft statuses. Each renewal request was rejected with the expected HTTP 404 response. Subsequent database queries confirmed that every listing retained its original status, ownership, and other retrieved information, while its renewed_at timestamp remained NULL. An unrelated active control listing also remained unchanged, confirming that the rejected requests did not affect other records. All assertions passed, both when TC-15-05 was executed individually and when it was run alongside TC-15-01 through TC-15-04.
 
-**Status:** Not Run
+**Status:** Pass
 
 **Related Jira Defect:** None
 

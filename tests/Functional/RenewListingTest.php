@@ -738,6 +738,150 @@ final class RenewListingTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-15-05: PREVENT RENEWAL OF INELIGIBLE LISTINGS
+    // =========================================
+
+    public function testIneligibleListingsCannotBeRenewed(): void
+    {
+        // -----------------------------------------
+        // 1. Create a temporary seller and category.
+        // -----------------------------------------
+
+        $seller = $this->createSeller();
+        $categoryId = $this->createCategory();
+
+        // Create an active listing to act as a control.
+        $controlId = $this->createListing(
+            $seller['id'],
+            $categoryId,
+            'UC15 Active Control ' . bin2hex(random_bytes(6))
+        );
+
+        $controlBefore = $this->listingRecord($controlId);
+
+        // -----------------------------------------
+        // 2. Authenticate as the listing owner.
+        // -----------------------------------------
+
+        $token = $this->logInAs($seller['email']);
+
+        // -----------------------------------------
+        // 3. Define the ineligible listing statuses.
+        // -----------------------------------------
+
+        $ineligibleStatuses = [
+            'sold',
+            'archived',
+            'hidden',
+            'draft'
+        ];
+
+        // -----------------------------------------
+        // 4. Test each ineligible status.
+        // -----------------------------------------
+
+        foreach ($ineligibleStatuses as $status) {
+
+            // Create a separate listing for this status.
+            $listingName = 'UC15 Ineligible ' . $status . ' '
+                . bin2hex(random_bytes(6));
+
+            $listingId = $this->createListing(
+                $seller['id'],
+                $categoryId,
+                $listingName
+            );
+
+            // Change the listing to the ineligible status.
+            $stmt = $this->pdo->prepare(
+                'UPDATE listings
+                 SET listing_status = ?
+                 WHERE listing_id = ?'
+            );
+
+            $stmt->execute([
+                $status,
+                $listingId
+            ]);
+
+            // -----------------------------------------
+            // 5. Verify the original database record.
+            // -----------------------------------------
+
+            $before = $this->listingRecord($listingId);
+
+            $this->assertSame(
+                $status,
+                $before['listing_status']
+            );
+
+            $this->assertNull(
+                $before['renewed_at']
+            );
+
+            $this->assertSame(
+                $seller['id'],
+                (int) $before['seller_user_id']
+            );
+
+            // -----------------------------------------
+            // 6. Attempt to renew the ineligible listing.
+            // -----------------------------------------
+
+            $response = $this->browser->post(
+                '/pages/my-listings.php',
+                [
+                    'action' => 'renew_listing',
+                    'listing_id' => (string) $listingId,
+                    'csrf_token' => $token,
+                ]
+            );
+
+            // The backend should reject the request.
+            $this->assertSame(
+                404,
+                $response['status'],
+                "Expected HTTP 404 for {$status} listing."
+            );
+
+            // -----------------------------------------
+            // 7. Verify the database was not modified.
+            // -----------------------------------------
+
+            $after = $this->listingRecord($listingId);
+
+            // The listing must retain its original status.
+            $this->assertSame(
+                $status,
+                $after['listing_status']
+            );
+
+            // The renewal timestamp must remain NULL.
+            $this->assertNull(
+                $after['renewed_at']
+            );
+
+            // All retrieved listing fields must be unchanged.
+            $this->assertSame(
+                $before,
+                $after,
+                "The {$status} listing was unexpectedly modified."
+            );
+        }
+
+        // -----------------------------------------
+        // 8. Verify the unrelated active listing
+        //    was not modified.
+        // -----------------------------------------
+
+        $controlAfter = $this->listingRecord($controlId);
+
+        $this->assertSame(
+            $controlBefore,
+            $controlAfter
+        );
+    }
 
     // =========================================
     // TEST DATA HELPER: CREATE SELLER
