@@ -278,6 +278,7 @@
 .listing-detail__action--secondary { background: #fff; color: var(--detail-accent); border-color: var(--detail-accent); }
 .listing-detail__action--secondary span { font-size: 1.4rem; line-height: .7; }
 .listing-detail__action:disabled { opacity: .65; cursor: not-allowed; }
+a.listing-detail__action { text-decoration: none; }
 .listing-detail__integration-note {
     margin: 12px 0 0;
     color: var(--detail-muted);
