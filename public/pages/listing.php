@@ -6,6 +6,7 @@ declare(strict_types=1);
 // Install as public/pages/listing.php.
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/marketplace-image.php';
+require_once __DIR__ . '/../../includes/marketplace-activity.php';
 startSession();
 
 /** Escape text and attribute values from the database before rendering HTML. */
@@ -181,6 +182,26 @@ if ($listingId === false) {
         $images = [];
         $listingReviews = [];
     }
+}
+
+// =========================================
+// RECORD LISTING VIEW ACTIVITY
+// =========================================
+// Only a successfully loaded, available listing viewed by an
+// authenticated user should generate a recommendation signal.
+// The helper independently excludes own-listing views, verifies
+// listing/seller eligibility, and deduplicates within 15 minutes.
+if (
+    $listing !== null
+    && isLoggedIn()
+    && isset($_SESSION['user_id'])
+    && (int) $_SESSION['user_id'] > 0
+) {
+    recordListingView(
+        $pdo,
+        (int) $_SESSION['user_id'],
+        (int) $listing['listing_id']
+    );
 }
 
 $defaultImage = '/assets/images/listing/listing-default-img.jpg';
