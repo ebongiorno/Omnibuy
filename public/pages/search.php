@@ -4,6 +4,7 @@ startSession();
 
 require_once __DIR__ . '/../../db_connect.php';
 require_once __DIR__ . '/../../includes/marketplace-image.php';
+require_once __DIR__ . '/../../includes/marketplace-activity.php';
 
 // =========================================
 // SEARCH INPUT
@@ -500,6 +501,9 @@ function searchPaginationUrl(array $query, int $page): string
     return '/pages/search.php?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
 }
 
+// Track only after the item results query completes successfully.
+$itemSearchSucceeded = false;
+
 // =========================================
 // ITEM SEARCH
 // =========================================
@@ -621,6 +625,7 @@ if (
         $listings = executeWithRetry(
             $pdo, $sql, $params, 2, 2, ['page_limit', 'page_offset']
         );
+        $itemSearchSucceeded = true;
 
     } catch (PDOException $e) {
         $searchError = true;
@@ -632,6 +637,32 @@ if (
     }
 }
 
+
+// =========================================
+// RECORD ITEM SEARCH ACTIVITY
+// =========================================
+// An intentional keyword search is different from navigating existing
+// results. Search controls submit sort/filter/page parameters, so those
+// requests do not produce new interest signals.
+// The helper also deduplicates repeated queries within five minutes.
+$isNewItemSearch =
+    $itemSearchSucceeded
+    && $searchType === 'items'
+    && $searchQuery !== ''
+    && isset($_SESSION['user_id'])
+    && filter_var($_SESSION['user_id'], FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1],
+    ]) !== false
+    && !array_intersect(
+        ['page', 'sort', 'condition', 'fulfillment', 'category',
+         'min_price', 'max_price', 'zip', 'radius', 'browse'],
+        array_keys($_GET)
+    );
+
+if ($isNewItemSearch) {
+    // The helper logs write failures and does not interrupt search results.
+    recordSearchActivity($pdo, (int) $_SESSION['user_id'], $searchQuery);
+}
 
 // =========================================
 // SELLER PROFILE SEARCH
