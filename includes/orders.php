@@ -44,6 +44,14 @@ function loadBuyerOrders(PDO $pdo, int $buyerId): array
         SELECT
             oi.order_id, oi.order_item_id, oi.listing_id, oi.quantity,
             oi.unit_price, oi.fulfillment_type, oi.item_status, oi.shipping_cost,
+            EXISTS (
+                SELECT 1 FROM listing_reviews lr
+                WHERE lr.order_item_id = oi.order_item_id AND lr.reviewer_user_id = o.buyer_user_id
+            ) AS has_listing_review,
+            EXISTS (
+                SELECT 1 FROM user_reviews ur
+                WHERE ur.order_item_id = oi.order_item_id AND ur.reviewer_user_id = o.buyer_user_id
+            ) AS has_seller_review,
             l.item_name, sp.store_name,
             (
                 SELECT li.image_url
@@ -53,6 +61,7 @@ function loadBuyerOrders(PDO $pdo, int $buyerId): array
                 LIMIT 1
             ) AS image_url
         FROM order_items oi
+        JOIN orders o ON o.order_id = oi.order_id
         JOIN listings l ON l.listing_id = oi.listing_id
         LEFT JOIN seller_profiles sp ON sp.user_id = l.seller_user_id
         WHERE oi.order_id IN ($placeholders)

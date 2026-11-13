@@ -1,0 +1,157 @@
+/* Write a review page and seller reviews on profiles */
+
+.review-card {
+  max-width: 600px;
+}
+
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-surface-secondary);
+}
+
+.review-item img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-input);
+}
+
+.review-item__name {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.review-item__meta {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.review-item__meta a {
+  color: var(--color-primary);
+}
+
+/* Star picker: radios in reverse order so "this star and the ones before
+   it" can be highlighted with the ~ sibling selector, no JavaScript. */
+.review-rating {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.review-rating input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.review-rating label {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-border);
+  cursor: pointer;
+}
+
+.review-rating input:checked ~ label,
+.review-rating label:hover,
+.review-rating label:hover ~ label {
+  color: #bd8019;
+}
+
+.review-rating input:focus-visible + label {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.review-stars {
+  color: #bd8019;
+  letter-spacing: 0.1em;
+}
+
+.review-saved {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.review-saved__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.review-saved__text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Profile: reviews of this seller */
+.profile-reviews {
+  margin-top: var(--space-8);
+}
+
+.profile-reviews__summary {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+.profile-reviews__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.profile-review {
+  padding: var(--space-4) var(--space-6);
+}
+
+.profile-review + .profile-review {
+  border-top: 1px solid var(--color-border);
+}
+
+.profile-review__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.profile-review__author {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.profile-review__title {
+  margin: var(--space-2) 0 0;
+  font-size: 1rem;
+}
+
+.profile-review__text {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.profile-review__item {
+  margin: var(--space-2) 0 0;
+  font-size: 0.875rem;
+}
+
+.profile-review__item a {
+  color: var(--color-primary);
+}
+
