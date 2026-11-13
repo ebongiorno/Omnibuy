@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../db_connect.php';
+require_once __DIR__ . '/../../includes/marketplace-image.php';
 
 startSession();
 
@@ -128,18 +129,25 @@ $listings = [];
 if ($isLoggedIn) {
     $stmt = $pdo->prepare(
         "SELECT
-            listing_id,
-            item_name,
-            price,
-            `condition`,
-            quantity,
-            fulfillment_type,
-            listing_status,
-            created_at,
-            renewed_at
-         FROM listings
-         WHERE seller_user_id = :seller_user_id
-         ORDER BY created_at DESC, listing_id DESC"
+            l.listing_id,
+            l.item_name,
+            l.price,
+            l.`condition`,
+            l.quantity,
+            l.fulfillment_type,
+            l.listing_status,
+            l.created_at,
+            l.renewed_at,
+            (
+                SELECT li.image_url
+                FROM listing_images AS li
+                WHERE li.listing_id = l.listing_id
+                ORDER BY li.display_order ASC, li.listing_image_id ASC
+                LIMIT 1
+            ) AS image_url
+        FROM listings AS l
+        WHERE l.seller_user_id = :seller_user_id
+        ORDER BY l.created_at DESC, l.listing_id DESC"
     );
 
     $stmt->execute([
@@ -249,6 +257,28 @@ include $header;
                 <?php foreach ($listings as $listing): ?>
 
                     <article class="my-listings__item">
+                        <?php
+                            $imageUrl = marketplaceImageUrl(
+                                $listing['image_url'] ?? null
+                            );
+                        ?>
+
+                        <div class="my-listings__image">
+                            <img
+                                src="<?= htmlspecialchars(
+                                    $imageUrl,
+                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                    'UTF-8'
+                                ) ?>"
+                                alt="<?= htmlspecialchars(
+                                    (string) $listing['item_name'],
+                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                    'UTF-8'
+                                ) ?>"
+                                loading="lazy"
+                                data-image-fallback
+                            >
+                        </div>
 
                         <h2>
                             <?= htmlspecialchars(
@@ -417,6 +447,7 @@ include $header;
     <?php endif; ?>
 
 </section>
+<script src="/assets/js/image-fallback.js" defer></script>
 
 <?php
 
