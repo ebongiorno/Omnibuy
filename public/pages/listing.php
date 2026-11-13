@@ -429,6 +429,14 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
                                         <span data-wishlist-icon aria-hidden="true">&#9825;</span>
                                         <span data-wishlist-label>Checking Wishlist...</span>
                                     </button>
+                                    <?php // Only buyers can start conversations for a seller's listing. ?>
+                                    <?php if ((int) ($_SESSION['user_id'] ?? 0) !== (int) $listing['seller_user_id']): ?>
+                                        <a
+                                            href="/pages/conversation.php?listing_id=<?= (int) $listing['listing_id'] ?>"
+                                            class="listing-detail__action listing-detail__action--secondary"
+                                            style="text-decoration: none; cursor: pointer;"
+                                        >Message Seller</a>
+                                    <?php endif; ?>
                                 </div>
                                 <p class="listing-detail__purchase-note" data-wishlist-feedback role="status" aria-live="polite"></p>
                             </section>
