@@ -215,3 +215,9 @@
 .order-item__cancel:hover {
   text-decoration: underline;
 }
+
+.order-item__review {
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}

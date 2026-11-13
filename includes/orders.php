@@ -51,6 +51,14 @@ function loadBuyerOrders(PDO $pdo, int $buyerId): array
                 AND oi.return_window_days > 0
                 AND NOW() <= DATE_ADD(o.created_at, INTERVAL oi.return_window_days DAY)
             ) AS can_cancel,
+            EXISTS (
+                SELECT 1 FROM listing_reviews lr
+                WHERE lr.order_item_id = oi.order_item_id AND lr.reviewer_user_id = o.buyer_user_id
+            ) AS has_listing_review,
+            EXISTS (
+                SELECT 1 FROM user_reviews ur
+                WHERE ur.order_item_id = oi.order_item_id AND ur.reviewer_user_id = o.buyer_user_id
+            ) AS has_seller_review,
             l.item_name, sp.store_name,
             (
                 SELECT li.image_url
