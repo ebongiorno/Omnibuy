@@ -26,6 +26,11 @@ if (!isset($isLoggedIn) && session_status() === PHP_SESSION_ACTIVE && isset($_SE
 
 $isLoggedIn = $isLoggedIn ?? false;
 $currentUser = $currentUser ?? null;
+// Pages that already connected to the database get the cart badge for free.
+if (!isset($cartCount) && $isLoggedIn && isset($pdo) && $pdo instanceof PDO && isset($_SESSION['user_id'])) {
+    require_once __DIR__ . '/../../includes/cart.php';
+    $cartCount = cartItemCount($pdo, (int) $_SESSION['user_id']);
+}
 $cartCount = $cartCount ?? 0;
 $unreadCount = $unreadCount ?? 0;
 
@@ -122,7 +127,7 @@ function navActive(string $key, string $activeNav): string
         <?php endif; ?>
       </a>
 
-      <a class="icon-link" href="/cart.php" aria-label="Cart">
+      <a class="icon-link" href="/pages/cart.php" aria-label="Cart">
         <i class="fa-solid fa-cart-shopping"></i>
         <span class="icon-link__label">Cart</span>
         <?php if ($cartCount > 0): ?>

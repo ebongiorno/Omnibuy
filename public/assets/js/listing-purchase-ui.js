@@ -1,4 +1,4 @@
-/* UC-25 Phase 3 - quantity selection UI only; no API requests or cart/wishlist changes. */
+/* UC-25 quantity stepper. The input is submitted with the Add to Cart form; cart.php revalidates it. */
 (() => {
     'use strict';
 
@@ -23,7 +23,7 @@
             input.value = String(quantity);
             decrease.disabled = quantity <= 1;
             increase.disabled = quantity >= maximum;
-            // Exposes the selected quantity for a teammate's future cart integration.
+            // Mirrors the selected quantity on the button (the form submits the input itself).
             // This client-side value is not authoritative; cart backend must revalidate.
             if (cartButton) cartButton.dataset.selectedQuantity = String(quantity);
         };
