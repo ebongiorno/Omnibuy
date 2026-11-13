@@ -8,6 +8,15 @@
   margin: 0 0 var(--space-2);
 }
 
+.orders-placed {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-input);
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  font-weight: 600;
+}
+
 .orders-page__count {
   margin: 0 0 var(--space-6);
   color: var(--color-text-muted);

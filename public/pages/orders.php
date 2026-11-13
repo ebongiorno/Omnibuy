@@ -20,6 +20,11 @@ include __DIR__ . '/../components/header.php';
 <section class="shell orders-page">
   <h1>My Orders</h1>
 
+  <?php $placedId = filter_var($_GET['placed'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]); ?>
+  <?php if ($placedId !== false && in_array($placedId, array_map('intval', array_column($orders, 'order_id')), true)): ?>
+    <p class="orders-placed" role="status">Thanks! Order #<?= (int) $placedId ?> has been placed.</p>
+  <?php endif; ?>
+
   <?php if ($orders === []): ?>
     <div class="orders-empty">
       <p>You haven't placed any orders yet.</p>
