@@ -1349,6 +1349,224 @@ Not yet recorded.
 **Related Jira Defect:** None
 
 
+### TC-17-06: Record and Normalize an Authenticated Item Search
+
+**Use Case:** UC-17
+
+**Test Type:** Automated Integration
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testItemSearchIsSavedWithNormalizedQueryAndTimestamp`
+
+**Objective:**
+Verify that a valid item-search event is saved with its authenticated user, normalized query, search type, and timestamp.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary test user exists and the MySQL activity tables are available.
+
+**Test Data:**
+- User ID: temporary test user; query: `  Mechanical   Keyboard  `.
+
+**Test Steps:**
+1. Call `recordSearchActivity()` with the test user and padded keyword.
+2. Query `search_history` for the temporary user.
+3. Check the stored user ID, normalized query, search type, and timestamp.
+
+**Expected Result:**
+- Exactly one activity row is inserted.
+- The query is saved as `Mechanical Keyboard`; `search_type` is `items`.
+- The stored user ID is correct and `searched_at` is populated.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-17-07: Prevent Duplicate Searches Within Five Minutes
+
+**Use Case:** UC-17
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testSameSearchIsDeduplicatedWithinFiveMinutes`
+
+**Objective:**
+Verify that a repeated search by the same user is not counted twice within the five-minute window, including differences in capitalization and whitespace.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary test user and a writable `search_history` table are available.
+
+**Test Data:**
+- First query: `Wireless Keyboard`; repeated query: ` wireless   keyboard `.
+
+**Test Steps:**
+1. Record the first search using `recordSearchActivity()`.
+2. Immediately submit the equivalent search with different case and spacing.
+3. Count search-history rows for the temporary user.
+
+**Expected Result:**
+- The first call returns `true` and the repeated call returns `false`.
+- Exactly one search-history row exists for the user.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-17-08: Allow a Search After the Five-Minute Deduplication Window
+
+**Use Case:** UC-17
+
+**Test Type:** Automated Integration
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testSameSearchCanBeRecordedAfterFiveMinutes`
+
+**Objective:**
+Verify that a new search is recorded after the previous matching search falls outside the five-minute window.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary test user exists and database timestamps can be adjusted within the test transaction.
+
+**Test Data:**
+- Keyword: `headphones`; previous event backdated six minutes.
+
+**Test Steps:**
+1. Record the initial search.
+2. Backdate its `searched_at` timestamp by six minutes.
+3. Call `recordSearchActivity()` again with the same query.
+4. Count the recorded searches for the temporary user.
+
+**Expected Result:**
+- Both calls return `true`.
+- Two activity rows exist because the earlier search is outside the deduplication window.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-17-09: Keep Search Activity Separate by User and Keyword
+
+**Use Case:** UC-17
+
+**Test Type:** Automated Integration
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testSearchesAreIndependentByUserAndKeyword`
+
+**Objective:**
+Verify that different keywords and different users produce independent search-history records.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- Two temporary test users exist.
+
+**Test Data:**
+- User A: `laptop`, `camera`; User B: `laptop`.
+
+**Test Steps:**
+1. Record two distinct searches for User A.
+2. Record the same first keyword for User B.
+3. Query each user's search history independently.
+
+**Expected Result:**
+- User A has two records and User B has one record.
+- Deduplication does not suppress a different keyword or another user's search.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-17-10: Reject Invalid or Oversized Search Activity
+
+**Use Case:** UC-17
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testInvalidSearchActivityIsNotSaved`
+
+**Objective:**
+Verify that invalid user IDs, blank queries, and queries exceeding the schema length are rejected without inserts.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary test user exists.
+
+**Test Data:**
+- User ID: `0`; blank/whitespace-only queries; keyword of 256 bytes.
+
+**Test Steps:**
+1. Call `recordSearchActivity()` with a nonpositive user ID.
+2. Repeat with empty and whitespace-only queries.
+3. Repeat with a 256-byte query for the test user.
+4. Check for any inserted history records.
+
+**Expected Result:**
+- Every invalid call returns `false`.
+- No search-history rows are inserted for the test user.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-17-11: Handle Search Activity Database Write Failures Safely
+
+**Use Case:** UC-17
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testSearchTrackingWriteErrorIsHandledWithoutThrowing`
+
+**Objective:**
+Verify that activity recording fails safely without interrupting a calling page when PDO throws an insertion error.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A controlled PDO test double throws `PDOException` on `prepare()`.
+
+**Test Data:**
+- Valid item search and simulated database failure.
+
+**Test Steps:**
+1. Call `recordSearchActivity()` using the failing PDO test double.
+2. Inspect the function return value and whether an exception escapes.
+
+**Expected Result:**
+- The function catches the PDO error, logs it, and returns `false`.
+- No uncaught database exception is propagated to the caller.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
 ## UC-18: Search Seller Profiles
 ### TC-18-01: Search for an Existing Seller
 
@@ -4204,6 +4422,330 @@ requested listing ID.
 
 **Actual Result:**
 Not yet recorded.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+### TC-25-06: Record a Valid Authenticated Listing View
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testEligibleListingViewIsSavedWithTimestamp`
+
+**Objective:**
+Verify that viewing an active listing owned by another active user creates a listing-view activity record.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary active seller, buyer, category, and active listing exist.
+
+**Test Data:**
+- Authenticated buyer ID; active listing ID belonging to another seller.
+
+**Test Steps:**
+1. Call `recordListingView()` with the buyer and active listing IDs.
+2. Retrieve the buyer's `listing_views` records.
+3. Compare the stored IDs and timestamp to the fixture.
+
+**Expected Result:**
+- The helper returns `true` and inserts exactly one record.
+- User ID and listing ID match; `viewed_at` is populated.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-07: Prevent Duplicate Listing Views Within Fifteen Minutes
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testSameListingViewIsDeduplicatedWithinFifteenMinutes`
+
+**Objective:**
+Verify that refreshing the same listing does not create another activity event within fifteen minutes.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- An active listing owned by a temporary seller and a separate buyer exist.
+
+**Test Data:**
+- Same buyer and listing submitted twice in succession.
+
+**Test Steps:**
+1. Record a valid listing view.
+2. Immediately call `recordListingView()` again for the same pair.
+3. Count the buyer's recorded views.
+
+**Expected Result:**
+- The first call returns `true`; the second returns `false`.
+- Exactly one view exists for the buyer/listing pair.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-08: Allow a Listing View After the Fifteen-Minute Window
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testListingViewCanBeRecordedAfterFifteenMinutes`
+
+**Objective:**
+Verify that a view may be recorded again once an earlier matching view is outside the fifteen-minute deduplication window.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary active seller, buyer, and listing exist.
+
+**Test Data:**
+- Previous view backdated sixteen minutes.
+
+**Test Steps:**
+1. Record the initial buyer view.
+2. Backdate its `viewed_at` timestamp by sixteen minutes.
+3. Record another view of the same listing.
+4. Count the buyer's view records.
+
+**Expected Result:**
+- Both view calls return `true`.
+- Two view rows exist because the first event is outside the window.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-09: Exclude Sellers Viewing Their Own Listings
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testSellerOwnListingViewIsNotSaved`
+
+**Objective:**
+Verify that a seller opening their own listing does not generate a buyer-interest signal.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary active seller owns an active listing.
+
+**Test Data:**
+- Viewer ID equals the listing's `seller_user_id`.
+
+**Test Steps:**
+1. Call `recordListingView()` using the seller's own user ID and listing ID.
+2. Inspect the seller's `listing_views` records.
+
+**Expected Result:**
+- The helper returns `false`.
+- No view row is created for the seller viewing their own listing.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-10: Exclude Inactive Listings From View Tracking
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testInactiveListingsDoNotGenerateViews`
+
+**Objective:**
+Verify that sold, hidden, archived, and draft listings cannot create new listing-view activity.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- An active seller, separate buyer, and temporary listing exist.
+
+**Test Data:**
+- Listing statuses: `sold`, `hidden`, `archived`, `draft`.
+
+**Test Steps:**
+1. Change the test listing to each inactive status in turn.
+2. Attempt to record the buyer's view for each status.
+3. Inspect the buyer's view history.
+
+**Expected Result:**
+- Every attempt returns `false`.
+- No views are recorded while the listing is inactive.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-11: Exclude Listings From Inactive Seller Accounts
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testInactiveSellerListingsDoNotGenerateViews`
+
+**Objective:**
+Verify that an active listing cannot generate views while its seller is suspended or restricted.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- An active listing and separate buyer exist; the seller's account status can be modified in the test transaction.
+
+**Test Data:**
+- Seller states: `suspended`, `restricted`, then `active`.
+
+**Test Steps:**
+1. Set the seller account to suspended and attempt a view.
+2. Repeat with the restricted account state.
+3. Confirm no views were recorded.
+4. Restore the seller to active and repeat the view.
+
+**Expected Result:**
+- Suspended/restricted states yield `false` and zero records.
+- Restoring active status allows one eligible view.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-12: Keep Listing Views Separate by Buyer and Listing
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testListingViewsAreIndependentByBuyerAndListing`
+
+**Objective:**
+Verify that view deduplication applies to a specific user/listing pair, not to an entire buyer or listing.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- One active seller has two active listings; two separate buyers exist.
+
+**Test Data:**
+- Buyer A views Listings A and B; Buyer B views Listing A.
+
+**Test Steps:**
+1. Record the three distinct buyer/listing interactions.
+2. Inspect each buyer's stored views.
+3. Verify that the correct listing IDs belong to the correct buyers.
+
+**Expected Result:**
+- All three calls return `true`.
+- Buyer A has two rows; Buyer B has one row for Listing A.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-13: Reject Invalid or Unknown Listing View Identifiers
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testInvalidListingViewIdentifiersAreRejected`
+
+**Objective:**
+Verify that invalid user IDs, invalid listing IDs, and nonexistent listings cannot generate view rows.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A temporary seller, buyer, and active listing exist.
+
+**Test Data:**
+- Invalid user ID `0`; listing ID `0`; nonexistent listing ID.
+
+**Test Steps:**
+1. Attempt to record a view with user ID 0.
+2. Attempt to record a view with listing ID 0.
+3. Attempt to record a view with a nonexistent listing ID.
+4. Inspect the buyer's view history.
+
+**Expected Result:**
+- Every attempt returns `false`.
+- No invalid view records are created.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-14: Handle Listing View Database Write Failures Safely
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Integration / Negative Testing
+
+**PHPUnit Source:** `tests/Functional/MarketplaceActivityTest.php`
+**Automated Test:** `testListingViewWriteErrorIsHandledWithoutThrowing`
+
+**Objective:**
+Verify that a database insertion failure does not propagate an uncaught exception from view tracking.
+
+**Preconditions:**
+- OmniBuy test database is accessible via Docker/PDO.
+- A controlled PDO test double throws `PDOException` on `prepare()`.
+
+**Test Data:**
+- Valid buyer/listing identifiers and simulated database failure.
+
+**Test Steps:**
+1. Call `recordListingView()` using the failing PDO test double.
+2. Inspect the helper's return value and exception behavior.
+
+**Expected Result:**
+- The helper catches and logs the PDO error and returns `false`.
+- No uncaught database exception reaches the caller.
+
+**Actual Result:**
+Not yet recorded; run the new PHPUnit test class in Docker.
 
 **Status:** Not Run
 
