@@ -20,6 +20,16 @@ $allowedImageTypes = [
 $maxImageSize = 10 * 1024 * 1024;
 $maxPhotos = 10;
 
+$isEditMode = isset($_SESSION['listing_edit']['listing_id'])
+    && filter_var(
+        $_SESSION['listing_edit']['listing_id'],
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1]]
+    ) !== false;
+
+$existingPhotos = $isEditMode
+    ? ($_SESSION['listing_edit']['existing_photos'] ?? [])
+    : [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $title = trim((string) ($_POST['title'] ?? ''));
@@ -55,8 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         !isset($photos['error']) ||
         !is_array($photos['error'])
     ) {
-        $errors['photos'] =
-            'Please upload at least one photo.';
+        if (!$isEditMode || empty($existingPhotos)) {
+            $errors['photos'] =
+                'Please upload at least one photo.';
+        }
     } else {
 
         $photoCount = count($photos['error']);
@@ -110,7 +122,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
 
-        if (empty($validPhotos) && !isset($errors['photos'])) {
+        if (
+            empty($validPhotos) &&
+            !isset($errors['photos']) &&
+            (!$isEditMode || empty($existingPhotos))
+        ) {
             $errors['photos'] =
                 'Please upload at least one photo.';
         }
@@ -285,7 +301,7 @@ include __DIR__ . '/../components/header.php';
                 name="photos[]"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                required
+                <?= $isEditMode && !empty($existingPhotos) ? '' : 'required' ?>
             >
 
             <p class="create-listing__hint">
