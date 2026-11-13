@@ -198,6 +198,19 @@ if (!$galleryImages) {
 $imageCount = count($galleryImages);
 $primaryImage = $galleryImages[0];
 $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing | OmniBuy';
+
+// What the Add to Cart button does: 'buy' (submit to the cart), 'login'
+// (a logged-out visitor), 'own' (the seller's own listing) or 'unavailable'.
+$cartState = 'unavailable';
+if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listing['quantity'] > 0) {
+    if (!isLoggedIn()) {
+        $cartState = 'login';
+    } elseif ((int) $listing['seller_user_id'] === (int) $_SESSION['user_id']) {
+        $cartState = 'own';
+    } else {
+        $cartState = 'buy';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -343,9 +356,8 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                                 <?php endif; ?>
                             </section>
 
-                            <!-- Phase 3: presentation and local quantity selection only.
-                                 Cart/Wishlist requests, authentication, and inventory enforcement
-                                 belong to the teammates implementing those features. -->
+                            <!-- Add to Cart posts to cart.php, which re-checks stock and
+                                 availability; the quantity here is only the buyer's request. -->
                             <section class="listing-detail__purchase" aria-labelledby="listing-purchase-heading">
                                 <h2 id="listing-purchase-heading">Purchase options</h2>
 
@@ -359,6 +371,8 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                                                 id="listing-quantity"
                                                 class="listing-detail__quantity-input"
                                                 data-quantity-value
+                                                name="quantity"
+                                                form="listing-add-to-cart"
                                                 value="1"
                                                 min="1"
                                                 max="<?= (int) $listing['quantity'] ?>"
@@ -378,14 +392,33 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                                 <?php endif; ?>
 
                                 <div class="listing-detail__actions" data-listing-actions data-listing-id="<?= (int) $listing['listing_id'] ?>">
-                                    <button
-                                        type="button"
-                                        class="listing-detail__action listing-detail__action--primary"
-                                        data-add-to-cart
-                                        data-selected-quantity="1"
-                                        disabled
-                                        title="Cart integration is pending"
-                                    >Add to Cart</button>
+                                    <?php if ($cartState === 'buy'): ?>
+                                        <form id="listing-add-to-cart" method="post" action="/pages/cart.php" hidden>
+                                            <input type="hidden" name="csrf_token" value="<?= listingEscape(csrfToken()) ?>">
+                                            <input type="hidden" name="action" value="add">
+                                            <input type="hidden" name="listing_id" value="<?= (int) $listing['listing_id'] ?>">
+                                        </form>
+                                        <button
+                                            type="submit"
+                                            form="listing-add-to-cart"
+                                            class="listing-detail__action listing-detail__action--primary"
+                                            data-add-to-cart
+                                            data-selected-quantity="1"
+                                        >Add to Cart</button>
+                                    <?php elseif ($cartState === 'login'): ?>
+                                        <a
+                                            class="listing-detail__action listing-detail__action--primary"
+                                            data-add-to-cart
+                                            href="/pages/login.php?redirect=<?= urlencode('/pages/listing.php?id=' . (int) $listing['listing_id']) ?>"
+                                        >Log In to Buy</a>
+                                    <?php else: ?>
+                                        <button
+                                            type="button"
+                                            class="listing-detail__action listing-detail__action--primary"
+                                            data-add-to-cart
+                                            disabled
+                                        ><?= $cartState === 'own' ? 'Your Listing' : 'Add to Cart' ?></button>
+                                    <?php endif; ?>
                                     <button
                                         type="button"
                                         class="listing-detail__action listing-detail__action--secondary"
@@ -398,7 +431,6 @@ $pageTitle = $listing !== null ? $listing['item_name'] . ' | OmniBuy' : 'Listing
                                     </button>
                                 </div>
                                 <p class="listing-detail__purchase-note" data-wishlist-feedback role="status" aria-live="polite"></p>
-                                <p class="listing-detail__integration-note" role="note">Add to Cart is not yet connected.</p>
                             </section>
                         </div>
                     </div>

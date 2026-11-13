@@ -328,7 +328,7 @@ final class ListingDetailTest extends DatabaseTestCase
         });
     }
 
-    public function testFixedPriceQuantityAndDisabledActionButtons(): void
+    public function testFixedPriceQuantityAndLoginToBuyButton(): void
     {
         $listing = $this->activeListing("l.sale_type = 'fixed_price' AND l.quantity > 0");
         $xpath = $this->xpath($this->requestListing((int) $listing['listing_id']));
@@ -345,7 +345,14 @@ final class ListingDetailTest extends DatabaseTestCase
         self::assertSame((string) $listing['quantity'], $this->elementAt($inputs)->getAttribute('max'));
         self::assertSame('1', $this->elementAt($inputs)->getAttribute('value'));
 
-        $this->assertButtonsArePlaceholders($xpath);
+        // Logged out, Add to Cart is a link to log in and come back here.
+        $cartLinks = $xpath->query('//a[@data-add-to-cart]');
+        self::assertCount(1, $cartLinks);
+        self::assertSame(
+            '/pages/login.php?redirect=' . urlencode('/pages/listing.php?id=' . (int) $listing['listing_id']),
+            $this->elementAt($cartLinks)->getAttribute('href')
+        );
+        self::assertCount(1, $xpath->query('//*[@data-add-to-wishlist][@disabled]'));
     }
 
     public function testAuctionListingDoesNotShowDirectPurchaseQuantitySelector(): void
