@@ -6,6 +6,7 @@ declare(strict_types=1);
 // Install as public/pages/listing.php.
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/marketplace-image.php';
+require_once __DIR__ . '/../../includes/listing-validation.php';
 startSession();
 
 /** Escape text and attribute values from the database before rendering HTML. */
@@ -87,6 +88,7 @@ if ($listingId === false) {
                 l.price,
                 l.`condition`,
                 l.quantity,
+                l.return_policy_days,
                 l.created_at,
                 c.category_name,
                 c.parent_category_id,
@@ -443,6 +445,7 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
                                 <div><dt>Condition</dt><dd><?= listingEscape(listingHumanLabel((string) $listing['condition'])) ?></dd></div>
                                 <div><dt>Category</dt><dd><?= listingEscape($listing['category_name'] ?? 'Uncategorized') ?></dd></div>
                                 <div><dt>Sale type</dt><dd><?= $listing['sale_type'] === 'auction' ? 'Auction' : 'Fixed price' ?></dd></div>
+                                <div><dt>Return policy</dt><dd data-return-policy><?= listingEscape(formatReturnPolicy((int) $listing['return_policy_days'])) ?></dd></div>
                             </dl>
                         </section>
 

@@ -224,6 +224,9 @@ CREATE TABLE listings (
 
     quantity INT UNSIGNED NOT NULL,
 
+    -- Days a buyer can cancel/return after buying; 0 = no returns.
+    return_policy_days TINYINT UNSIGNED NOT NULL DEFAULT 0,
+
     listing_status ENUM(
         'draft',
         'active',
@@ -262,7 +265,10 @@ CREATE TABLE listings (
         CHECK (price > 0),
 
     CONSTRAINT chk_listings_quantity
-        CHECK (quantity >= 0)
+        CHECK (quantity >= 0),
+
+    CONSTRAINT chk_listings_return_policy_days
+        CHECK (return_policy_days <= 30)
 )
 ENGINE = InnoDB
 DEFAULT CHARSET = utf8mb4
@@ -517,6 +523,10 @@ CREATE TABLE order_items (
         NOT NULL
         DEFAULT 0.00
         CHECK (shipping_cost >= 0),
+    -- The listing's return policy when bought, so later edits don't change it.
+    return_window_days TINYINT UNSIGNED NOT NULL DEFAULT 0
+        CHECK (return_window_days <= 30),
+    cancelled_at TIMESTAMP NULL DEFAULT NULL,
 
     CONSTRAINT chk_meetup_shipping_cost
         CHECK (

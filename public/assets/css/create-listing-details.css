@@ -38,3 +38,19 @@
   padding: 12px 24px;
   cursor: pointer;
 }
+.listing-details__field input.listing-details__range {
+  padding: 0;
+  border: 0;
+  accent-color: var(--color-primary);
+}
+
+.listing-details__range-value {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.listing-details__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}

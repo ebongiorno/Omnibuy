@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/orders.php';
+require_once __DIR__ . '/listing-validation.php';
 
 const CART_ADDRESS_FIELDS = ['address_line_1', 'address_line_2', 'city', 'state_name', 'zip_code', 'country'];
 
@@ -200,7 +201,7 @@ function loadCart(PDO $pdo, int $userId, bool $lockListings = false): array
         SELECT
             ci.listing_id, ci.quantity,
             l.item_name, l.price, l.quantity AS stock, l.listing_status, l.sale_type,
-            l.fulfillment_type, l.shipping_cost, l.seller_user_id,
+            l.fulfillment_type, l.shipping_cost, l.seller_user_id, l.return_policy_days,
             u.account_status AS seller_status,
             sp.store_name,
             (
@@ -433,8 +434,11 @@ function placeOrder(PDO $pdo, int $userId, array $billing, ?array $shipping): ar
         $orderId = (int) $pdo->lastInsertId();
 
         $insertItem = $pdo->prepare('
-            INSERT INTO order_items (order_id, listing_id, quantity, unit_price, fulfillment_type, shipping_cost)
-            VALUES (:order_id, :listing_id, :quantity, :unit_price, :fulfillment_type, :shipping_cost)
+            INSERT INTO order_items (
+                order_id, listing_id, quantity, unit_price, fulfillment_type, shipping_cost, return_window_days
+            ) VALUES (
+                :order_id, :listing_id, :quantity, :unit_price, :fulfillment_type, :shipping_cost, :return_window_days
+            )
         ');
         $decrementStock = $pdo->prepare('
             UPDATE listings
@@ -451,6 +455,8 @@ function placeOrder(PDO $pdo, int $userId, array $billing, ?array $shipping): ar
                 'unit_price' => $item['price'],
                 'fulfillment_type' => $item['fulfillment_type'],
                 'shipping_cost' => $item['line_shipping'],
+                // Snapshot: the seller changing the listing later doesn't change this purchase.
+                'return_window_days' => (int) $item['return_policy_days'],
             ]);
 
             // MySQL applies SET left to right, so the IF sees the new quantity.
