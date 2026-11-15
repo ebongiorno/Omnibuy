@@ -4750,3 +4750,87 @@ Not yet recorded; run the new PHPUnit test class in Docker.
 **Status:** Not Run
 
 **Related Jira Defect:** None
+
+
+### TC-25-15: Display Parent Category and Subcategory Separately
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Functional / Database Integration
+
+**Objective:**
+Verify that a listing assigned to a subcategory displays its parent category under Category and its assigned child category under Subcategory in the About this item specifications.
+
+**Preconditions:**
+- OmniBuy is running in Docker with an isolated test database.
+- Categories include at least one parent-child relationship.
+- An active seller account exists.
+
+**Test Data:**
+- A parent category and its child category selected from MySQL (for example, Electronics and Computers).
+- A temporary active listing assigned to the child category.
+
+**Test Steps:**
+1. Retrieve a parent-child category pair from the database.
+2. Create a temporary active listing assigned to the child category.
+3. Request the listing detail page over HTTP.
+4. Locate the Category and Subcategory rows within About this item.
+5. Compare both displayed values with the parent and child names stored in MySQL.
+6. Clean up the temporary listing.
+
+**Expected Result:**
+- Exactly one Category row displays the parent category name.
+- Exactly one Subcategory row displays the assigned child category name.
+- The two values are not incorrectly swapped or combined.
+- The listing page loads without PHP or database errors.
+
+**Automated PHPUnit Test:** `testSubcategoryListingDisplaysParentCategoryAndSubcategory` in `tests/Functional/ListingDetailTest.php`
+
+**Actual Result:**
+Not yet recorded; run the updated PHPUnit test against the corresponding listing-detail implementation.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None
+
+
+### TC-25-16: Hide Subcategory Field for a Parent-Only Listing
+
+**Use Case:** UC-25
+
+**Test Type:** Automated Functional / Database Integration / Boundary Testing
+
+**Objective:**
+Verify that a listing assigned directly to a top-level category displays its category name without an empty or misleading Subcategory row.
+
+**Preconditions:**
+- OmniBuy is running in Docker with an isolated test database.
+- A top-level category exists (`parent_category_id IS NULL`).
+- An active seller account exists.
+
+**Test Data:**
+- A root category retrieved from MySQL (for example, Books).
+- A temporary active listing assigned directly to that root category.
+
+**Test Steps:**
+1. Retrieve a top-level category from the database.
+2. Create a temporary active listing assigned directly to that category.
+3. Request its listing detail page over HTTP.
+4. Inspect the Category and Subcategory specification rows.
+5. Compare the Category value with the database record.
+6. Clean up the temporary listing.
+
+**Expected Result:**
+- Exactly one Category row displays the root category name.
+- No Subcategory row is rendered.
+- No blank or incorrect subcategory value appears.
+- The listing page loads without PHP or database errors.
+
+**Automated PHPUnit Test:** `testParentCategoryListingDoesNotDisplaySubcategoryField` in `tests/Functional/ListingDetailTest.php`
+
+**Actual Result:**
+Not yet recorded; run the updated PHPUnit test against the corresponding listing-detail implementation.
+
+**Status:** Not Run
+
+**Related Jira Defect:** None

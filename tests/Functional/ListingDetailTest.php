@@ -59,6 +59,68 @@ final class ListingDetailTest extends DatabaseTestCase
         }
     }
 
+    /** TC-25-06: A child category displays its parent and child in separate spec rows. */
+    public function testSubcategoryListingDisplaysParentCategoryAndSubcategory(): void
+    {
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $category = $db->query("
+                SELECT child.category_id AS child_id, child.category_name AS child_name,
+                       parent.category_name AS parent_name
+                FROM categories AS child
+                INNER JOIN categories AS parent
+                    ON parent.category_id = child.parent_category_id
+                ORDER BY child.category_id ASC LIMIT 1
+            ")->fetch(PDO::FETCH_ASSOC);
+            self::assertIsArray($category, 'A parent and child category are required.');
+
+            $listingId = $this->insertFixtureListing(
+                $db, $created, $this->findActiveSeller($db), 'fixed_price', (int) $category['child_id']
+            );
+            $xpath = $this->xpath($this->requestListing($listingId));
+            $specs = '//*[@id="listing-description-heading"]/following-sibling::dl[1]';
+            $categoryRows = $xpath->query($specs . '/div[dt[normalize-space(.)="Category"]]');
+            $subcategoryRows = $xpath->query($specs . '/div[dt[normalize-space(.)="Subcategory"]]');
+
+            self::assertCount(1, $categoryRows);
+            self::assertCount(1, $subcategoryRows);
+            self::assertSame(
+                (string) $category['parent_name'],
+                trim((string) $xpath->evaluate('string(./dd)', $this->elementAt($categoryRows)))
+            );
+            self::assertSame(
+                (string) $category['child_name'],
+                trim((string) $xpath->evaluate('string(./dd)', $this->elementAt($subcategoryRows)))
+            );
+        });
+    }
+
+    /** TC-25-07: A parent-only category must not create an empty subcategory row. */
+    public function testParentCategoryListingDoesNotDisplaySubcategoryField(): void
+    {
+        $this->withListingFixture(function (PDO $db, array &$created): void {
+            $category = $db->query("
+                SELECT category_id, category_name FROM categories
+                WHERE parent_category_id IS NULL
+                ORDER BY category_id ASC LIMIT 1
+            ")->fetch(PDO::FETCH_ASSOC);
+            self::assertIsArray($category, 'A top-level category is required.');
+
+            $listingId = $this->insertFixtureListing(
+                $db, $created, $this->findActiveSeller($db), 'fixed_price', (int) $category['category_id']
+            );
+            $xpath = $this->xpath($this->requestListing($listingId));
+            $specs = '//*[@id="listing-description-heading"]/following-sibling::dl[1]';
+            $categoryRows = $xpath->query($specs . '/div[dt[normalize-space(.)="Category"]]');
+
+            self::assertCount(1, $categoryRows);
+            self::assertSame(
+                (string) $category['category_name'],
+                trim((string) $xpath->evaluate('string(./dd)', $this->elementAt($categoryRows)))
+            );
+            self::assertCount(0, $xpath->query($specs . '/div[dt[normalize-space(.)="Subcategory"]]'));
+        });
+    }
+
     public function testListingIdSelectsTheCorrectListing(): void
     {
         $first = $this->activeListing();
@@ -546,9 +608,9 @@ final class ListingDetailTest extends DatabaseTestCase
         ]);
     }
 
-    private function insertFixtureListing(PDO $db, array &$created, int $sellerId, string $saleType = 'fixed_price'): int
+    private function insertFixtureListing(PDO $db, array &$created, int $sellerId, string $saleType = 'fixed_price', ?int $categoryId = null): int
     {
-        $categoryId = (int) $db->query('SELECT category_id FROM categories ORDER BY category_id LIMIT 1')->fetchColumn();
+        $categoryId ??= (int) $db->query('SELECT category_id FROM categories ORDER BY category_id LIMIT 1')->fetchColumn();
         self::assertGreaterThan(0, $categoryId, 'A seeded category is required.');
         return $this->insertTracked($db, $created, 'listings', [
             'seller_user_id' => $sellerId, 'category_id' => $categoryId,
