@@ -4209,7 +4209,6 @@ Not yet recorded.
 
 **Related Jira Defect:** None
 
-
 ### TC-25-06: Display Parent Category and Subcategory Separately
 
 **Use Case:** UC-25
