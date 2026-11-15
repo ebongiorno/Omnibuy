@@ -75,7 +75,7 @@ $mainCategoryId = $parentCategoryId
 
 // Load the existing photos.
 $imageStmt = $pdo->prepare(
-    "SELECT image_url
+    "SELECT listing_image_id, image_url
      FROM listing_images
      WHERE listing_id = :listing_id
      ORDER BY display_order ASC, listing_image_id ASC"
@@ -85,7 +85,7 @@ $imageStmt->execute([
     'listing_id' => $listingId,
 ]);
 
-$existingPhotos = $imageStmt->fetchAll(PDO::FETCH_COLUMN);
+$existingPhotos = $imageStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Prepare edit-specific session data.
 unset($_SESSION['listing']);
