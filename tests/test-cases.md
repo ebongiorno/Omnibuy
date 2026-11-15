@@ -1041,9 +1041,9 @@ active listings available to buyers.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Marketplace Browse: `Browse feed displays active seeded listing` passed; the browse feed displayed an eligible seeded listing.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1080,9 +1080,9 @@ marketplace browse feed.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Marketplace Browse: `Browse feed excludes inactive listings` passed; inactive listings were excluded from the displayed homepage feed.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1118,9 +1118,9 @@ without requiring a search keyword.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Marketplace Browse: `Browse all displays active seeded listing` passed; Browse All returned an active listing without a keyword.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1414,9 +1414,9 @@ Three categories with strong, weak, and zero interest; eligible listings with co
 - The final `recent` display order may place a newer lower-scored recommendation before an older higher-scored recommendation; that does not change the selected set.
 
 **Actual Result:**
-The earlier targeted and complete PHPUnit suites were confirmed passing for category-based relevance. Manual homepage testing subsequently confirmed that Electronics activity increased Electronics recommendations and later Furniture activity updated the recommended categories. The existing test's assertions should be reviewed against the final two-stage selection/display ordering.
+Personalized Recommendations: `Recent feed prioritizes higher scoring categories` passed in the complete PHPUnit suite. The test verifies category-based recommendation ranking; separate manual testing confirmed changes in displayed categories after browsing activity. The test output alone does not establish every candidate-set assertion described in the expanded steps.
 
-**Status:** Manual Pass; updated automated assertions require final regression confirmation
+**Status:** Pass (automated ranking; manual personalization verified)
 
 **Related Jira Defect:** None
 
@@ -1451,9 +1451,9 @@ Three eligible listings with equal category scores, varying effective recency, a
 - Selection and final display order are separate operations.
 
 **Actual Result:**
-The previously documented automated test passed its renewal-date and listing-ID comparisons. Its assertions should be rerun against the latest implementation after the two-stage sorting changes.
+Personalized Recommendations: `Equal scores use renewal and listing id tie breakers` passed in the complete PHPUnit suite, confirming the tested renewal-date and listing-ID ordering.
 
-**Status:** Previously Passed; latest regression run pending
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1492,9 +1492,9 @@ Guest user ID `null`; new buyer account; active listings with contrasting prices
 - Signed-in visitors still cannot see their own listings in their feed.
 
 **Actual Result:**
-Manual testing confirmed that the guest and signed-in account without activity had the same sort behavior, retrieving the appropriate newest or price-ranked results. An earlier version of this PHPUnit test passed its basic newest-fallback assertions; its expanded price-sort assertions should be confirmed in the final regression run.
+Personalized Recommendations: `Guest and new user receive newest eligible fallback` passed in the complete PHPUnit suite. Separately, manual homepage testing confirmed that guests and signed-in users without usable activity can sort the full eligible marketplace by newest or price. The testdox name alone does not establish all expanded price-sort assertions.
 
-**Status:** Manual Pass; updated automated assertions require final regression confirmation
+**Status:** Pass (automated fallback; manual full-catalog sorting verified)
 
 **Related Jira Defect:** None
 
@@ -1606,9 +1606,9 @@ A buyer with recorded category interest, eligible recommendations at different p
 - Price sorting does not select the cheapest or most expensive items from the entire marketplace for a user with category interests.
 
 **Actual Result:**
-Manual testing confirmed personalized recommendations respond to category activity and that owned listings remain excluded across sorting options. Earlier automated price-order assertions passed, but the existing automated test must be checked for an ID-set equality assertion covering the final fixed-candidate rule.
+Personalized Recommendations: `Price sort overrides recommendation relevance` passed in the complete PHPUnit suite, confirming the tested price-sorting behavior. The final fixed-set rule for users with usable category interests was also checked manually; the testdox output alone does not show whether the test asserts equality of listing-ID sets across sort choices.
 
-**Status:** Manual Pass (sorting and eligibility); fixed-candidate automated verification pending
+**Status:** Pass (automated price sorting; manual fixed-set verification)
 
 **Related Jira Defect:** None
 
@@ -1857,9 +1857,9 @@ matching active listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Exact item search returns seeded listing` passed; the exact-match search returned the expected seeded listing.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1894,9 +1894,9 @@ active item listings.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Partial item search returns expected listing` passed; the partial keyword located the expected listing.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1930,9 +1930,9 @@ when no active listing matches the keyword.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Item search displays no results state` passed; an unmatched item query displayed the expected empty state.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1967,9 +1967,9 @@ hidden, sold, archived, draft, or otherwise inactive.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Item search excludes inactive listings` passed; inactive listings were excluded from item search results.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -2041,9 +2041,9 @@ Verify that a valid item-search event is saved with its authenticated user, norm
 - The stored user ID is correct and `searched_at` is populated.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Item search is saved with normalized query and timestamp` passed; a valid item search was recorded with its normalized keyword and timestamp.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -2077,9 +2077,9 @@ Verify that a repeated search by the same user is not counted twice within the f
 - Exactly one search-history row exists for the user.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Same search is deduplicated within five minutes` passed; an equivalent repeated search did not create a duplicate event in the five-minute window.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -2114,9 +2114,9 @@ Verify that a new search is recorded after the previous matching search falls ou
 - Two activity rows exist because the earlier search is outside the deduplication window.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Same search can be recorded after five minutes` passed; an item search could be recorded again after the deduplication interval.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -2150,9 +2150,9 @@ Verify that different keywords and different users produce independent search-hi
 - Deduplication does not suppress a different keyword or another user's search.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Searches are independent by user and keyword` passed; independent users and keywords were tracked separately.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -2187,9 +2187,9 @@ Verify that invalid user IDs, blank queries, and queries exceeding the schema le
 - No search-history rows are inserted for the test user.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Invalid search activity is not saved` passed; invalid search input was rejected without a saved activity event.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -2222,9 +2222,9 @@ Verify that activity recording fails safely without interrupting a calling page 
 - No uncaught database exception is propagated to the caller.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Search tracking write error is handled without throwing` passed; the simulated database write failure was handled without propagating an exception.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -2260,9 +2260,9 @@ matching seller profile.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Exact seller search returns seeded seller` passed; exact-match seller search returned the expected active seller.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -2297,9 +2297,9 @@ active seller profiles.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Partial seller search returns expected seller` passed; a partial seller query returned the expected profile.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -2339,9 +2339,9 @@ first name, and permitted visible name fields.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Partial seller search returns expected seller` passed, providing partial-name search coverage. Manual test output establishes that each separate username, first-name, visible-last-name, and full-name variation in this broader case was exercised.
 
-**Status:** Not Run
+**Status:** Pass (automated partial-name search; manual name variations search)
 
 **Related Jira Defect:** None
 
@@ -2374,9 +2374,9 @@ when no active seller matches the query.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Seller search displays no results state` passed; an unmatched seller query produced the expected empty result.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -2411,9 +2411,9 @@ inactive are excluded from Seller Search.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Seller search excludes inactive sellers` passed; inactive sellers were excluded from search results.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -2452,9 +2452,9 @@ account or payout information.
 - Only intended public seller information should appear.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Seller search does not expose restricted data` passed; the test checked that restricted seller data was not rendered in search results.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -3691,17 +3691,9 @@ that support meetup delivery.
 - The Meetup Distance filter should remain visible.
 
 **Actual Result:**
-The automated test confirmed that the number of active
-meetup listings returned by the search page matched
-the corresponding MySQL count.
+Search Page: `Meetup filter matches database` passed in the complete PHPUnit suite. The existing manual result also confirms meetup-only listings, selected control state, and filter visibility.
 
-The Meetup radio button remained selected, and the
-Meetup Distance filter was visible.
-
-Manual testing confirmed that only meetup listings
-appeared in the search results.
-
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -4925,9 +4917,9 @@ active marketplace listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Active listing displays its database information` passed; an active listing detail page returned the expected listing information.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4969,9 +4961,9 @@ information for the selected listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Active listing displays its database information`, `Shipping information matches database`, `Meetup information matches database without exposing coordinates`, and listing-image tests all passed; the rendered listing detail data matched tested database values.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -5007,9 +4999,9 @@ are handled safely.
 - No unrelated listing data should be displayed.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Missing listing id is rejected`, `Invalid listing id is rejected` (all displayed datasets), and `Nonexistent listing is unavailable` passed; invalid and nonexistent identifiers were handled safely.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -5044,9 +5036,9 @@ as an available marketplace item.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Inactive listing cannot be opened` passed for hidden, sold, archived, and draft datasets. `Listing from inactive seller is unavailable` also passed.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -5083,9 +5075,9 @@ requested listing ID.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Listing id selects the correct listing` passed; requests returned the selected listing instead of another listing's data.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5118,9 +5110,9 @@ Verify that viewing an active listing owned by another active user creates a lis
 - User ID and listing ID match; `viewed_at` is populated.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Eligible listing view is saved with timestamp` passed; the buyer’s eligible listing-view event was saved.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5154,9 +5146,9 @@ Verify that refreshing the same listing does not create another activity event w
 - Exactly one view exists for the buyer/listing pair.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Same listing view is deduplicated within fifteen minutes` passed; refreshing a listing within the interval did not create a duplicate view.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5191,9 +5183,9 @@ Verify that a view may be recorded again once an earlier matching view is outsid
 - Two view rows exist because the first event is outside the window.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Listing view can be recorded after fifteen minutes` passed; a subsequent view outside the deduplication window was saved.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5226,9 +5218,9 @@ Verify that a seller opening their own listing does not generate a buyer-interes
 - No view row is created for the seller viewing their own listing.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Seller own listing view is not saved` passed; viewing an owned listing did not create the buyer-interest event.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5262,9 +5254,9 @@ Verify that sold, hidden, archived, and draft listings cannot create new listing
 - No views are recorded while the listing is inactive.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Inactive listings do not generate views` passed; inactive listings did not produce new view records.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5299,9 +5291,9 @@ Verify that an active listing cannot generate views while its seller is suspende
 - Restoring active status allows one eligible view.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Inactive seller listings do not generate views` passed; listings owned by inactive sellers did not produce eligible view records.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5335,9 +5327,9 @@ Verify that view deduplication applies to a specific user/listing pair, not to a
 - Buyer A has two rows; Buyer B has one row for Listing A.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Listing views are independent by buyer and listing` passed; view events remained independent for distinct buyer/listing pairs.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5372,9 +5364,9 @@ Verify that invalid user IDs, invalid listing IDs, and nonexistent listings cann
 - No invalid view records are created.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Invalid listing view identifiers are rejected` passed; invalid or nonexistent identifiers were rejected.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5407,9 +5399,9 @@ Verify that a database insertion failure does not propagate an uncaught exceptio
 - No uncaught database exception reaches the caller.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Listing view write error is handled without throwing` passed; a simulated database write failure was handled safely.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -5449,9 +5441,9 @@ Verify that a listing assigned to a subcategory displays its parent category und
 **Automated PHPUnit Test:** `testSubcategoryListingDisplaysParentCategoryAndSubcategory` in `tests/Functional/ListingDetailTest.php`
 
 **Actual Result:**
-Not yet recorded; run the updated PHPUnit test against the corresponding listing-detail implementation.
+Listing Detail: `Subcategory listing displays parent category and subcategory` passed; the listing detail page displayed the correct parent and child category fields.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -5491,8 +5483,8 @@ Verify that a listing assigned directly to a top-level category displays its cat
 **Automated PHPUnit Test:** `testParentCategoryListingDoesNotDisplaySubcategoryField` in `tests/Functional/ListingDetailTest.php`
 
 **Actual Result:**
-Not yet recorded; run the updated PHPUnit test against the corresponding listing-detail implementation.
+Listing Detail: `Parent category listing does not display subcategory field` passed; a root-category listing omitted the Subcategory row.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
