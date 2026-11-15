@@ -8,6 +8,10 @@ requireLogin();
 
 require __DIR__ . '/../../db_connect.php';
 
+// One-time message from another page, such as "Thanks for your review!".
+$flash = $_SESSION['orders_flash'] ?? null;
+unset($_SESSION['orders_flash']);
+
 $orders = loadBuyerOrders($pdo, currentUser()['user_id']);
 
 $pageTitle = 'My Orders | OmniBuy';
@@ -23,6 +27,12 @@ include __DIR__ . '/../components/header.php';
   <?php $placedId = filter_var($_GET['placed'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]); ?>
   <?php if ($placedId !== false && in_array($placedId, array_map('intval', array_column($orders, 'order_id')), true)): ?>
     <p class="orders-placed" role="status">Thanks! Order #<?= (int) $placedId ?> has been placed.</p>
+  <?php endif; ?>
+
+  <?php if (is_array($flash)): ?>
+    <p class="orders-flash<?= $flash['ok'] ? '' : ' orders-flash--error' ?>" role="<?= $flash['ok'] ? 'status' : 'alert' ?>">
+      <?= htmlspecialchars($flash['message']) ?>
+    </p>
   <?php endif; ?>
 
   <?php if ($orders === []): ?>
@@ -69,9 +79,17 @@ include __DIR__ . '/../components/header.php';
                   · <?= $item['fulfillment_type'] === 'meetup' ? 'Local meetup' : 'Shipping' ?>
                 </p>
               </div>
-              <span class="order-badge order-badge--<?= orderStatusTone($item['item_status']) ?>">
-                <?= htmlspecialchars(formatOrderStatus($item['item_status'])) ?>
-              </span>
+              <div class="order-item__side">
+                <span class="order-badge order-badge--<?= orderStatusTone($item['item_status']) ?>">
+                  <?= htmlspecialchars(formatOrderStatus($item['item_status'])) ?>
+                </span>
+                <?php if ($item['item_status'] !== 'cancelled'): ?>
+                  <?php $reviewed = (bool) $item['has_listing_review'] && (bool) $item['has_seller_review']; ?>
+                  <a class="order-item__review" href="/pages/review.php?order_item_id=<?= (int) $item['order_item_id'] ?>">
+                    <?= $reviewed ? 'View your review' : ((bool) $item['has_listing_review'] || (bool) $item['has_seller_review'] ? 'Finish your review' : 'Write a review') ?>
+                  </a>
+                <?php endif; ?>
+              </div>
             </li>
           <?php endforeach; ?>
         </ul>
