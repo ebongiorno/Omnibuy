@@ -16,9 +16,10 @@ declare(strict_types=1);
  * - +3 for each eligible listing view, +2 for each item search associated with
  *   a category. One search contributes at most once to any given category.
  * - Subcategory activity is grouped under its immediate parent category.
- * - Signed-in users: select the highest-scoring eligible listings first,
- *   then sort that fixed selection by newest date or price.
- * - Guests: sort the full eligible marketplace first, then return the top N.
+ * - Signed-in users with usable category-interest scores: select the highest-
+ *   scoring eligible listings first, then sort that fixed set by date or price.
+ * - Guests and signed-in users without usable category-interest scores: sort
+ *   all eligible marketplace listings first, then return the top N.
  * - Active listings from active sellers only; exclude the viewer's listings.
  * - Unscored eligible listings fill remaining slots for signed-in users.
  * - On failure to read activity, still return a general eligible feed.
@@ -148,8 +149,9 @@ function getPersonalizedRecommendations(
     $personalizedUserId = $userId !== null && $userId > 0 ? $userId : null;
     $scores = [];
 
-    // Authenticated visitors always use the same relevance-selected candidates.
-    // Guests have no activity scores and instead sort the full catalog.
+    // Category scores are available only for authenticated users with recent,
+    // eligible item-search or listing-view activity that maps to a category.
+    // Merely being logged in must not lock the user into the newest ten.
     if ($personalizedUserId !== null) {
         try {
             $scores = recommendationCategoryScores($pdo, $personalizedUserId);
@@ -160,6 +162,11 @@ function getPersonalizedRecommendations(
             $scores = [];
         }
     }
+
+    // No usable interests means browse-style sorting, regardless of login.
+    // An unmatched search, expired activity, or a failed activity lookup does
+    // not provide enough category information to personalize the candidate set.
+    $hasCategoryInterests = $personalizedUserId !== null && $scores !== [];
 
     // Dynamic CASE contains *only* parameter placeholders, never raw category
     // IDs or user input. A zero score supplies the newest-first fallback.
@@ -180,11 +187,11 @@ function getPersonalizedRecommendations(
             . implode(' ', $branches) . ' ELSE 0 END';
     }
 
-    // Signed-in users: choose the same top-N candidates by relevance first.
-    // Guests: apply the selected sort to ALL eligible listings before LIMIT,
-    // so the lowest- or highest-priced items can differ from the newest ten.
+    // Users with category interests: select the same top-N recommendation
+    // candidates for every sort option. Guests and users without interests:
+    // apply the selected sort to the full eligible catalog BEFORE LIMIT.
     $recencyOrder = 'COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
-    if ($personalizedUserId !== null) {
+    if ($hasCategoryInterests) {
         $orderBy = 'recommendation_score DESC, ' . $recencyOrder;
     } elseif ($sort === 'price_low') {
         $orderBy = 'listing.price ASC, ' . $recencyOrder;
@@ -232,9 +239,9 @@ function getPersonalizedRecommendations(
 
     $recommendations = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-    // SQL already sorted guests across the whole marketplace before LIMIT.
-    // Only signed-in users reorder the fixed relevance-selected candidate set.
-    if ($personalizedUserId !== null) {
+    // General-feed results were already sorted by MySQL before LIMIT.
+    // Only users with category interests reorder the fixed candidate set.
+    if ($hasCategoryInterests) {
         usort($recommendations, static function (array $left, array $right) use ($sort): int {
             if ($sort === 'price_low' || $sort === 'price_high') {
                 $comparison = (float) $left['price'] <=> (float) $right['price'];

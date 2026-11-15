@@ -216,7 +216,7 @@ final class PersonalizedRecommendationsTest extends TestCase
         $this->assertLessThan(array_search($older, $ids, true), array_search($newer, $ids, true));
     }
 
-    // TC-16-13: Guests sort the full catalog; new users get an eligible fallback.
+    // TC-16-13: Guests and users without interests sort the full catalog.
     public function testGuestAndNewUserReceiveNewestEligibleFallback(): void
     {
         $newUser = $this->createUser();
@@ -250,10 +250,36 @@ final class PersonalizedRecommendationsTest extends TestCase
         $this->assertContains($cheap, $lowIds);
         $this->assertContains($expensive, $highIds);
 
-        // A new authenticated user still has a fixed newest-selected set.
+        // A new authenticated user has no category scores, so all three
+        // sorting choices behave like a guest's full-catalog sorting.
         $newestMember = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'recent'));
         $cheapMember = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'price_low'));
-        $this->assertEqualsCanonicalizing($newestMember, $cheapMember);
+        $expensiveMember = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'price_high'));
+        $this->assertSame($newestIds, $newestMember);
+        $this->assertSame($lowIds, $cheapMember);
+        $this->assertSame($highIds, $expensiveMember);
+        $this->assertContains($cheap, $cheapMember);
+        $this->assertContains($expensive, $expensiveMember);
+
+        // A search with no matching eligible category still provides no
+        // meaningful personalization signal, so full-catalog sorting remains.
+        $this->addSearch($newUser, $this->uniqueTerm());
+        $this->assertSame(
+            $lowIds,
+            $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'price_low'))
+        );
+
+        // Once the member has an eligible listing view, category interests
+        // exist and the same ten relevance-selected listings are retained
+        // while sorting their prices.
+        $this->addView($newUser, $listing);
+        $personalizedNewest = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'recent'));
+        $personalizedLow = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'price_low'));
+        $personalizedHigh = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'price_high'));
+        $this->assertEqualsCanonicalizing($personalizedNewest, $personalizedLow);
+        $this->assertEqualsCanonicalizing($personalizedNewest, $personalizedHigh);
+        $this->assertNotContains($cheap, $personalizedLow);
+        $this->assertNotContains($expensive, $personalizedHigh);
     }
 
     // TC-16-14: Own listings are excluded only for logged-in viewers.
