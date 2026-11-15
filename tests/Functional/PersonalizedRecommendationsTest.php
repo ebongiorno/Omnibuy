@@ -165,7 +165,7 @@ final class PersonalizedRecommendationsTest extends TestCase
         $this->assertSame([], recommendationCategoryScores($this->pdo, $buyer));
     }
 
-    // TC-16-11: Default feed ranks interest first, before newer unscored items.
+    // TC-16-11: Relevance selects the candidate set; newest sorts within it.
     public function testRecentFeedPrioritizesHigherScoringCategories(): void
     {
         $buyer = $this->createUser();
@@ -184,10 +184,11 @@ final class PersonalizedRecommendationsTest extends TestCase
         $this->setListingTime($weakListing, '-2 days');
         $this->setListingTime($unscoredListing, '+1 day');
 
-        $ids = $this->listingIds(getPersonalizedRecommendations($this->pdo, $buyer, 50));
-        $this->assertSame($strongListing, $ids[0]);
-        $this->assertSame($weakListing, $ids[1]);
-        $this->assertContains($unscoredListing, $ids);
+        // Only the two highest-scoring listings are selected, even though
+        // an unrelated listing has a more recent timestamp.
+        $recent = $this->listingIds(getPersonalizedRecommendations($this->pdo, $buyer, 2, 'recent'));
+        $this->assertSame([$weakListing, $strongListing], $recent);
+        $this->assertNotContains($unscoredListing, $recent);
     }
 
     // TC-16-12: Recency and listing ID break ties deterministically.
@@ -275,7 +276,7 @@ final class PersonalizedRecommendationsTest extends TestCase
         }
     }
 
-    // TC-16-16: Explicit price sorting overrides interest ranking.
+    // TC-16-16: Price sorts reorder the same relevance-selected listings.
     public function testPriceSortOverridesRecommendationRelevance(): void
     {
         $buyer = $this->createUser();
@@ -284,24 +285,20 @@ final class PersonalizedRecommendationsTest extends TestCase
         $cheap = $this->createListing($seller, $category, price: 0.01);
         $expensive = $this->createListing($seller, $category, price: 999999.99);
         $this->addView($buyer, $cheap);
+        $this->addView($buyer, $expensive);
         $this->setListingTime($cheap, '+1 day');
         $this->setListingTime($expensive, '+2 days');
 
-        // Verify each returned page is ordered by price. The database can
-        // contain more than 50 seeded listings, so the two extreme fixture
-        // IDs are not guaranteed to appear together on either limited page.
-        $asc = getPersonalizedRecommendations($this->pdo, $buyer, 50, 'price_low');
-        $desc = getPersonalizedRecommendations($this->pdo, $buyer, 50, 'price_high');
-        $ascPrices = array_map(static fn(array $row): float => (float) $row['price'], $asc);
-        $descPrices = array_map(static fn(array $row): float => (float) $row['price'], $desc);
-        $expectedAsc = $ascPrices;
-        $expectedDesc = $descPrices;
-        sort($expectedAsc, SORT_NUMERIC);
-        rsort($expectedDesc, SORT_NUMERIC);
-        $this->assertSame($expectedAsc, $ascPrices);
-        $this->assertSame($expectedDesc, $descPrices);
-        $this->assertContains($cheap, $this->listingIds($asc));
-        $this->assertContains($expensive, $this->listingIds($desc));
+        // The two viewed listings are the top two relevance candidates;
+        // all sort modes must return the same IDs, only in a different order.
+        $recent = $this->listingIds(getPersonalizedRecommendations($this->pdo, $buyer, 2, 'recent'));
+        $ascending = $this->listingIds(getPersonalizedRecommendations($this->pdo, $buyer, 2, 'price_low'));
+        $descending = $this->listingIds(getPersonalizedRecommendations($this->pdo, $buyer, 2, 'price_high'));
+        $this->assertSame([$expensive, $cheap], $recent);
+        $this->assertSame([$cheap, $expensive], $ascending);
+        $this->assertSame([$expensive, $cheap], $descending);
+        $this->assertEqualsCanonicalizing($recent, $ascending);
+        $this->assertEqualsCanonicalizing($recent, $descending);
     }
 
     // TC-16-17: Invalid sort falls back safely; limits remain bounded.

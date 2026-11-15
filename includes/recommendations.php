@@ -16,8 +16,8 @@ declare(strict_types=1);
  * - +3 for each eligible listing view, +2 for each item search associated with
  *   a category. One search contributes at most once to any given category.
  * - Subcategory activity is grouped under its immediate parent category.
- * - Default 'recent' sorts by relevance, then renewed/created time, then ID.
- * - Explicit price sorts override relevance, preserving homepage controls.
+ * - Select the highest-scoring eligible listings first (newest/ID ties).
+ * - Sort only that selected set by effective newest date or price.
  * - Active listings from active sellers only; exclude the viewer's listings.
  * - Unscored eligible listings naturally fill the remaining recommendation slots.
  * - On failure to read activity, still return a general eligible feed.
@@ -147,7 +147,8 @@ function getPersonalizedRecommendations(
     $personalizedUserId = $userId !== null && $userId > 0 ? $userId : null;
     $scores = [];
 
-    if ($personalizedUserId !== null && $sort === 'recent') {
+    // Category relevance determines the candidate set for EVERY sort option.
+    if ($personalizedUserId !== null) {
         try {
             $scores = recommendationCategoryScores($pdo, $personalizedUserId);
         } catch (PDOException $exception) {
@@ -177,13 +178,9 @@ function getPersonalizedRecommendations(
             . implode(' ', $branches) . ' ELSE 0 END';
     }
 
-    if ($sort === 'price_low') {
-        $orderBy = 'listing.price ASC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
-    } elseif ($sort === 'price_high') {
-        $orderBy = 'listing.price DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
-    } else {
-        $orderBy = 'recommendation_score DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
-    }
+    // Choose the same top-N personalized candidates for every sort choice.
+    // Sorting is applied *after* the LIMIT, not to the entire marketplace.
+    $orderBy = 'recommendation_score DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
 
     $sql = "
         SELECT listing.listing_id,
@@ -194,6 +191,7 @@ function getPersonalizedRecommendations(
                listing.fulfillment_type,
                image.image_url,
                category.category_name,
+               COALESCE(listing.renewed_at, listing.created_at) AS recommendation_recency,
                $scoreExpression AS recommendation_score
         FROM listings AS listing
         INNER JOIN users AS seller
@@ -220,5 +218,38 @@ function getPersonalizedRecommendations(
     $statement->bindValue(':feed_limit', $limit, PDO::PARAM_INT);
     $statement->execute();
 
-    return $statement->fetchAll(PDO::FETCH_ASSOC);
+    $recommendations = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+    // Reorder the fixed candidate set only; no lower-ranked marketplace
+    // listings are introduced when changing between price and newest sorts.
+    usort($recommendations, static function (array $left, array $right) use ($sort): int {
+        if ($sort === 'price_low' || $sort === 'price_high') {
+            $comparison = (float) $left['price'] <=> (float) $right['price'];
+            if ($sort === 'price_high') {
+                $comparison = -$comparison;
+            }
+            if ($comparison !== 0) {
+                return $comparison;
+            }
+        }
+
+        // MySQL timestamps have lexicographically sortable ISO representations.
+        $comparison = strcmp(
+            (string) $right['recommendation_recency'],
+            (string) $left['recommendation_recency']
+        );
+        if ($comparison !== 0) {
+            return $comparison;
+        }
+
+        return (int) $right['listing_id'] <=> (int) $left['listing_id'];
+    });
+
+    // Keep the returned shape compatible with the existing homepage cards.
+    foreach ($recommendations as &$listing) {
+        unset($listing['recommendation_recency']);
+    }
+    unset($listing);
+
+    return $recommendations;
 }

@@ -224,7 +224,7 @@ include __DIR__ . '/components/header.php';
                     </div>
 
 
-                    <!-- Recommended first; explicit price sorts override relevance. -->
+                    <!-- Sort the selected personalized recommendations by newest or price. -->
                     <form class="feed-controls" method="get" action="index.php#browse-feed">
                         <label for="feed-sort">
                             Sort by
@@ -235,7 +235,7 @@ include __DIR__ . '/components/header.php';
                                 value="recent"
                                 <?= $sort === 'recent' ? 'selected' : '' ?>
                                 >
-                                Recommended / Newest
+                                Newest
                             </option>
 
                             <option
