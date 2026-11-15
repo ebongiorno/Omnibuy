@@ -1383,7 +1383,7 @@ The test asserted empty category scores after selling the listing and again afte
 **Related Jira Defect:** None
 
 
-### TC-16-11: Prioritize Higher-Scoring Categories in the Default Feed
+### TC-16-11: Select Higher-Scoring Categories Before Sorting Personalized Results
 
 **Use Case:** UC-16
 
@@ -1393,33 +1393,34 @@ The test asserted empty category scores after selling the listing and again afte
 **Automated Test:** `testRecentFeedPrioritizesHigherScoringCategories`
 
 **Objective:**
-Verify that the default recommendation order prioritizes stronger user interests above recently created, unrelated listings.
+Verify that a signed-in user with meaningful category-interest scores receives the highest-ranked eligible recommendations as the selected candidate set, before the user-selected display sort is applied.
 
 **Preconditions:**
 - OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
-- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+- Temporary buyer, seller, and listing fixtures are available with transaction rollback.
 
 **Test Data:**
-Three categories with strong, weak, and zero interest; three corresponding listings with controlled timestamps.
+Three categories with strong, weak, and zero interest; eligible listings with controlled timestamps.
 
 **Test Steps:**
-1. Record two views in the strong category and one in the weak category.
-2. Give the unrelated listing a newer timestamp.
-3. Retrieve the default recommendation feed and inspect listing order.
+1. Record two eligible views in the strong category and one in the weak category.
+2. Create eligible listings in those categories and an unrelated category.
+3. Request the personalized feed with a limit that makes candidate selection observable.
+4. Verify higher-scoring categories are selected before unscored fallback candidates, regardless of the final Newest display order.
 
 **Expected Result:**
-- Strongly preferred listings precede weakly preferred listings.
-- Unscored listings are still eligible as fallback results.
+- The algorithm selects eligible candidates by category-interest score descending, using effective recency and listing ID as candidate-selection tie-breakers.
+- Unscored eligible items fill remaining slots if needed.
+- The final `recent` display order may place a newer lower-scored recommendation before an older higher-scored recommendation; that does not change the selected set.
 
 **Actual Result:**
-The high-scoring listing ranked first, the lower-scoring listing second, and the unscored listing remained in the result set. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+The earlier targeted and complete PHPUnit suites were confirmed passing for category-based relevance. Manual homepage testing subsequently confirmed that Electronics activity increased Electronics recommendations and later Furniture activity updated the recommended categories. The existing test's assertions should be reviewed against the final two-stage selection/display ordering.
 
-**Status:** Pass
+**Status:** Manual Pass; updated automated assertions require final regression confirmation
 
 **Related Jira Defect:** None
 
-
-### TC-16-12: Use Renewal Time and Listing ID for Deterministic Tie-Breaking
+### TC-16-12: Use Renewal Time and Listing ID for Deterministic Ordering
 
 **Use Case:** UC-16
 
@@ -1429,68 +1430,73 @@ The high-scoring listing ranked first, the lower-scoring listing second, and the
 **Automated Test:** `testEqualScoresUseRenewalAndListingIdTieBreakers`
 
 **Objective:**
-Verify that equal-relevance results are ordered by effective recency and then listing ID.
+Verify deterministic tie-breaking when selecting equally scored candidates and when sorting the selected recommendations by Newest.
 
 **Preconditions:**
 - OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
-- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+- Controlled listings have known creation and renewal times.
 
 **Test Data:**
-Three listings sharing a category, distinct creation and renewal times, followed by equal effective timestamps.
+Three eligible listings with equal category scores, varying effective recency, and optionally identical timestamps.
 
 **Test Steps:**
-1. Create three listings with the same recommendation score.
-2. Set a renewed listing to be newer than the others and compare result positions.
-3. Set two listings to the same timestamp and verify the higher listing ID sorts first.
+1. Create listings with equal category scores and different creation/renewal timestamps.
+2. Confirm the selection uses newest effective timestamp when category scores tie.
+3. Request `recent` and verify the selected set is displayed by `COALESCE(renewed_at, created_at)` descending.
+4. Give two listings the same effective timestamp and verify descending listing ID breaks the tie.
 
 **Expected Result:**
-- Higher effective recency sorts first when relevance is equal.
-- The listing ID provides stable descending ordering when timestamps match.
+- Equal-scored candidates use effective recency, then descending listing ID, for deterministic selection.
+- Newest displays the selected candidates by effective recency, then descending listing ID.
+- Selection and final display order are separate operations.
 
 **Actual Result:**
-The test verified the renewal-first order and the deterministic higher-ID tie-breaker. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+The previously documented automated test passed its renewal-date and listing-ID comparisons. Its assertions should be rerun against the latest implementation after the two-stage sorting changes.
 
-**Status:** Pass
+**Status:** Previously Passed; latest regression run pending
 
 **Related Jira Defect:** None
 
-
-### TC-16-13: Display Newest Eligible Listings for Guests and New Users
+### TC-16-13: Use Full-Catalog Sorting for Guests and Users Without Category Interests
 
 **Use Case:** UC-16
 
-**Test Type:** Automated Integration / Functional
+**Test Type:** Automated Integration / Manual Functional
 
 **PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
 **Automated Test:** `testGuestAndNewUserReceiveNewestEligibleFallback`
 
 **Objective:**
-Verify that a guest or a user without activity receives a general recent-listing feed.
+Verify that guests and signed-in users with no usable category-interest scores sort the entire eligible marketplace first and then receive up to ten results, instead of sorting a fixed set of ten newest listings.
 
 **Preconditions:**
 - OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
-- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+- An unauthenticated session and a signed-in account without usable category-interest scores are available.
+- Eligible listings span different dates and prices.
 
 **Test Data:**
-Guest ID `null`, newly created buyer with no activity, and a recent active listing.
+Guest user ID `null`; new buyer account; active listings with contrasting prices and dates; sort values `recent`, `price_low`, `price_high`.
 
 **Test Steps:**
-1. Create a recent active listing belonging to an active seller.
-2. Retrieve recommendations with a null user ID.
-3. Retrieve recommendations for a new user with no activity.
-4. Compare the first listing for both responses.
+1. Open the homepage as a guest and record the listing IDs shown under Newest.
+2. Select Price: Low to High and Price: High to Low, recording the results of each.
+3. Verify the price sorts select the cheapest or most expensive eligible listings from the full marketplace, not only from the newest ten.
+4. Repeat for a signed-in account without usable category scores.
+5. Confirm both visitor types follow the same full-catalog sort-before-limit rule, except that the signed-in account excludes its own listings.
 
 **Expected Result:**
-- Both visitors receive an eligible listing feed without errors.
-- The newest controlled listing appears first in each fallback response.
+- `recent` returns up to ten newest eligible listings.
+- `price_low` returns up to ten cheapest eligible listings across the marketplace.
+- `price_high` returns up to ten most expensive eligible listings across the marketplace.
+- The returned listing set may differ across sort choices.
+- Signed-in visitors still cannot see their own listings in their feed.
 
 **Actual Result:**
-The guest and new-user requests both returned the controlled newest listing first. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+Manual testing confirmed that the guest and signed-in account without activity had the same sort behavior, retrieving the appropriate newest or price-ranked results. An earlier version of this PHPUnit test passed its basic newest-fallback assertions; its expanded price-sort assertions should be confirmed in the final regression run.
 
-**Status:** Pass
+**Status:** Manual Pass; updated automated assertions require final regression confirmation
 
 **Related Jira Defect:** None
-
 
 ### TC-16-14: Exclude a Viewer's Own Listings From Personalized Results
 
@@ -1567,43 +1573,44 @@ The active control was present and all ineligible listing IDs were absent. The t
 **Related Jira Defect:** None
 
 
-### TC-16-16: Preserve Explicit Price Sorting Over Recommendation Relevance
+### TC-16-16: Sort the Same Ten Personalized Listings by Newest or Price
 
 **Use Case:** UC-16
 
-**Test Type:** Automated Integration / Functional
+**Test Type:** Automated Integration / Manual Functional
 
 **PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
 **Automated Test:** `testPriceSortOverridesRecommendationRelevance`
 
 **Objective:**
-Verify that selecting ascending or descending price sorts results by price instead of interest score.
+Verify that once a signed-in user's recorded activity produces usable category scores, the helper selects the top ten recommendations by relevance and only reorders those same listing IDs for Newest and price sorting.
 
 **Preconditions:**
 - OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
-- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+- The user has at least one eligible activity signal that contributes to a category score.
+- The marketplace contains eligible listings with different dates and prices.
 
 **Test Data:**
-A buyer with recorded interest, an inexpensive listing, an expensive listing, and other eligible marketplace listings.
+A buyer with recorded category interest, eligible recommendations at different prices, and additional eligible listings outside the top ten.
 
 **Test Steps:**
-1. Record activity for a buyer and create controlled low- and high-priced listings.
-2. Request `price_low` and check the returned price sequence.
-3. Request `price_high` and check the returned price sequence.
-4. Verify the extreme-price fixtures are eligible in their respective sorted results.
+1. Retrieve the feed with `recent` and record its listing IDs.
+2. Retrieve `price_low` and confirm prices are nondecreasing.
+3. Retrieve `price_high` and confirm prices are nonincreasing.
+4. Compare the unordered ID sets across all three options.
+5. Verify no lower-ranked marketplace listing replaces a selected personalized recommendation only because of its price.
 
 **Expected Result:**
-- Ascending results are numerically nondecreasing.
-- Descending results are numerically nonincreasing.
-- Explicit price order takes precedence over recommendation relevance.
+- The same up-to-ten recommendation IDs are returned under all three sort options while the activity scores and inventory remain unchanged.
+- Newest orders that selected set by effective recency; the price sorts order only that set by price.
+- Price sorting does not select the cheapest or most expensive items from the entire marketplace for a user with category interests.
 
 **Actual Result:**
-The test verified correct ascending/descending price sequences and eligibility of the extreme-price fixtures. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+Manual testing confirmed personalized recommendations respond to category activity and that owned listings remain excluded across sorting options. Earlier automated price-order assertions passed, but the existing automated test must be checked for an ID-set equality assertion covering the final fixed-candidate rule.
 
-**Status:** Pass
+**Status:** Manual Pass (sorting and eligibility); fixed-candidate automated verification pending
 
 **Related Jira Defect:** None
-
 
 ### TC-16-17: Handle Unsupported Sort Values and Enforce Result Limits
 
@@ -1677,6 +1684,145 @@ The test verified unique IDs, all required homepage-card fields, and the selecte
 **Status:** Pass
 
 **Related Jira Defect:** None
+
+### TC-16-19: Activate Personalization After Eligible Search or Listing Activity
+
+**Use Case:** UC-16, UC-17, UC-25
+
+**Test Type:** Manual Functional / End-to-End
+
+**Objective:**
+Verify that a signed-in account transitions from full-marketplace fallback sorting to category-based candidate selection once recorded activity produces a usable category score.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A signed-in test account initially has no usable category-interest scores.
+- Eligible listings exist in multiple categories.
+
+**Test Data:**
+Test account without category interests; Electronics search terms and eligible Electronics listings.
+
+**Test Steps:**
+1. Record the initial homepage feed under the available sort choices.
+2. Search for an Electronics item and open eligible Electronics listings owned by other sellers.
+3. Return to the homepage and inspect the recommended listing categories.
+4. Change the sort options and compare the selected personalized listing IDs.
+
+**Expected Result:**
+- Before usable activity, sorting searches the full eligible marketplace before applying the ten-result limit.
+- After usable Electronics activity, Electronics is favored in the personalized candidate selection.
+- Sorting the personalized feed does not change which selected recommendations are included, assuming unchanged activity and listing availability.
+
+**Actual Result:**
+Manual before-and-after testing confirmed that the homepage feed changed to feature more Electronics listings after searches and listing views.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
+### TC-16-20: Update Personalized Recommendations When Category Interests Change
+
+**Use Case:** UC-16, UC-17, UC-25
+
+**Test Type:** Manual Functional / End-to-End
+
+**Objective:**
+Verify that additional browsing in a different category changes recommendations according to the updated category-interest scores.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A signed-in account has existing category-related search/view activity.
+
+**Test Data:**
+Existing Electronics activity; additional searches and eligible listing views in Home & Furniture.
+
+**Test Steps:**
+1. Record the personalized homepage listings after Electronics activity.
+2. Search for Furniture-related items and view eligible listings in that category.
+3. Reload the homepage and compare the recommended categories with the earlier feed.
+4. Confirm the changes are consistent with the user's more recent and accumulated interests.
+
+**Expected Result:**
+- New eligible activity contributes to the appropriate category scores.
+- Higher-scoring categories are prioritized in candidate selection.
+- The recommendation set can change after meaningful new category activity.
+
+**Actual Result:**
+Manual testing confirmed that additional Furniture searches and listing views changed the feed from Electronics-focused to Furniture-focused recommendations.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
+### TC-16-21: Preserve Personalized Interests Across Logout and Login
+
+**Use Case:** UC-16
+
+**Test Type:** Manual Functional / End-to-End
+
+**Objective:**
+Verify that a signed-in user's personalization is derived from persisted database activity and remains available after logging out and back in.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A test account has eligible saved search-history or listing-view activity.
+
+**Test Data:**
+Signed-in user with established category interests; login/logout session transitions.
+
+**Test Steps:**
+1. View and record the signed-in personalized homepage feed.
+2. Log out and confirm the guest feed uses general marketplace sorting.
+3. Log in again using the same account.
+4. Return to the homepage and check that the account's category-based recommendations are restored.
+
+**Expected Result:**
+- Logout changes the feed to guest behavior without deleting recorded activity.
+- Logging back into the same account restores personalization based on saved eligible activity.
+
+**Actual Result:**
+Manual testing previously confirmed that personalized recommendations persisted after logging out and logging back into the same account.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
+### TC-16-22: Exclude Own Listings From Every Signed-In Sorting Option
+
+**Use Case:** UC-16
+
+**Test Type:** Manual Functional / End-to-End / Negative Testing
+
+**Objective:**
+Verify that a signed-in user's own active listings are excluded from the recommendation feed regardless of personalized or fallback state and selected sort.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A signed-in account can create an active listing.
+
+**Test Data:**
+A newly created listing owned by the signed-in test user; sort options Newest, Price: Low to High, and Price: High to Low.
+
+**Test Steps:**
+1. Create an active test listing using the signed-in account.
+2. Open the homepage and check the feed under each sort option.
+3. Confirm the owned listing ID is absent from all three feed results.
+4. Confirm eligible listings belonging to other sellers remain available.
+
+**Expected Result:**
+- The user's own listing is not returned under any homepage sort option.
+- Other sellers' eligible listings can still be returned.
+
+**Actual Result:**
+Manual testing confirmed that the newly created listing did not appear in the signed-in user's personalized feed under any of the three sorting options.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
 
 ## UC-17: Search for Items
 ### TC-17-01: Search for an Existing Item
