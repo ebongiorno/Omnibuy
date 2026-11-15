@@ -1162,6 +1162,522 @@ Not yet recorded.
 **Related Jira Defect:** None
 
 
+**Personalized recommendation PHPUnit source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Execution evidence:** User-confirmed successful targeted recommendation tests and complete PHPUnit test suite. These tests validate the recommendation helper; homepage rendering should be verified separately.
+
+### TC-16-05: Calculate Category Scores From Search and Listing Views
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testCategoryScoresCombineViewAndSearchWeights`
+
+**Objective:**
+Verify that item searches contribute two points and listing views contribute three points to category interests.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A temporary buyer, active seller, category, searchable listing, two recorded listing views, and one matching item search.
+
+**Test Steps:**
+1. Create a buyer, seller, and active listing in a temporary category.
+2. Insert two views of the listing and one matching item search for the buyer.
+3. Call `recommendationCategoryScores()` and inspect the category score.
+
+**Expected Result:**
+- The category receives six points for views and two for the search.
+- The combined category score is exactly eight.
+
+**Actual Result:**
+The category score was asserted to equal eight (3 + 3 + 2). The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-06: Count Each Search Once Per Matching Parent Category
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testOneSearchContributesOncePerMatchingRootCategory`
+
+**Objective:**
+Verify that one keyword search does not gain additional weight merely because multiple listings in the same category match.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A buyer, two active listings with a shared unique keyword in one category, and one recorded item search.
+
+**Test Steps:**
+1. Create two active listings in the same category sharing a unique search keyword.
+2. Record one matching item search for the buyer.
+3. Calculate scores for the buyer and inspect the matched category.
+
+**Expected Result:**
+- The single search contributes exactly two points to that category.
+- The number of matching listings does not multiply the search weight.
+
+**Actual Result:**
+One search matched two listings, and the test asserted exactly two points for their category. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-07: Group Subcategory Activity Under the Parent Category
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testSubcategoryActivityAccumulatesUnderParentCategory`
+
+**Objective:**
+Verify that searches and views of a subcategory listing contribute to its parent-category score.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A parent category, child category, active listing in the child, one view, and one matching search.
+
+**Test Steps:**
+1. Create a parent category and its child category.
+2. Record a buyer view and matching item search for the child-category listing.
+3. Calculate category scores and inspect both parent and child IDs.
+
+**Expected Result:**
+- The parent category receives five points.
+- No separate score entry remains for the child category.
+
+**Actual Result:**
+The parent received five points (3 + 2) and the child had no independent score entry. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-08: Keep Recommendation Activity Separate by User
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testCategoryScoresAreIsolatedPerUser`
+
+**Objective:**
+Verify that one buyer's history does not influence another buyer's category scores.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Two buyers; two categories; one viewed listing per buyer; invalid user ID 0.
+
+**Test Steps:**
+1. Record a view in Category A for Buyer A and a view in Category B for Buyer B.
+2. Calculate category scores separately for both buyers.
+3. Verify a nonpositive user ID produces no scores.
+
+**Expected Result:**
+- Buyer A receives only Category A: 3 points.
+- Buyer B receives only Category B: 3 points.
+- User ID 0 returns an empty score array.
+
+**Actual Result:**
+The test verified independent per-user score arrays and an empty result for user ID 0. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-09: Ignore Expired and Non-Recommendation Activity
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testIrrelevantOrExpiredActivityDoesNotIncreaseScores`
+
+**Objective:**
+Verify that outdated actions, seller-profile searches, and views of the user's own listings are excluded from interest scoring.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+An authenticated seller/buyer; search and view events older than 90 days; seller-profile search; own-listing view.
+
+**Test Steps:**
+1. Create controlled item and seller-profile search records, including activity older than 90 days.
+2. Insert an old view of another seller's listing and a current view of an owned listing.
+3. Calculate the user's category interests.
+
+**Expected Result:**
+- Expired search and view records do not add points.
+- Seller-profile searches and own-listing views do not add points.
+- The resulting category score array is empty.
+
+**Actual Result:**
+The test confirmed no scores were assigned from expired, seller-profile, or own-listing activity. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-10: Exclude Unavailable Listing and Inactive Seller Activity From Scores
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testInactiveListingAndSellerActivityIsExcludedFromScores`
+
+**Objective:**
+Verify that previously recorded signals stop contributing when their listing becomes sold or their seller becomes inactive.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+One active listing with search/view history; statuses `sold` and seller `suspended`.
+
+**Test Steps:**
+1. Record an item search and listing view for an active seller's listing.
+2. Mark the listing sold and calculate category interests.
+3. Reactivate the listing, suspend the seller, and recalculate.
+
+**Expected Result:**
+- Sold listings do not contribute category points.
+- Listings owned by suspended sellers do not contribute category points.
+
+**Actual Result:**
+The test asserted empty category scores after selling the listing and again after suspending its seller. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-11: Prioritize Higher-Scoring Categories in the Default Feed
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testRecentFeedPrioritizesHigherScoringCategories`
+
+**Objective:**
+Verify that the default recommendation order prioritizes stronger user interests above recently created, unrelated listings.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Three categories with strong, weak, and zero interest; three corresponding listings with controlled timestamps.
+
+**Test Steps:**
+1. Record two views in the strong category and one in the weak category.
+2. Give the unrelated listing a newer timestamp.
+3. Retrieve the default recommendation feed and inspect listing order.
+
+**Expected Result:**
+- Strongly preferred listings precede weakly preferred listings.
+- Unscored listings are still eligible as fallback results.
+
+**Actual Result:**
+The high-scoring listing ranked first, the lower-scoring listing second, and the unscored listing remained in the result set. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-12: Use Renewal Time and Listing ID for Deterministic Tie-Breaking
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testEqualScoresUseRenewalAndListingIdTieBreakers`
+
+**Objective:**
+Verify that equal-relevance results are ordered by effective recency and then listing ID.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Three listings sharing a category, distinct creation and renewal times, followed by equal effective timestamps.
+
+**Test Steps:**
+1. Create three listings with the same recommendation score.
+2. Set a renewed listing to be newer than the others and compare result positions.
+3. Set two listings to the same timestamp and verify the higher listing ID sorts first.
+
+**Expected Result:**
+- Higher effective recency sorts first when relevance is equal.
+- The listing ID provides stable descending ordering when timestamps match.
+
+**Actual Result:**
+The test verified the renewal-first order and the deterministic higher-ID tie-breaker. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-13: Display Newest Eligible Listings for Guests and New Users
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testGuestAndNewUserReceiveNewestEligibleFallback`
+
+**Objective:**
+Verify that a guest or a user without activity receives a general recent-listing feed.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Guest ID `null`, newly created buyer with no activity, and a recent active listing.
+
+**Test Steps:**
+1. Create a recent active listing belonging to an active seller.
+2. Retrieve recommendations with a null user ID.
+3. Retrieve recommendations for a new user with no activity.
+4. Compare the first listing for both responses.
+
+**Expected Result:**
+- Both visitors receive an eligible listing feed without errors.
+- The newest controlled listing appears first in each fallback response.
+
+**Actual Result:**
+The guest and new-user requests both returned the controlled newest listing first. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-14: Exclude a Viewer's Own Listings From Personalized Results
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testAuthenticatedFeedExcludesViewerOwnedListings`
+
+**Objective:**
+Verify that signed-in users do not receive recommendations for listings they own.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+An authenticated seller/viewer, another seller, one owned listing, and one other-seller listing.
+
+**Test Steps:**
+1. Create active listings owned by the current viewer and a different seller.
+2. Retrieve recommendations for the authenticated viewer.
+3. Retrieve general recommendations for a guest.
+4. Compare presence of the owned listing in each response.
+
+**Expected Result:**
+- Signed-in results exclude the user's own listing.
+- Another seller's listing remains eligible.
+- The owned listing is not globally removed from the guest feed.
+
+**Actual Result:**
+The authenticated feed omitted the viewer-owned listing, while the other-seller listing and guest eligibility were retained. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-15: Exclude Unavailable Listings and Inactive Sellers From the Feed
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testFeedExcludesUnavailableListingsAndInactiveSellers`
+
+**Objective:**
+Verify that only active listings belonging to active sellers are recommended.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+One active control listing, listings in `sold`, `hidden`, `archived`, and `draft` states, and a restricted seller's listing.
+
+**Test Steps:**
+1. Create the eligible control listing and several ineligible listings.
+2. Set the inactive listing statuses and restrict another seller account.
+3. Retrieve the recommendation feed for the buyer.
+4. Check inclusion and exclusion of each controlled listing ID.
+
+**Expected Result:**
+- The active control listing appears.
+- Inactive listings and listings owned by restricted sellers are excluded.
+
+**Actual Result:**
+The active control was present and all ineligible listing IDs were absent. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-16: Preserve Explicit Price Sorting Over Recommendation Relevance
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testPriceSortOverridesRecommendationRelevance`
+
+**Objective:**
+Verify that selecting ascending or descending price sorts results by price instead of interest score.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A buyer with recorded interest, an inexpensive listing, an expensive listing, and other eligible marketplace listings.
+
+**Test Steps:**
+1. Record activity for a buyer and create controlled low- and high-priced listings.
+2. Request `price_low` and check the returned price sequence.
+3. Request `price_high` and check the returned price sequence.
+4. Verify the extreme-price fixtures are eligible in their respective sorted results.
+
+**Expected Result:**
+- Ascending results are numerically nondecreasing.
+- Descending results are numerically nonincreasing.
+- Explicit price order takes precedence over recommendation relevance.
+
+**Actual Result:**
+The test verified correct ascending/descending price sequences and eligibility of the extreme-price fixtures. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-17: Handle Unsupported Sort Values and Enforce Result Limits
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testInvalidSortAndLimitValuesFallBackSafely`
+
+**Objective:**
+Verify that unsupported sort values and out-of-range requested limits are handled safely.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Sort `invalid_sort`; limits `0` and `500`; newest active test listing.
+
+**Test Steps:**
+1. Request recommendations with an unsupported sort and limit zero.
+2. Verify a single newest eligible listing is returned.
+3. Request a result limit greater than the supported maximum.
+4. Check that no more than 50 rows are returned.
+
+**Expected Result:**
+- Invalid sorts fall back to default ordering.
+- The requested limit is clamped between 1 and 50.
+
+**Actual Result:**
+The invalid-sort request returned one eligible listing and the oversized-limit request returned at most 50. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-18: Return Unique Listings With Homepage-Compatible Fields
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testResultsContainUniqueListingsAndHomepageCardFields`
+
+**Objective:**
+Verify that the recommendation result can safely populate the existing homepage listing-card component.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+An active listing with a primary image and the existing homepage listing-card field requirements.
+
+**Test Steps:**
+1. Create an active listing and primary image record.
+2. Retrieve recommended listings and collect their IDs.
+3. Verify all listing IDs are unique.
+4. Verify the primary image URL and required homepage listing-card fields are present.
+
+**Expected Result:**
+- No duplicate listing IDs appear in the result array.
+- Each relevant result provides listing ID, condition, name, price, category, fulfillment, image URL, and category name.
+
+**Actual Result:**
+The test verified unique IDs, all required homepage-card fields, and the selected primary image URL. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-17: Search for Items
 ### TC-17-01: Search for an Existing Item
 
