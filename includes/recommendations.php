@@ -75,6 +75,8 @@ function recommendationCategoryScores(PDO $pdo, int $userId): array
     // DISTINCT ensures one search contributes at most +2 per root category,
     // regardless of how many matching listings that category contains.
     // The terms are escaped with the same '!' convention as search.php.
+    // Explicit collations prevent MySQL 8 schema-column defaults and the
+    // connection collation from conflicting in LIKE comparisons.
     $searchSql = <<<'SQL'
         SELECT match_categories.root_category_id,
                COUNT(*) * 2 AS points
@@ -99,15 +101,15 @@ function recommendationCategoryScores(PDO $pdo, int $userId): array
                AND seller.account_status = 'active'
             INNER JOIN categories AS category
                 ON category.category_id = listing.category_id
-            WHERE listing.item_name LIKE CONCAT('%',
+            WHERE listing.item_name COLLATE utf8mb4_unicode_ci LIKE CONCAT('%',
                       REPLACE(REPLACE(REPLACE(recent.search_query, '!', '!!'), '%', '!%'), '_', '!_'),
-                      '%') ESCAPE '!'
-               OR listing.item_description LIKE CONCAT('%',
+                      '%') COLLATE utf8mb4_unicode_ci ESCAPE '!'
+               OR listing.item_description COLLATE utf8mb4_unicode_ci LIKE CONCAT('%',
                       REPLACE(REPLACE(REPLACE(recent.search_query, '!', '!!'), '%', '!%'), '_', '!_'),
-                      '%') ESCAPE '!'
-               OR category.category_name LIKE CONCAT('%',
+                      '%') COLLATE utf8mb4_unicode_ci ESCAPE '!'
+               OR category.category_name COLLATE utf8mb4_unicode_ci LIKE CONCAT('%',
                       REPLACE(REPLACE(REPLACE(recent.search_query, '!', '!!'), '%', '!%'), '_', '!_'),
-                      '%') ESCAPE '!'
+                      '%') COLLATE utf8mb4_unicode_ci ESCAPE '!'
         ) AS match_categories
         GROUP BY match_categories.root_category_id
     SQL;
@@ -158,6 +160,8 @@ function getPersonalizedRecommendations(
 
     // Dynamic CASE contains *only* parameter placeholders, never raw category
     // IDs or user input. A zero score supplies the newest-first fallback.
+    // Select the score under a named alias: ORDER BY 0 would be interpreted
+    // by MySQL as a column position and fail for users without history.
     $scoreExpression = '0';
     $scoreParams = [];
     if ($scores !== []) {
@@ -178,7 +182,7 @@ function getPersonalizedRecommendations(
     } elseif ($sort === 'price_high') {
         $orderBy = 'listing.price DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
     } else {
-        $orderBy = "$scoreExpression DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC";
+        $orderBy = 'recommendation_score DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
     }
 
     $sql = "
@@ -189,7 +193,8 @@ function getPersonalizedRecommendations(
                listing.category_id,
                listing.fulfillment_type,
                image.image_url,
-               category.category_name
+               category.category_name,
+               $scoreExpression AS recommendation_score
         FROM listings AS listing
         INNER JOIN users AS seller
             ON seller.user_id = listing.seller_user_id
