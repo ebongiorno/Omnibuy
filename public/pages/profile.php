@@ -5,12 +5,14 @@
 
 require_once __DIR__ . '/../../includes/profile.php';
 require_once __DIR__ . '/../../includes/marketplace-image.php';
+require_once __DIR__ . '/../../includes/reviews.php';
 
 startSession();
 
 $userId = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 $profile = null;
 $listings = ['active' => [], 'sold' => []];
+$sellerReviews = ['review_count' => 0, 'average_rating' => null, 'reviews' => []];
 
 if ($userId !== false && $userId !== null) {
     require __DIR__ . '/../../db_connect.php';
@@ -18,6 +20,7 @@ if ($userId !== false && $userId !== null) {
     $profile = loadPublicProfile($pdo, $userId, isLoggedIn());
     if ($profile !== null) {
         $listings = loadProfileListings($pdo, $userId);
+        $sellerReviews = loadSellerReviews($pdo, $userId);
     }
 }
 
@@ -35,6 +38,7 @@ include __DIR__ . '/../components/header.php';
 
 <link rel="stylesheet" href="/assets/css/listing-card.css">
 <link rel="stylesheet" href="/assets/css/profile.css">
+<link rel="stylesheet" href="/assets/css/reviews.css">
 
 <section class="shell profile-page">
   <?php if ($profile === null): ?>
@@ -156,6 +160,50 @@ include __DIR__ . '/../components/header.php';
         </div>
       </section>
     <?php endif; ?>
+
+    <?php // Every account can sell, so every profile shows the reviews it received as a seller. ?>
+      <section class="profile-reviews" aria-labelledby="reviews-heading">
+        <h2 id="reviews-heading">Reviews <span class="profile-listings__count"><?= $sellerReviews['review_count'] ?></span></h2>
+
+        <?php if ($sellerReviews['review_count'] === 0): ?>
+          <p class="profile-listings__empty">No reviews yet.</p>
+        <?php else: ?>
+          <p class="profile-reviews__summary">
+            <span class="review-stars" aria-hidden="true"><?= reviewStars((int) round($sellerReviews['average_rating'])) ?></span>
+            <strong><?= number_format($sellerReviews['average_rating'], 1) ?> out of 5</strong>
+            from <?= $sellerReviews['review_count'] ?> review<?= $sellerReviews['review_count'] === 1 ? '' : 's' ?>
+          </p>
+
+          <ol class="profile-reviews__list">
+            <?php foreach ($sellerReviews['reviews'] as $review): ?>
+              <li class="profile-review">
+                <article aria-label="Review by <?= htmlspecialchars($review['reviewer_username'] ?? 'OmniBuy member') ?>">
+                  <div class="profile-review__meta">
+                    <span>
+                      <span class="profile-review__author"><?= htmlspecialchars($review['reviewer_username'] ?? 'OmniBuy member') ?></span>
+                      <span class="review-stars" aria-hidden="true"><?= reviewStars((int) $review['star_rating']) ?></span>
+                      <span class="sr-only"><?= (int) $review['star_rating'] ?> out of 5 stars</span>
+                    </span>
+                    <time datetime="<?= htmlspecialchars(date('Y-m-d', strtotime($review['created_at']))) ?>">
+                      <?= htmlspecialchars(date('M j, Y', strtotime($review['created_at']))) ?>
+                    </time>
+                  </div>
+                  <?php if ($review['title'] !== null): ?>
+                    <h3 class="profile-review__title"><?= htmlspecialchars($review['title']) ?></h3>
+                  <?php endif; ?>
+                  <?php if ($review['description'] !== null): ?>
+                    <p class="profile-review__text"><?= nl2br(htmlspecialchars($review['description'])) ?></p>
+                  <?php endif; ?>
+                  <p class="profile-review__item">Bought <a href="/pages/listing.php?id=<?= (int) $review['listing_id'] ?>"><?= htmlspecialchars($review['item_name']) ?></a></p>
+                </article>
+              </li>
+            <?php endforeach; ?>
+          </ol>
+          <?php if ($sellerReviews['review_count'] > count($sellerReviews['reviews'])): ?>
+            <p class="profile-reviews__summary">Showing the <?= count($sellerReviews['reviews']) ?> most recent reviews.</p>
+          <?php endif; ?>
+        <?php endif; ?>
+      </section>
   <?php endif; ?>
 </section>
 

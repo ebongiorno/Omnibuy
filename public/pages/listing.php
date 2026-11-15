@@ -6,6 +6,7 @@ declare(strict_types=1);
 // Install as public/pages/listing.php.
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/marketplace-image.php';
+require_once __DIR__ . '/../../includes/marketplace-activity.php';
 startSession();
 
 /** Escape text and attribute values from the database before rendering HTML. */
@@ -186,6 +187,26 @@ if ($listingId === false) {
         $images = [];
         $listingReviews = [];
     }
+}
+
+// =========================================
+// RECORD LISTING VIEW ACTIVITY
+// =========================================
+// Only a successfully loaded, available listing viewed by an
+// authenticated user should generate a recommendation signal.
+// The helper independently excludes own-listing views, verifies
+// listing/seller eligibility, and deduplicates within 15 minutes.
+if (
+    $listing !== null
+    && isLoggedIn()
+    && isset($_SESSION['user_id'])
+    && (int) $_SESSION['user_id'] > 0
+) {
+    recordListingView(
+        $pdo,
+        (int) $_SESSION['user_id'],
+        (int) $listing['listing_id']
+    );
 }
 
 $defaultImage = '/assets/images/listing/listing-default-img.jpg';
@@ -434,6 +455,14 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
                                         <span data-wishlist-icon aria-hidden="true">&#9825;</span>
                                         <span data-wishlist-label>Checking Wishlist...</span>
                                     </button>
+                                    <?php // Only buyers can start conversations for a seller's listing. ?>
+                                    <?php if ((int) ($_SESSION['user_id'] ?? 0) !== (int) $listing['seller_user_id']): ?>
+                                        <a
+                                            href="/pages/conversation.php?listing_id=<?= (int) $listing['listing_id'] ?>"
+                                            class="listing-detail__action listing-detail__action--secondary"
+                                            style="text-decoration: none; cursor: pointer;"
+                                        >Message Seller</a>
+                                    <?php endif; ?>
                                 </div>
                                 <p class="listing-detail__purchase-note" data-wishlist-feedback role="status" aria-live="polite"></p>
                             </section>
