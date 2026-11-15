@@ -224,11 +224,19 @@ include $header;
 
         <?php endif; ?>
 
+        
         <?php if (($_GET['renewed'] ?? '') === '1'): ?>
             <p class="my-listings-success" role="status">
                 Your listing was renewed successfully!
             </p>
         <?php endif; ?>
+
+        <?php if (($_GET['edited'] ?? '') === '1'): ?>
+            <p class="my-listings-success" role="status">
+                Your listing was updated successfully!
+            </p>
+        <?php endif; ?>
+
 
         <?php if (empty($listings)): ?>
 
@@ -343,6 +351,12 @@ include $header;
 
                         <?php if ($listing['listing_status'] === 'active'): ?>
                             <div class="my-listings__actions">
+                                <a
+                                    href="/pages/edit-listing.php?id=<?= (int) $listing['listing_id'] ?>"
+                                    class="my-listings__edit"
+                                >
+                                    Edit Listing
+                                </a>
                                 <form
                                     action="/pages/my-listings.php"
                                     method="POST"

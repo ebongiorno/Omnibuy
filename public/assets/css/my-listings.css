@@ -195,3 +195,22 @@
     object-fit: cover;
     display: block;
 }
+/* SCRUM-250: Edit Listing button */
+
+.my-listings__edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.my-listings__edit:hover {
+    background-color: #1d4ed8;
+    color: #ffffff;
+}
