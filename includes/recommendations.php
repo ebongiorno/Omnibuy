@@ -16,10 +16,11 @@ declare(strict_types=1);
  * - +3 for each eligible listing view, +2 for each item search associated with
  *   a category. One search contributes at most once to any given category.
  * - Subcategory activity is grouped under its immediate parent category.
- * - Select the highest-scoring eligible listings first (newest/ID ties).
- * - Sort only that selected set by effective newest date or price.
+ * - Signed-in users: select the highest-scoring eligible listings first,
+ *   then sort that fixed selection by newest date or price.
+ * - Guests: sort the full eligible marketplace first, then return the top N.
  * - Active listings from active sellers only; exclude the viewer's listings.
- * - Unscored eligible listings naturally fill the remaining recommendation slots.
+ * - Unscored eligible listings fill remaining slots for signed-in users.
  * - On failure to read activity, still return a general eligible feed.
  */
 
@@ -147,7 +148,8 @@ function getPersonalizedRecommendations(
     $personalizedUserId = $userId !== null && $userId > 0 ? $userId : null;
     $scores = [];
 
-    // Category relevance determines the candidate set for EVERY sort option.
+    // Authenticated visitors always use the same relevance-selected candidates.
+    // Guests have no activity scores and instead sort the full catalog.
     if ($personalizedUserId !== null) {
         try {
             $scores = recommendationCategoryScores($pdo, $personalizedUserId);
@@ -178,9 +180,19 @@ function getPersonalizedRecommendations(
             . implode(' ', $branches) . ' ELSE 0 END';
     }
 
-    // Choose the same top-N personalized candidates for every sort choice.
-    // Sorting is applied *after* the LIMIT, not to the entire marketplace.
-    $orderBy = 'recommendation_score DESC, COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
+    // Signed-in users: choose the same top-N candidates by relevance first.
+    // Guests: apply the selected sort to ALL eligible listings before LIMIT,
+    // so the lowest- or highest-priced items can differ from the newest ten.
+    $recencyOrder = 'COALESCE(listing.renewed_at, listing.created_at) DESC, listing.listing_id DESC';
+    if ($personalizedUserId !== null) {
+        $orderBy = 'recommendation_score DESC, ' . $recencyOrder;
+    } elseif ($sort === 'price_low') {
+        $orderBy = 'listing.price ASC, ' . $recencyOrder;
+    } elseif ($sort === 'price_high') {
+        $orderBy = 'listing.price DESC, ' . $recencyOrder;
+    } else {
+        $orderBy = $recencyOrder;
+    }
 
     $sql = "
         SELECT listing.listing_id,
@@ -220,30 +232,32 @@ function getPersonalizedRecommendations(
 
     $recommendations = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-    // Reorder the fixed candidate set only; no lower-ranked marketplace
-    // listings are introduced when changing between price and newest sorts.
-    usort($recommendations, static function (array $left, array $right) use ($sort): int {
-        if ($sort === 'price_low' || $sort === 'price_high') {
-            $comparison = (float) $left['price'] <=> (float) $right['price'];
-            if ($sort === 'price_high') {
-                $comparison = -$comparison;
+    // SQL already sorted guests across the whole marketplace before LIMIT.
+    // Only signed-in users reorder the fixed relevance-selected candidate set.
+    if ($personalizedUserId !== null) {
+        usort($recommendations, static function (array $left, array $right) use ($sort): int {
+            if ($sort === 'price_low' || $sort === 'price_high') {
+                $comparison = (float) $left['price'] <=> (float) $right['price'];
+                if ($sort === 'price_high') {
+                    $comparison = -$comparison;
+                }
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
             }
+
+            // MySQL timestamps have lexicographically sortable ISO representations.
+            $comparison = strcmp(
+                (string) $right['recommendation_recency'],
+                (string) $left['recommendation_recency']
+            );
             if ($comparison !== 0) {
                 return $comparison;
             }
-        }
 
-        // MySQL timestamps have lexicographically sortable ISO representations.
-        $comparison = strcmp(
-            (string) $right['recommendation_recency'],
-            (string) $left['recommendation_recency']
-        );
-        if ($comparison !== 0) {
-            return $comparison;
-        }
-
-        return (int) $right['listing_id'] <=> (int) $left['listing_id'];
-    });
+            return (int) $right['listing_id'] <=> (int) $left['listing_id'];
+        });
+    }
 
     // Keep the returned shape compatible with the existing homepage cards.
     foreach ($recommendations as &$listing) {

@@ -216,18 +216,44 @@ final class PersonalizedRecommendationsTest extends TestCase
         $this->assertLessThan(array_search($older, $ids, true), array_search($newer, $ids, true));
     }
 
-    // TC-16-13: Guests and users with no recorded activity receive general feed.
+    // TC-16-13: Guests sort the full catalog; new users get an eligible fallback.
     public function testGuestAndNewUserReceiveNewestEligibleFallback(): void
     {
         $newUser = $this->createUser();
         $seller = $this->createUser(true);
-        $listing = $this->createListing($seller, $this->createCategory());
+        $category = $this->createCategory();
+        $listing = $this->createListing($seller, $category);
         $this->setListingTime($listing, '+2 days');
 
         $guest = getPersonalizedRecommendations($this->pdo, null, 10);
         $new = getPersonalizedRecommendations($this->pdo, $newUser, 10);
         $this->assertSame($listing, (int) $guest[0]['listing_id']);
         $this->assertSame($listing, (int) $new[0]['listing_id']);
+
+        // Add old extreme-price listings and 11 newer normal-price listings.
+        // The extremes must not be in the newest ten, but must be eligible
+        // when guests sort the entire catalog by price BEFORE applying LIMIT.
+        $cheap = $this->createListing($seller, $category, price: 0.01);
+        $expensive = $this->createListing($seller, $category, price: 99999999.99);
+        $this->setListingTime($cheap, '-20 days');
+        $this->setListingTime($expensive, '-20 days');
+        for ($i = 0; $i < 11; $i++) {
+            $newListing = $this->createListing($seller, $category, price: 25.0);
+            $this->setListingTime($newListing, '+3 days');
+        }
+
+        $newestIds = $this->listingIds(getPersonalizedRecommendations($this->pdo, null, 10, 'recent'));
+        $lowIds = $this->listingIds(getPersonalizedRecommendations($this->pdo, null, 10, 'price_low'));
+        $highIds = $this->listingIds(getPersonalizedRecommendations($this->pdo, null, 10, 'price_high'));
+        $this->assertNotContains($cheap, $newestIds);
+        $this->assertNotContains($expensive, $newestIds);
+        $this->assertContains($cheap, $lowIds);
+        $this->assertContains($expensive, $highIds);
+
+        // A new authenticated user still has a fixed newest-selected set.
+        $newestMember = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'recent'));
+        $cheapMember = $this->listingIds(getPersonalizedRecommendations($this->pdo, $newUser, 10, 'price_low'));
+        $this->assertEqualsCanonicalizing($newestMember, $cheapMember);
     }
 
     // TC-16-14: Own listings are excluded only for logged-in viewers.

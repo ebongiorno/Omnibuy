@@ -13,7 +13,8 @@ $extraStylesheets = [
 
 
 // UC-16: Use recorded search and listing-view activity to personalize
-// the homepage feed. Guests and new users receive recent eligible listings.
+// the homepage feed. Guests sort all eligible listings before taking ten;
+// signed-in users sort only their ten selected recommendations.
 require_once __DIR__ . '/../includes/recommendations.php';
 
 $sort = $_GET['sort'] ?? 'recent';
@@ -224,7 +225,7 @@ include __DIR__ . '/components/header.php';
                     </div>
 
 
-                    <!-- Sort the selected personalized recommendations by newest or price. -->
+                    <!-- Guests sort the marketplace; members sort their recommendation set. -->
                     <form class="feed-controls" method="get" action="index.php#browse-feed">
                         <label for="feed-sort">
                             Sort by
