@@ -568,6 +568,69 @@ final class ListingAnalyticsTest extends TestCase
     }
 
     // =========================================
+    // TC-11-04: HANDLE ZERO-VALUED ANALYTICS
+    // =========================================
+
+    public function testListingWithNoActivityDisplaysZeroMetrics(): void
+    {
+        // Create a temporary listing owner.
+        $owner = $this->createListingOwner();
+
+        // Create a category.
+        $categoryId = $this->createCategory();
+
+        // Create a unique listing name.
+        $listingName = 'UC11 Zero Activity Test '
+            . bin2hex(random_bytes(4));
+
+        // Create a listing without any activity records.
+        $listingId = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Authenticate as the listing owner.
+        $this->logInAs($owner['email']);
+
+        // Open analytics for the new listing.
+        $response = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $listingId
+        );
+
+        // Verify the analytics page loads successfully.
+        $this->assertSame(
+            200,
+            $response['status'],
+            $response['body']
+        );
+
+        // Verify the correct listing is displayed.
+        $this->assertStringContainsString(
+            $listingName,
+            $response['body']
+        );
+
+        // Extract analytics values from the HTML.
+        $actualMetrics = $this->extractAnalyticsMetrics(
+            $response['body']
+        );
+
+        // All metrics should display zero.
+        $this->assertSame(
+            [
+                'Total Views' => 0,
+                'Unique Viewers' => 0,
+                'Views in Last 7 Days' => 0,
+                'Wishlist Saves' => 0,
+                'Total Conversations' => 0,
+                'Total Messages' => 0,
+            ],
+            $actualMetrics
+        );
+    }
+
+    // =========================================
     // TC-11-06: ANALYTICS REQUIRES LOGIN
     // =========================================
 

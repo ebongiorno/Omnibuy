@@ -377,9 +377,13 @@ display appropriate values without errors.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. A temporary listing was created without any recorded analytics activity, and the authenticated listing owner successfully accessed its analytics page.
 
-**Status:** Not Run
+The page returned HTTP 200 and correctly displayed the listing information. All six analytics metrics—Total Views, Unique Viewers, Views in Last 7 Days, Wishlist Saves, Total Conversations, and Total Messages—displayed a value of zero.
+
+All assertions passed, confirming that listings without recorded activity display accurate zero-valued metrics without PHP errors, database errors, or missing analytics information.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
