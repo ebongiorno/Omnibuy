@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// One-time message, from a cancel above or another page ("Thanks for your review!").
 $flash = $_SESSION['orders_flash'] ?? null;
 unset($_SESSION['orders_flash']);
 
@@ -121,6 +122,12 @@ include __DIR__ . '/../components/header.php';
                     <input type="hidden" name="order_item_id" value="<?= (int) $item['order_item_id'] ?>">
                     <button type="submit" class="order-item__cancel">Cancel item</button>
                   </form>
+                <?php endif; ?>
+                <?php if ($item['item_status'] !== 'cancelled'): ?>
+                  <?php $reviewed = (bool) $item['has_listing_review'] && (bool) $item['has_seller_review']; ?>
+                  <a class="order-item__review" href="/pages/review.php?order_item_id=<?= (int) $item['order_item_id'] ?>">
+                    <?= $reviewed ? 'View your review' : ((bool) $item['has_listing_review'] || (bool) $item['has_seller_review'] ? 'Finish your review' : 'Write a review') ?>
+                  </a>
                 <?php endif; ?>
               </div>
             </li>

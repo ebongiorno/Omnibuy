@@ -7,6 +7,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/marketplace-image.php';
 require_once __DIR__ . '/../../includes/listing-validation.php';
+require_once __DIR__ . '/../../includes/marketplace-activity.php';
 startSession();
 
 /** Escape text and attribute values from the database before rendering HTML. */
@@ -92,6 +93,9 @@ if ($listingId === false) {
                 l.created_at,
                 c.category_name,
                 c.parent_category_id,
+                COALESCE(parent_c.category_name, c.category_name) AS display_category_name,
+                CASE WHEN c.parent_category_id IS NOT NULL
+                    THEN c.category_name ELSE NULL END AS display_subcategory_name,
                 sp.store_name,
                 sp.is_verified AS seller_is_verified,
                 u.username AS seller_username,
@@ -106,6 +110,8 @@ if ($listingId === false) {
                 ON u.user_id = sp.user_id
             LEFT JOIN categories AS c
                 ON c.category_id = l.category_id
+            LEFT JOIN categories AS parent_c
+                ON parent_c.category_id = c.parent_category_id
             WHERE l.listing_id = :listing_id
               AND l.listing_status = 'active'
               AND u.account_status = 'active'
@@ -183,6 +189,26 @@ if ($listingId === false) {
         $images = [];
         $listingReviews = [];
     }
+}
+
+// =========================================
+// RECORD LISTING VIEW ACTIVITY
+// =========================================
+// Only a successfully loaded, available listing viewed by an
+// authenticated user should generate a recommendation signal.
+// The helper independently excludes own-listing views, verifies
+// listing/seller eligibility, and deduplicates within 15 minutes.
+if (
+    $listing !== null
+    && isLoggedIn()
+    && isset($_SESSION['user_id'])
+    && (int) $_SESSION['user_id'] > 0
+) {
+    recordListingView(
+        $pdo,
+        (int) $_SESSION['user_id'],
+        (int) $listing['listing_id']
+    );
 }
 
 $defaultImage = '/assets/images/listing/listing-default-img.jpg';
@@ -431,6 +457,14 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
                                         <span data-wishlist-icon aria-hidden="true">&#9825;</span>
                                         <span data-wishlist-label>Checking Wishlist...</span>
                                     </button>
+                                    <?php // Only buyers can start conversations for a seller's listing. ?>
+                                    <?php if ((int) ($_SESSION['user_id'] ?? 0) !== (int) $listing['seller_user_id']): ?>
+                                        <a
+                                            href="/pages/conversation.php?listing_id=<?= (int) $listing['listing_id'] ?>"
+                                            class="listing-detail__action listing-detail__action--secondary"
+                                            style="text-decoration: none; cursor: pointer;"
+                                        >Message Seller</a>
+                                    <?php endif; ?>
                                 </div>
                                 <p class="listing-detail__purchase-note" data-wishlist-feedback role="status" aria-live="polite"></p>
                             </section>
@@ -443,7 +477,10 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
                             <p class="listing-detail__description"><?= nl2br(listingEscape($listing['item_description'] ?: 'No description provided.')) ?></p>
                             <dl class="listing-detail__specs listing-detail__specs--extra">
                                 <div><dt>Condition</dt><dd><?= listingEscape(listingHumanLabel((string) $listing['condition'])) ?></dd></div>
-                                <div><dt>Category</dt><dd><?= listingEscape($listing['category_name'] ?? 'Uncategorized') ?></dd></div>
+                                <div><dt>Category</dt><dd><?= listingEscape($listing['display_category_name'] ?? 'Uncategorized') ?></dd></div>
+                                <?php if ($listing['display_subcategory_name'] !== null): ?>
+                                    <div><dt>Subcategory</dt><dd><?= listingEscape($listing['display_subcategory_name']) ?></dd></div>
+                                <?php endif; ?>
                                 <div><dt>Sale type</dt><dd><?= $listing['sale_type'] === 'auction' ? 'Auction' : 'Fixed price' ?></dd></div>
                                 <div><dt>Return policy</dt><dd data-return-policy><?= listingEscape(formatReturnPolicy((int) $listing['return_policy_days'])) ?></dd></div>
                             </dl>

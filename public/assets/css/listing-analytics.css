@@ -1,0 +1,113 @@
+/* =========================================
+   OMNIBUY LISTING ANALYTICS
+   ========================================= */
+.listing-analytics-page {
+    padding-block: var(--space-8);
+}
+
+.listing-analytics__back {
+    display: inline-block;
+    margin-bottom: var(--space-4);
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.listing-analytics__back:hover {
+    text-decoration: underline;
+}
+
+.listing-analytics-page h1 {
+    margin: 0 0 var(--space-6);
+    color: var(--color-navy);
+    font-size: clamp(28px, 4vw, 36px);
+}
+
+.listing-analytics__summary {
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+}
+
+.listing-analytics__summary h2 {
+    margin: 0 0 var(--space-4);
+    color: var(--color-text);
+    font-size: 22px;
+}
+
+.listing-analytics__summary p {
+    margin: var(--space-2) 0;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.listing-analytics__summary strong {
+    color: var(--color-text);
+}
+
+/* =========================================
+   ANALYTICS METRICS
+   ========================================= */
+
+.listing-analytics__metrics h2 {
+    margin: 0 0 var(--space-6);
+    color: var(--color-navy);
+    font-size: 24px;
+}
+
+.listing-analytics__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.listing-analytics__card {
+    padding: var(--space-6);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    transition: box-shadow 150ms ease;
+}
+
+.listing-analytics__card:hover {
+    box-shadow: 0 8px 22px rgb(15 23 42 / 0.08);
+}
+
+.listing-analytics__card-label {
+    margin: 0 0 var(--space-3);
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.listing-analytics__card-value {
+    margin: 0;
+    color: var(--color-navy);
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+/* =========================================
+   RESPONSIVE ANALYTICS LAYOUT
+   ========================================= */
+
+@media (max-width: 900px) {
+    .listing-analytics__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .listing-analytics__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .listing-analytics__card-value {
+        font-size: 30px;
+    }
+}

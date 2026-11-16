@@ -178,3 +178,73 @@
     outline: 3px solid var(--color-primary, #2563eb);
     outline-offset: 3px;
 }
+/* SCRUM-255: Display listing photos on My Listings */
+
+.my-listings__image {
+    width: 100%;
+    height: 180px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #f3f4f6;
+}
+
+.my-listings__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+/* SCRUM-250: Edit Listing button */
+
+.my-listings__edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.my-listings__edit:hover {
+    background-color: #1d4ed8;
+    color: #ffffff;
+}
+
+/* =========================================
+   VIEW LISTING ANALYTICS
+   ========================================= */
+
+.my-listings__analytics-link {
+    margin: var(--space-3) 0;
+}
+
+.my-listings__analytics {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border: 1px solid var(--color-primary);
+    border-radius: 8px;
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+}
+
+.my-listings__analytics:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary) 8%,
+        transparent
+    );
+}
+
+.my-listings__analytics:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}

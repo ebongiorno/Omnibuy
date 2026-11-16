@@ -47,7 +47,13 @@ final class MarkListingSoldTest extends TestCase
             if (isset($this->pdo)) {
                 // Functional HTTP tests require committed fixtures,
                 // so remove only the records created by this test.
+                // Activity records can reference test listings, even when
+                // those listings have been marked sold.
                 foreach (array_reverse($this->createdListingIds) as $id) {
+                    $this->pdo->prepare(
+                        'DELETE FROM listing_views WHERE listing_id = ?'
+                    )->execute([$id]);
+
                     $this->pdo->prepare(
                         'DELETE FROM listings WHERE listing_id = ?'
                     )->execute([$id]);
@@ -60,6 +66,16 @@ final class MarkListingSoldTest extends TestCase
                 }
 
                 foreach (array_reverse($this->createdUserIds) as $id) {
+                    // Search and view history now reference authenticated
+                    // users. Clear only this test's users before deleting them.
+                    $this->pdo->prepare(
+                        'DELETE FROM search_history WHERE user_id = ?'
+                    )->execute([$id]);
+
+                    $this->pdo->prepare(
+                        'DELETE FROM listing_views WHERE user_id = ?'
+                    )->execute([$id]);
+
                     $this->pdo->prepare(
                         'DELETE FROM seller_profiles WHERE user_id = ?'
                     )->execute([$id]);

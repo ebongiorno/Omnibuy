@@ -82,13 +82,22 @@ final class CreateListingFlowTest extends TestCase
             WHERE parent_category_id IS NOT NULL
             ORDER BY category_id LIMIT 1
         ')->fetch();
+        
+        $detailsPage = $this->browser->get(
+            '/pages/create-listing-details.php'
+        );
+
+        $this->assertSame(200, $detailsPage['status']);
+
         $step2 = $this->browser->post('/pages/create-listing-details.php', [
+            'csrf_token' => HttpClient::csrfToken($detailsPage['body']),
             'main_category' => (string) $category['parent_category_id'],
             'category' => (string) $category['category_id'],
             'condition' => 'good',
             'quantity' => '1',
             'fulfillment_type' => 'shipping',
         ]);
+
 
         $this->assertSame('my-listings.php?published=1', $step2['location'], $this->alerts($step2['body']));
 
