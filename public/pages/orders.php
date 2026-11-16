@@ -8,11 +8,30 @@ requireLogin();
 
 require __DIR__ . '/../../db_connect.php';
 
-// One-time message from another page, such as "Thanks for your review!".
+$buyerId = currentUser()['user_id'];
+
+// Cancel/return one item (POST + CSRF, then redirect so a refresh can't repeat it).
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $orderItemId = filter_var($_POST['order_item_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+    if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
+        $result = ['ok' => false, 'message' => 'Your session expired. Please try again.'];
+    } elseif (($_POST['action'] ?? '') !== 'cancel_item' || $orderItemId === false) {
+        $result = ['ok' => false, 'message' => 'That order item could not be found.'];
+    } else {
+        $result = cancelOrderItem($pdo, $buyerId, $orderItemId);
+    }
+
+    $_SESSION['orders_flash'] = $result;
+    header('Location: /pages/orders.php', true, 303);
+    exit;
+}
+
+// One-time message, from a cancel above or another page ("Thanks for your review!").
 $flash = $_SESSION['orders_flash'] ?? null;
 unset($_SESSION['orders_flash']);
 
-$orders = loadBuyerOrders($pdo, currentUser()['user_id']);
+$orders = loadBuyerOrders($pdo, $buyerId);
 
 $pageTitle = 'My Orders | OmniBuy';
 
@@ -78,11 +97,32 @@ include __DIR__ . '/../components/header.php';
                   Qty <?= (int) $item['quantity'] ?> · <?= formatMoney($item['unit_price']) ?> each
                   · <?= $item['fulfillment_type'] === 'meetup' ? 'Local meetup' : 'Shipping' ?>
                 </p>
+                <p class="order-item__meta">
+                  <?php $deadline = htmlspecialchars(date('F j, Y', strtotime((string) $item['return_deadline']))); ?>
+                  <?php if ($item['item_status'] === 'cancelled'): ?>
+                    Cancelled<?= $item['cancelled_at'] !== null ? ' ' . htmlspecialchars(date('F j, Y', strtotime((string) $item['cancelled_at']))) : '' ?>
+                  <?php elseif ((int) $item['return_window_days'] === 0): ?>
+                    No returns
+                  <?php elseif ((bool) $item['can_cancel']): ?>
+                    Returnable until <?= $deadline ?>
+                  <?php else: ?>
+                    Return window ended <?= $deadline ?>
+                  <?php endif; ?>
+                </p>
               </div>
               <div class="order-item__side">
                 <span class="order-badge order-badge--<?= orderStatusTone($item['item_status']) ?>">
                   <?= htmlspecialchars(formatOrderStatus($item['item_status'])) ?>
                 </span>
+                <?php if ((bool) $item['can_cancel']): ?>
+                  <form method="post" action="/pages/orders.php"
+                    onsubmit="return confirm('Cancel this item? This can\'t be undone.');">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfToken()) ?>">
+                    <input type="hidden" name="action" value="cancel_item">
+                    <input type="hidden" name="order_item_id" value="<?= (int) $item['order_item_id'] ?>">
+                    <button type="submit" class="order-item__cancel">Cancel item</button>
+                  </form>
+                <?php endif; ?>
                 <?php if ($item['item_status'] !== 'cancelled'): ?>
                   <?php $reviewed = (bool) $item['has_listing_review'] && (bool) $item['has_seller_review']; ?>
                   <a class="order-item__review" href="/pages/review.php?order_item_id=<?= (int) $item['order_item_id'] ?>">

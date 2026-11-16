@@ -37,7 +37,8 @@ $stmt = $pdo->prepare(
         price,
         `condition`,
         quantity,
-        fulfillment_type
+        fulfillment_type,
+        return_policy_days
      FROM listings
      WHERE listing_id = :listing_id
        AND seller_user_id = :seller_id
@@ -105,6 +106,7 @@ $_SESSION['listing'] = [
     'condition' => (string) $listing['condition'],
     'quantity' => (string) $listing['quantity'],
     'fulfillment_type' => (string) $listing['fulfillment_type'],
+    'return_policy_days' => (string) $listing['return_policy_days'],
     'photos' => [],
 ];
 

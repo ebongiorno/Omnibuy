@@ -87,6 +87,7 @@ $brand = (string) ($listing['brand'] ?? '');
 $size = (string) ($listing['size'] ?? '');
 $quantity = (string) ($listing['quantity'] ?? '1');
 $fulfillmentType = (string) ($listing['fulfillment_type'] ?? '');
+$returnPolicyDays = (string) ($listing['return_policy_days'] ?? '0');
 $draftDirectory = sys_get_temp_dir() . '/omnibuy-listing-drafts';
 $allowedImageTypes = [
     'image/jpeg' => 'jpg',
@@ -116,6 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fulfillmentType = is_string($_POST['fulfillment_type'] ?? null)
         ? trim($_POST['fulfillment_type']) : '';
 
+    $returnPolicyDays = trim((string) ($_POST['return_policy_days'] ?? '0'));
+    $parsedReturnDays = parseReturnPolicyDays($returnPolicyDays);
+
     $errors = validateListingDetails([
         'category' => $category,
         'condition' => $condition,
@@ -138,6 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($mainCategory !== $clothingCategoryId) {
         $size = '';
+    }
+
+    if ($parsedReturnDays === null) {
+        $errors['return_policy_days'] =
+            'Return policy must be between 0 and ' . LISTING_MAX_RETURN_DAYS . ' days.';
     }
 
     $title = trim((string) ($listing['title'] ?? ''));
@@ -241,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         item_description = :description,
                         fulfillment_type = :fulfillment_type,
                         price = :price, `condition` = :item_condition,
-                        quantity = :quantity
+                        quantity = :quantity, return_policy_days = :return_policy_days
                      WHERE listing_id = :id AND seller_user_id = :seller
                        AND listing_status = 'active'"
                 );
@@ -253,6 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'price' => $price,
                     'item_condition' => $condition,
                     'quantity' => (int) $quantity,
+                    'return_policy_days' => $parsedReturnDays,
                     'id' => $listingId,
                     'seller' => $currentSellerId,
                 ]);
@@ -279,11 +289,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "INSERT INTO listings (
                         seller_user_id, category_id, item_name,
                         item_description, sale_type, fulfillment_type,
-                        price, `condition`, quantity, listing_status
+                        price, `condition`, quantity, return_policy_days, listing_status
                     ) VALUES (
                         :seller, :category, :name, :description,
                         'fixed_price', :fulfillment, :price,
-                        :item_condition, :quantity, 'active'
+                        :item_condition, :quantity, :return_policy_days, 'active'
                     )"
                 );
                 $stmt->execute([
@@ -295,6 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'price' => $price,
                     'item_condition' => $condition,
                     'quantity' => (int) $quantity,
+                    'return_policy_days' => $parsedReturnDays,
                 ]);
                 $listingId = (int) $pdo->lastInsertId();
                 $nextOrder = 1;
@@ -436,6 +447,26 @@ include __DIR__ . '/../components/header.php';
             </select>
         </div>
 
+        <?php $sliderDays = parseReturnPolicyDays($returnPolicyDays) ?? 0; ?>
+        <div class="listing-details__field">
+            <label for="return_policy_days">Return Policy</label>
+            <input
+                type="range"
+                id="return_policy_days"
+                name="return_policy_days"
+                class="listing-details__range"
+                min="0"
+                max="<?= LISTING_MAX_RETURN_DAYS ?>"
+                step="1"
+                value="<?= $sliderDays ?>"
+                aria-describedby="return_policy_hint"
+            >
+            <output for="return_policy_days" id="return_policy_value" class="listing-details__range-value"><?= htmlspecialchars(formatReturnPolicy($sliderDays), ENT_QUOTES, 'UTF-8') ?></output>
+            <p id="return_policy_hint" class="listing-details__hint">
+                Buyers can cancel and return their purchase within this many days. Up to <?= LISTING_MAX_RETURN_DAYS ?> days; 0 means no returns.
+            </p>
+        </div>
+
         <div>
             <a href="create-listing.php">Back</a>
             <button class="listing-details__submit" type="submit">
@@ -485,6 +516,13 @@ include __DIR__ . '/../components/header.php';
             sizeInput.value = '';
         }
     }
+
+    const returnSlider = document.getElementById('return_policy_days');
+    const returnValue = document.getElementById('return_policy_value');
+    returnSlider.addEventListener('input', () => {
+        const days = Number(returnSlider.value);
+        returnValue.textContent = days === 0 ? 'No returns' : (days === 1 ? '1-day returns' : `${days}-day returns`);
+    });
 
     main.addEventListener('change', () => updateCategories(true));
     updateCategories();

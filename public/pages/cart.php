@@ -90,6 +90,7 @@ include __DIR__ . '/../components/header.php';
                 <?php else: ?>
                   Shipping <?= $item['line_shipping'] > 0 ? formatMoney($item['line_shipping']) : 'free' ?>
                 <?php endif; ?>
+                · <?= htmlspecialchars(formatReturnPolicy((int) $item['return_policy_days'])) ?>
               </p>
               <?php if ($item['problem'] !== null): ?>
                 <p class="cart-item__problem" role="alert"><?= htmlspecialchars($item['problem']) ?></p>
