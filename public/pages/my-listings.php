@@ -349,6 +349,16 @@ include $header;
                             ) ?>
                         </p>
 
+                        <!-- UC-11: View Listing Analytics -->
+                        <div class="my-listings__analytics-link">
+                            <a
+                                href="/pages/listing-analytics.php?id=<?= (int) $listing['listing_id'] ?>"
+                                class="my-listings__analytics"
+                            >
+                                View Analytics
+                            </a>
+                        </div>
+
                         <?php if ($listing['listing_status'] === 'active'): ?>
                             <div class="my-listings__actions">
                                 <a
