@@ -288,9 +288,11 @@ the corresponding stored test data.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. Controlled analytics records were created for a temporary listing, including three listing views from two unique viewers, two recent views, two wishlist saves, one conversation, and two messages.
 
-**Status:** Not Run
+The authenticated listing owner successfully accessed the analytics page. All six displayed metrics matched the expected database values. The test completed without PHP or database errors after correcting the test-data cleanup order.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 

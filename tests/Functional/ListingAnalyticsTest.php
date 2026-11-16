@@ -47,6 +47,26 @@ final class ListingAnalyticsTest extends TestCase
                 // Activity records can reference test listings, even when
                 // those listings have been marked sold.
                 foreach (array_reverse($this->createdListingIds) as $id) {
+                    // Remove messages associated with this listing.
+                    $this->pdo->prepare(
+                        'DELETE FROM messages
+                        WHERE conversation_id IN (
+                            SELECT conversation_id
+                            FROM conversations
+                            WHERE listing_id = ?
+                        )'
+                    )->execute([$id]);
+
+                    // Remove conversations associated with this listing.
+                    $this->pdo->prepare(
+                        'DELETE FROM conversations WHERE listing_id = ?'
+                    )->execute([$id]);
+
+                    // Remove wishlist saves associated with this listing.
+                    $this->pdo->prepare(
+                        'DELETE FROM wishlist_items WHERE listing_id = ?'
+                    )->execute([$id]);
+                    
                     $this->pdo->prepare(
                         'DELETE FROM listing_views WHERE listing_id = ?'
                     )->execute([$id]);
@@ -177,6 +197,192 @@ final class ListingAnalyticsTest extends TestCase
                 $analyticsResponse['body'],
                 'class="listing-analytics__card-label"'
             )
+        );
+    }
+
+    // =========================================
+    // TC-11-02: VERIFY ANALYTICS METRIC ACCURACY
+    // =========================================
+
+    public function testAnalyticsMetricsMatchDatabaseRecords(): void 
+    {
+        // Create the listing owner.
+        $owner = $this->createListingOwner();
+
+        // Create two additional users to generate activity.
+        $viewerOne = $this->createListingOwner();
+        $viewerTwo = $this->createListingOwner();
+
+        // Create the listing.
+        $categoryId = $this->createCategory();
+
+        $listingName = 'UC11 Metrics Test '
+            . bin2hex(random_bytes(4));
+
+        $listingId = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Insert a recent listing view.
+        // Insert a recent listing view.
+        $recentView = $this->pdo->prepare(
+            'INSERT INTO listing_views (
+                user_id,
+                listing_id,
+                viewed_at
+            ) VALUES (?, ?, NOW())'
+        );
+
+        // Insert an older listing view.
+        $olderView = $this->pdo->prepare(
+            'INSERT INTO listing_views (
+                user_id,
+                listing_id,
+                viewed_at
+            ) VALUES (?, ?, NOW() - INTERVAL 10 DAY)'
+        );
+
+        // Viewer one views the listing twice recently.
+        $recentView->execute([
+            $viewerOne['id'],
+            $listingId
+        ]);
+
+        $recentView->execute([
+            $viewerOne['id'],
+            $listingId
+        ]);
+
+        // Viewer two viewed the listing 10 days ago.
+        $olderView->execute([
+            $viewerTwo['id'],
+            $listingId
+        ]);
+
+        // Save the listing to two users' wishlists.
+        $wishlistStmt = $this->pdo->prepare(
+            'INSERT INTO wishlist_items (
+                user_id,
+                listing_id
+            ) VALUES (?, ?)'
+        );
+
+        $wishlistStmt->execute([
+            $viewerOne['id'],
+            $listingId
+        ]);
+
+        $wishlistStmt->execute([
+            $viewerTwo['id'],
+            $listingId
+        ]);
+
+        // Create a conversation about the listing.
+        $conversationStmt = $this->pdo->prepare(
+            'INSERT INTO conversations (
+                buyer_id,
+                seller_id,
+                listing_id
+            ) VALUES (?, ?, ?)'
+        );
+
+        $conversationStmt->execute([
+            $viewerOne['id'],
+            $owner['id'],
+            $listingId
+        ]);
+
+        $conversationId = (int) $this->pdo->lastInsertId();
+
+        // Create two messages in the conversation.
+        $messageStmt = $this->pdo->prepare(
+            'INSERT INTO messages (
+                conversation_id,
+                sender_user_id,
+                message_text
+            ) VALUES (?, ?, ?)'
+        );
+
+        // Buyer sends a message.
+        $messageStmt->execute([
+            $conversationId,
+            $viewerOne['id'],
+            'Is this listing still available?'
+        ]);
+
+        // Listing owner replies.
+        $messageStmt->execute([
+            $conversationId,
+            $owner['id'],
+            'Yes, it is still available.'
+        ]);
+
+        // Log in as the listing owner.
+        $this->logInAs($owner['email']);
+
+        // Open the listing analytics page.
+        $response = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $listingId
+        );
+
+        // Verify the analytics page loads successfully.
+        $this->assertSame(
+            200,
+            $response['status'],
+            $response['body']
+        );
+
+        // Parse the analytics page HTML.
+        $document = new \DOMDocument();
+
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML($response['body']);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $xpath = new \DOMXPath($document);
+
+        // Find all analytics metric cards.
+        $cards = $xpath->query(
+            "//*[contains(concat(' ', normalize-space(@class), ' '), ' listing-analytics__card ')]"
+        );
+
+        $actualMetrics = [];
+
+        foreach ($cards as $card) {
+            $labelNode = $xpath->query(
+                ".//*[contains(concat(' ', normalize-space(@class), ' '), ' listing-analytics__card-label ')]",
+                $card
+            )->item(0);
+
+            $valueNode = $xpath->query(
+                ".//*[contains(concat(' ', normalize-space(@class), ' '), ' listing-analytics__card-value ')]",
+                $card
+            )->item(0);
+
+            if ($labelNode === null || $valueNode === null) {
+                continue;
+            }
+
+            $label = trim($labelNode->textContent);
+            $value = str_replace(',', '', trim($valueNode->textContent));
+
+            $actualMetrics[$label] = (int) $value;
+        }
+
+        // Verify the six calculated analytics metrics.
+        $this->assertSame(
+            [
+                'Total Views' => 3,
+                'Unique Viewers' => 2,
+                'Views in Last 7 Days' => 2,
+                'Wishlist Saves' => 2,
+                'Total Conversations' => 1,
+                'Total Messages' => 2,
+            ],
+            $actualMetrics
         );
     }
 
