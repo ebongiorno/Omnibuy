@@ -812,7 +812,62 @@ final class ListingAnalyticsTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-11-08: REJECT NONEXISTENT LISTING IDS
+    // =========================================
 
+    public function testAnalyticsRejectsNonexistentListingId(): void
+    {
+        // Create a temporary test user.
+        $user = $this->createListingOwner();
+
+        // Authenticate before requesting analytics.
+        $this->logInAs($user['email']);
+
+        // Generate a positive listing ID not currently in use.
+        $nonexistentId = (int) $this->pdo->query(
+            'SELECT COALESCE(MAX(listing_id), 0) + 1000
+             FROM listings'
+        )->fetchColumn();
+
+        // Verify the chosen listing ID is not present.
+        $checkStmt = $this->pdo->prepare(
+            'SELECT COUNT(*)
+             FROM listings
+             WHERE listing_id = ?'
+        );
+
+        $checkStmt->execute([$nonexistentId]);
+
+        $this->assertSame(
+            0,
+            (int) $checkStmt->fetchColumn()
+        );
+
+        // Attempt to access analytics for the nonexistent listing.
+        $response = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $nonexistentId
+        );
+
+        // Verify the application returns HTTP 404.
+        $this->assertSame(
+            404,
+            $response['status'],
+            $response['body']
+        );
+
+        // Verify the expected error message.
+        $this->assertStringContainsString(
+            'Listing not found or unavailable.',
+            $response['body']
+        );
+
+        // Verify the analytics cards are not displayed.
+        $this->assertStringNotContainsString(
+            'listing-analytics__card',
+            $response['body']
+        );
+    }
 
     // =========================================
     // TEST DATA HELPERS

@@ -514,6 +514,49 @@ All five requests returned HTTP 400 and displayed the expected "Invalid listing 
 
 **Related Jira Defect:** None
 
+
+### TC-11-08: Reject Nonexistent Listing IDs
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that the listing analytics page rejects valid positive listing IDs that do not correspond to existing database records.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- An authenticated user account is available.
+
+**Test Data:**
+- Authenticated temporary user
+- Positive listing ID not present in the database
+
+**Test Steps:**
+1. Create and authenticate a temporary user.
+2. Generate and verify a nonexistent positive listing ID.
+3. Attempt to access analytics using the nonexistent listing ID.
+4. Verify that the response returns HTTP 404.
+5. Verify that the appropriate error message is displayed and no analytics cards are returned.
+
+**Expected Result:**
+- The application should return HTTP 404.
+- The response should display the listing not found or unavailable message.
+- No listing analytics information should be displayed.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+The PHPUnit test passed successfully. A temporary user was created and authenticated, and a valid positive listing ID was generated and confirmed not to exist in the database.
+
+When the authenticated user attempted to access analytics for the nonexistent listing, the application correctly returned HTTP 404 and displayed the expected "Listing not found or unavailable." error message. No analytics metric cards were disclosed.
+
+All assertions passed, confirming that the application handles nonexistent listing IDs without exposing analytics information.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-14: Mark Listing as Sold
 ### TC-14-01: Mark an Active Listing as Sold
 
