@@ -1,0 +1,204 @@
+<?php
+
+require_once __DIR__ . '/../../includes/auth.php';
+requireLogin();
+require_once __DIR__ . '/../../db_connect.php';
+$currentUserId = (int) $_SESSION['user_id'];
+
+$listingId = filter_var(
+    $_GET['id'] ?? null,
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 1]]
+);
+if ($listingId === false || $listingId === null) {
+    http_response_code(400);
+    exit('Invalid listing ID.');
+}
+
+$stmt = $pdo->prepare(
+    "SELECT
+        listing_id,
+        item_name,
+        price,
+        listing_status,
+        created_at,
+        renewed_at
+    FROM listings
+    WHERE listing_id = :listing_id
+      AND seller_user_id = :user_id
+    LIMIT 1"
+);
+$stmt->execute([
+    'listing_id' => $listingId,
+    'user_id' => $currentUserId
+]);
+$listing = $stmt->fetch();
+if (!$listing) {
+    http_response_code(404);
+    exit('Listing not found or unavailable.');
+}
+
+$viewsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total_views
+     FROM listing_views
+     WHERE listing_id = :listing_id"
+);
+$viewsStmt->execute([
+    'listing_id' => $listingId
+]);
+$totalViews = (int) $viewsStmt->fetchColumn();
+
+$uniqueViewersStmt = $pdo->prepare(
+    "SELECT COUNT(DISTINCT user_id) AS unique_viewers
+     FROM listing_views
+     WHERE listing_id = :listing_id"
+);
+$uniqueViewersStmt->execute([
+    'listing_id' => $listingId
+]);
+$uniqueViewers = (int) $uniqueViewersStmt->fetchColumn();
+
+$recentViewsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS views_last_7_days
+     FROM listing_views
+     WHERE listing_id = :listing_id
+       AND viewed_at >= NOW() - INTERVAL 7 DAY"
+);
+$recentViewsStmt->execute([
+    'listing_id' => $listingId
+]);
+$recentViews = (int) $recentViewsStmt->fetchColumn();
+
+$wishlistStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS wishlist_saves
+     FROM wishlist_items
+     WHERE listing_id = :listing_id"
+);
+$wishlistStmt->execute([
+    'listing_id' => $listingId
+]);
+$wishlistSaves = (int) $wishlistStmt->fetchColumn();
+
+$conversationsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total_conversations
+     FROM conversations
+     WHERE listing_id = :listing_id"
+);
+$conversationsStmt->execute([
+    'listing_id' => $listingId
+]);
+$totalConversations = (int) $conversationsStmt->fetchColumn();
+
+$messagesStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total_messages
+     FROM messages AS m
+     INNER JOIN conversations AS c
+         ON m.conversation_id = c.conversation_id
+     WHERE c.listing_id = :listing_id"
+);
+$messagesStmt->execute([
+    'listing_id' => $listingId
+]);
+$totalMessages = (int) $messagesStmt->fetchColumn();
+
+// Page configuration
+$pageTitle = 'Listing Analytics | OmniBuy';
+$activeNav = 'my-listings';
+$pageStylesheet = '/assets/css/listing-analytics.css';
+include __DIR__ . '/../components/header.php';
+?>
+
+<section class="shell listing-analytics-page">
+
+    <a href="/pages/my-listings.php" class="listing-analytics__back">
+        Back to My Listings
+    </a>
+
+    <h1>Listing Analytics</h1>
+
+    <div class="listing-analytics__summary">
+        <h2>
+            <?= htmlspecialchars(
+                (string) $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </h2>
+        <p>
+            <strong>Current Price:</strong>
+            $<?= number_format((float) $listing['price'], 2) ?>
+        </p>
+        <p>
+            <strong>Status:</strong>
+            <?= htmlspecialchars(
+                ucfirst((string) $listing['listing_status']),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </p>
+    </div>
+
+    <div class="listing-analytics__metrics">
+        <h2>Performance Overview</h2>
+        <div class="listing-analytics__grid">
+            <!-- Card 1: Total Views -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Total Views
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $totalViews ?>
+                </p>
+            </div>
+            <!-- Card 2: Unique Viewers -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Unique Viewers
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $uniqueViewers ?>
+                </p>
+            </div>
+            <!-- Card 3: Views in Last 7 Days -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Views in Last 7 Days
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $recentViews ?>
+                </p>
+            </div>
+            <!-- Card 4: Wishlist Saves -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Wishlist Saves
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $wishlistSaves ?>
+                </p>
+            </div>
+            <!-- Card 5: Total Conversations -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Total Conversations
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $totalConversations ?>
+                </p>
+            </div>
+            <!-- Card 6: Total Messages -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Total Messages
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $totalMessages ?>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<?php
+
+include __DIR__ . '/../components/footer.php';

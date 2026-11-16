@@ -243,9 +243,13 @@ a listing they own.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated PHPUnit test passed successfully. A temporary user, category, and active listing were created, and the user was authenticated as the listing owner. The My Listings page returned HTTP 200 and correctly displayed the newly created listing.
 
-**Status:** Not Run
+The test confirmed that the listing contained a View Analytics link with the correct listing ID. Accessing this link returned HTTP 200 and displayed the Listing Analytics page with the correct listing name and expected price of $25.00.
+
+The analytics page successfully rendered all six metric-label elements. All assertions passed, confirming that an authenticated listing owner can access their listing analytics and view the corresponding information.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -284,9 +288,11 @@ the corresponding stored test data.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. Controlled analytics records were created for a temporary listing, including three listing views from two unique viewers, two recent views, two wishlist saves, one conversation, and two messages.
 
-**Status:** Not Run
+The authenticated listing owner successfully accessed the analytics page. All six displayed metrics matched the expected database values. The test completed without PHP or database errors after correcting the test-data cleanup order.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -327,9 +333,13 @@ incorrectly displayed for another listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. Two temporary listings were created under the same authenticated user, with different analytics activity recorded for each listing.
 
-**Status:** Not Run
+Both analytics pages returned HTTP 200 and displayed the correct listing information without displaying the other listing's details. Listing A correctly reported three total views, two unique viewers, two recent views, two wishlist saves, one conversation, and two messages. Listing B correctly reported one total view, one unique viewer, one recent view, and zero wishlist saves, conversations, and messages.
+
+All assertions passed, confirming that analytics data is correctly associated with its corresponding listing and does not include activity from other listings.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -367,9 +377,13 @@ display appropriate values without errors.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. A temporary listing was created without any recorded analytics activity, and the authenticated listing owner successfully accessed its analytics page.
 
-**Status:** Not Run
+The page returned HTTP 200 and correctly displayed the listing information. All six analytics metrics—Total Views, Unique Viewers, Views in Last 7 Days, Wishlist Saves, Total Conversations, and Total Messages—displayed a value of zero.
+
+All assertions passed, confirming that listings without recorded activity display accurate zero-valued metrics without PHP errors, database errors, or missing analytics information.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
@@ -408,11 +422,192 @@ belonging to another seller.
 - The listing owner should retain authorized access.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. Two temporary user accounts were created, with User A owning a listing containing recorded analytics activity.
 
-**Status:** Not Run
+When User B attempted to access User A's listing analytics, the application returned HTTP 404. The unauthorized response did not disclose the listing name or any analytics metrics.
+
+A separate authenticated session was established for User A, who successfully accessed the same listing's analytics page with HTTP 200. The correct listing information and recorded view metrics were displayed.
+
+All assertions passed, confirming that analytics access is restricted to the listing owner without preventing authorized access.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
+
+
+### TC-11-06: Analytics Page Requires Login
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that unauthenticated users are redirected to the login page when attempting to access listing analytics.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- The user is not authenticated.
+
+**Test Data:**
+- Listing ID: 1
+- Unauthenticated HTTP request
+
+**Test Steps:**
+1. Send an unauthenticated GET request to the listing analytics page.
+2. Verify that the response returns HTTP 302.
+3. Verify that the redirect points to the login page.
+
+**Expected Result:**
+- Unauthenticated users should be redirected to the login page.
+- The response should return HTTP 302.
+- The redirect URL should include the original destination.
+
+**Actual Result:**
+The PHPUnit test passed. The application returned HTTP 302 and redirected to the login page as expected.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-11-07: Reject Invalid Listing IDs
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that the listing analytics page rejects missing, malformed, and nonpositive listing IDs without exposing analytics information.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- An authenticated user account is available.
+
+**Test Data:**
+- Missing listing ID
+- Zero listing ID
+- Negative listing ID
+- Non-numeric listing ID
+- Decimal listing ID
+
+**Test Steps:**
+1. Create a temporary user and authenticate.
+2. Attempt to access listing analytics using each invalid listing ID.
+3. Verify that each request returns HTTP 400.
+4. Verify that the appropriate validation error message is displayed.
+5. Confirm that all invalid inputs are rejected.
+
+**Expected Result:**
+- All five invalid listing ID requests should return HTTP 400.
+- The application should display an invalid listing ID error.
+- No listing analytics information should be disclosed.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+The PHPUnit test passed successfully. An authenticated test user attempted to access the listing analytics page using five invalid listing ID inputs: a missing ID, zero, a negative integer, a non-numeric value, and a decimal value.
+
+All five requests returned HTTP 400 and displayed the expected "Invalid listing ID." validation message. All assertions passed, confirming that the application correctly rejects malformed and invalid listing identifiers.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-11-08: Reject Nonexistent Listing IDs
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that the listing analytics page rejects valid positive listing IDs that do not correspond to existing database records.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- An authenticated user account is available.
+
+**Test Data:**
+- Authenticated temporary user
+- Positive listing ID not present in the database
+
+**Test Steps:**
+1. Create and authenticate a temporary user.
+2. Generate and verify a nonexistent positive listing ID.
+3. Attempt to access analytics using the nonexistent listing ID.
+4. Verify that the response returns HTTP 404.
+5. Verify that the appropriate error message is displayed and no analytics cards are returned.
+
+**Expected Result:**
+- The application should return HTTP 404.
+- The response should display the listing not found or unavailable message.
+- No listing analytics information should be displayed.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+The PHPUnit test passed successfully. A temporary user was created and authenticated, and a valid positive listing ID was generated and confirmed not to exist in the database.
+
+When the authenticated user attempted to access analytics for the nonexistent listing, the application correctly returned HTTP 404 and displayed the expected "Listing not found or unavailable." error message. No analytics metric cards were disclosed.
+
+All assertions passed, confirming that the application handles nonexistent listing IDs without exposing analytics information.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-11-09: View Analytics for a Sold Listing
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Regression Testing
+
+**Objective:**
+Verify that a listing owner can continue accessing analytics after marking a listing as sold and that previously recorded analytics data remains available.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- An authenticated listing owner is available.
+- A listing can have its status changed to sold.
+
+**Test Data:**
+- Temporary listing owner and viewer
+- Temporary listing with one recorded view
+- Listing status: Sold
+
+**Test Steps:**
+1. Create a temporary listing and record one view.
+2. Change the listing status to sold.
+3. Authenticate as the listing owner.
+4. Verify that My Listings displays the sold listing and its View Analytics link.
+5. Access the listing analytics page.
+6. Verify HTTP 200, the correct listing information, and sold status.
+7. Verify that the recorded view remains in the analytics metrics.
+
+**Expected Result:**
+- The sold listing should remain accessible through My Listings.
+- The View Analytics link should remain available.
+- The analytics page should return HTTP 200 and display Sold as the listing status.
+- Previously recorded analytics should be preserved.
+- Metrics without recorded activity should display zero.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+The PHPUnit test passed successfully. A temporary listing was created with one recorded view before its status was changed from active to sold.
+
+The authenticated listing owner successfully accessed My Listings, where the sold listing and its View Analytics link remained available. The analytics page returned HTTP 200 and displayed the correct listing information with a status of Sold.
+
+The previously recorded view was preserved, with Total Views, Unique Viewers, and Views in Last 7 Days each displaying one. Wishlist Saves, Total Conversations, and Total Messages correctly displayed zero.
+
+All assertions passed, confirming that listing analytics remain accessible and accurate after a listing has been marked as sold.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-14: Mark Listing as Sold
 ### TC-14-01: Mark an Active Listing as Sold
 
