@@ -470,6 +470,50 @@ The PHPUnit test passed. The application returned HTTP 302 and redirected to the
 
 **Related Jira Defect:** None
 
+
+### TC-11-07: Reject Invalid Listing IDs
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that the listing analytics page rejects missing, malformed, and nonpositive listing IDs without exposing analytics information.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- An authenticated user account is available.
+
+**Test Data:**
+- Missing listing ID
+- Zero listing ID
+- Negative listing ID
+- Non-numeric listing ID
+- Decimal listing ID
+
+**Test Steps:**
+1. Create a temporary user and authenticate.
+2. Attempt to access listing analytics using each invalid listing ID.
+3. Verify that each request returns HTTP 400.
+4. Verify that the appropriate validation error message is displayed.
+5. Confirm that all invalid inputs are rejected.
+
+**Expected Result:**
+- All five invalid listing ID requests should return HTTP 400.
+- The application should display an invalid listing ID error.
+- No listing analytics information should be disclosed.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+The PHPUnit test passed successfully. An authenticated test user attempted to access the listing analytics page using five invalid listing ID inputs: a missing ID, zero, a negative integer, a non-numeric value, and a decimal value.
+
+All five requests returned HTTP 400 and displayed the expected "Invalid listing ID." validation message. All assertions passed, confirming that the application correctly rejects malformed and invalid listing identifiers.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-14: Mark Listing as Sold
 ### TC-14-01: Mark an Active Listing as Sold
 

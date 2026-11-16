@@ -765,6 +765,53 @@ final class ListingAnalyticsTest extends TestCase
         );
     }
 
+    // =========================================
+    // TC-11-07: REJECT INVALID LISTING IDS
+    // =========================================
+
+    public function testAnalyticsRejectsInvalidListingIds(): void
+    {
+        // Create a temporary authenticated user.
+        $user = $this->createListingOwner();
+
+        // Log in before testing listing ID validation.
+        $this->logInAs($user['email']);
+
+        // Define invalid listing ID requests.
+        $invalidUrls = [
+            'Missing ID' => '/pages/listing-analytics.php',
+            'Zero ID' => '/pages/listing-analytics.php?id=0',
+            'Negative ID' => '/pages/listing-analytics.php?id=-5',
+            'Non-numeric ID' => '/pages/listing-analytics.php?id=abc',
+            'Decimal ID' => '/pages/listing-analytics.php?id=1.5',
+        ];
+
+        // Verify every invalid ID is rejected.
+        foreach ($invalidUrls as $scenario => $url) {
+            $response = $this->browser->get($url);
+
+            // Invalid IDs must return HTTP 400.
+            $this->assertSame(
+                400,
+                $response['status'],
+                "Unexpected status for: $scenario"
+            );
+
+            // Verify the expected validation error.
+            $this->assertStringContainsString(
+                'Invalid listing ID.',
+                $response['body'],
+                "Missing validation message for: $scenario"
+            );
+        }
+
+        // Confirm all five scenarios were included.
+        $this->assertCount(
+            5,
+            $invalidUrls
+        );
+    }
+
 
 
     // =========================================
