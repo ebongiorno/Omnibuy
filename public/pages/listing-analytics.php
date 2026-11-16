@@ -107,3 +107,38 @@ $activeNav = 'my-listings';
 $pageStylesheet = '/assets/css/listing-analytics.css';
 include __DIR__ . '/../components/header.php';
 ?>
+
+<section class="shell listing-analytics-page">
+
+    <a href="/pages/my-listings.php" class="listing-analytics__back">
+        Back to My Listings
+    </a>
+
+    <h1>Listing Analytics</h1>
+
+    <div class="listing-analytics__summary">
+        <h2>
+            <?= htmlspecialchars(
+                (string) $listing['item_name'],
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </h2>
+        <p>
+            <strong>Current Price:</strong>
+            $<?= number_format((float) $listing['price'], 2) ?>
+        </p>
+        <p>
+            <strong>Status:</strong>
+            <?= htmlspecialchars(
+                ucfirst((string) $listing['listing_status']),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </p>
+    </div>
+</section>
+
+<?php
+
+include __DIR__ . '/../components/footer.php';
