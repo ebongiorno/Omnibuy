@@ -870,6 +870,136 @@ final class ListingAnalyticsTest extends TestCase
     }
 
     // =========================================
+    // TC-11-09: VIEW ANALYTICS FOR SOLD LISTING
+    // =========================================
+
+    public function testOwnerCanViewSoldListingAnalytics(): void
+    {
+        // Create a temporary listing owner and viewer.
+        $owner = $this->createListingOwner();
+        $viewer = $this->createListingOwner();
+
+        // Create a temporary category.
+        $categoryId = $this->createCategory();
+
+        // Generate a unique listing name.
+        $listingName = 'UC11 Sold Listing Test '
+            . bin2hex(random_bytes(4));
+
+        // Create an active listing.
+        $listingId = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Record one view while the listing is active.
+        $viewStmt = $this->pdo->prepare(
+            'INSERT INTO listing_views (
+                user_id,
+                listing_id,
+                viewed_at
+            ) VALUES (?, ?, NOW())'
+        );
+
+        $viewStmt->execute([
+            $viewer['id'],
+            $listingId
+        ]);
+
+        // Mark the test listing as sold.
+        $soldStmt = $this->pdo->prepare(
+            'UPDATE listings
+             SET listing_status = ?
+             WHERE listing_id = ?'
+        );
+
+        $soldStmt->execute([
+            'sold',
+            $listingId
+        ]);
+
+        // Verify the listing was updated.
+        $this->assertSame(
+            1,
+            $soldStmt->rowCount()
+        );
+
+        // Authenticate as the listing owner.
+        $this->logInAs($owner['email']);
+
+        // Open My Listings.
+        $myListingsResponse = $this->browser->get(
+            '/pages/my-listings.php'
+        );
+
+        // Verify My Listings loads successfully.
+        $this->assertSame(
+            200,
+            $myListingsResponse['status'],
+            $myListingsResponse['body']
+        );
+
+        // Verify the sold listing still appears.
+        $this->assertStringContainsString(
+            $listingName,
+            $myListingsResponse['body']
+        );
+
+        // Generate the expected analytics URL.
+        $analyticsUrl = '/pages/listing-analytics.php?id='
+            . $listingId;
+
+        // Verify the sold listing retains its analytics link.
+        $this->assertStringContainsString(
+            $analyticsUrl,
+            $myListingsResponse['body']
+        );
+
+        // Access analytics for the sold listing.
+        $response = $this->browser->get(
+            $analyticsUrl
+        );
+
+        // Verify successful access.
+        $this->assertSame(
+            200,
+            $response['status'],
+            $response['body']
+        );
+
+        // Verify the correct listing is displayed.
+        $this->assertStringContainsString(
+            $listingName,
+            $response['body']
+        );
+
+        // Verify the listing status displays Sold.
+        $this->assertMatchesRegularExpression(
+            '/<strong>\s*Status:\s*<\/strong>\s*Sold\b/',
+            $response['body']
+        );
+
+        // Extract analytics for the sold listing.
+        $actualMetrics = $this->extractAnalyticsMetrics(
+            $response['body']
+        );
+
+        // Verify analytics were preserved after the sale.
+        $this->assertSame(
+            [
+                'Total Views' => 1,
+                'Unique Viewers' => 1,
+                'Views in Last 7 Days' => 1,
+                'Wishlist Saves' => 0,
+                'Total Conversations' => 0,
+                'Total Messages' => 0,
+            ],
+            $actualMetrics
+        );
+    }
+
+    // =========================================
     // TEST DATA HELPERS
     // =========================================
 

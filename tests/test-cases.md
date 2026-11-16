@@ -557,6 +557,57 @@ All assertions passed, confirming that the application handles nonexistent listi
 
 **Related Jira Defect:** None
 
+
+### TC-11-09: View Analytics for a Sold Listing
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Regression Testing
+
+**Objective:**
+Verify that a listing owner can continue accessing analytics after marking a listing as sold and that previously recorded analytics data remains available.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- An authenticated listing owner is available.
+- A listing can have its status changed to sold.
+
+**Test Data:**
+- Temporary listing owner and viewer
+- Temporary listing with one recorded view
+- Listing status: Sold
+
+**Test Steps:**
+1. Create a temporary listing and record one view.
+2. Change the listing status to sold.
+3. Authenticate as the listing owner.
+4. Verify that My Listings displays the sold listing and its View Analytics link.
+5. Access the listing analytics page.
+6. Verify HTTP 200, the correct listing information, and sold status.
+7. Verify that the recorded view remains in the analytics metrics.
+
+**Expected Result:**
+- The sold listing should remain accessible through My Listings.
+- The View Analytics link should remain available.
+- The analytics page should return HTTP 200 and display Sold as the listing status.
+- Previously recorded analytics should be preserved.
+- Metrics without recorded activity should display zero.
+- No PHP or database errors should occur.
+
+**Actual Result:**
+The PHPUnit test passed successfully. A temporary listing was created with one recorded view before its status was changed from active to sold.
+
+The authenticated listing owner successfully accessed My Listings, where the sold listing and its View Analytics link remained available. The analytics page returned HTTP 200 and displayed the correct listing information with a status of Sold.
+
+The previously recorded view was preserved, with Total Views, Unique Viewers, and Views in Last 7 Days each displaying one. Wishlist Saves, Total Conversations, and Total Messages correctly displayed zero.
+
+All assertions passed, confirming that listing analytics remain accessible and accurate after a listing has been marked as sold.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-14: Mark Listing as Sold
 ### TC-14-01: Mark an Active Listing as Sold
 
