@@ -333,9 +333,13 @@ incorrectly displayed for another listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. Two temporary listings were created under the same authenticated user, with different analytics activity recorded for each listing.
 
-**Status:** Not Run
+Both analytics pages returned HTTP 200 and displayed the correct listing information without displaying the other listing's details. Listing A correctly reported three total views, two unique viewers, two recent views, two wishlist saves, one conversation, and two messages. Listing B correctly reported one total view, one unique viewer, one recent view, and zero wishlist saves, conversations, and messages.
+
+All assertions passed, confirming that analytics data is correctly associated with its corresponding listing and does not include activity from other listings.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 

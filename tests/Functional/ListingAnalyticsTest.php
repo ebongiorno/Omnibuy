@@ -387,6 +387,187 @@ final class ListingAnalyticsTest extends TestCase
     }
 
     // =========================================
+    // TC-11-03: VERIFY LISTING ANALYTICS ISOLATION
+    // =========================================
+
+    public function testAnalyticsBelongToCorrectListing(): void
+    {
+        // Create one owner and two viewers.
+        $owner = $this->createListingOwner();
+        $viewerOne = $this->createListingOwner();
+        $viewerTwo = $this->createListingOwner();
+
+        // Both listings belong to the same owner.
+        $categoryId = $this->createCategory();
+
+        $listingNameA = 'UC11 Listing A '
+            . bin2hex(random_bytes(4));
+
+        $listingNameB = 'UC11 Listing B '
+            . bin2hex(random_bytes(4));
+
+        $listingIdA = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingNameA
+        );
+
+        $listingIdB = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingNameB
+        );
+
+        // Create recent and older listing views.
+        $recentView = $this->pdo->prepare(
+            'INSERT INTO listing_views (
+                user_id,
+                listing_id,
+                viewed_at
+            ) VALUES (?, ?, NOW())'
+        );
+
+        $olderView = $this->pdo->prepare(
+            'INSERT INTO listing_views (
+                user_id,
+                listing_id,
+                viewed_at
+            ) VALUES (?, ?, NOW() - INTERVAL 10 DAY)'
+        );
+
+        // Listing A: three views, two unique viewers.
+        $recentView->execute([$viewerOne['id'], $listingIdA]);
+        $recentView->execute([$viewerOne['id'], $listingIdA]);
+        $olderView->execute([$viewerTwo['id'], $listingIdA]);
+
+        // Listing B: one recent view.
+        $recentView->execute([$viewerOne['id'], $listingIdB]);
+
+        // Listing A: two wishlist saves.
+        $wishlistStmt = $this->pdo->prepare(
+            'INSERT INTO wishlist_items (
+                user_id,
+                listing_id
+            ) VALUES (?, ?)'
+        );
+
+        $wishlistStmt->execute([$viewerOne['id'], $listingIdA]);
+        $wishlistStmt->execute([$viewerTwo['id'], $listingIdA]);
+
+        // Listing A: one conversation.
+        $conversationStmt = $this->pdo->prepare(
+            'INSERT INTO conversations (
+                buyer_id,
+                seller_id,
+                listing_id
+            ) VALUES (?, ?, ?)'
+        );
+
+        $conversationStmt->execute([
+            $viewerOne['id'],
+            $owner['id'],
+            $listingIdA
+        ]);
+
+        $conversationId = (int) $this->pdo->lastInsertId();
+
+        // Listing A: two messages.
+        $messageStmt = $this->pdo->prepare(
+            'INSERT INTO messages (
+                conversation_id,
+                sender_user_id,
+                message_text
+            ) VALUES (?, ?, ?)'
+        );
+
+        $messageStmt->execute([
+            $conversationId,
+            $viewerOne['id'],
+            'TC-11-03 test message from buyer.'
+        ]);
+
+        $messageStmt->execute([
+            $conversationId,
+            $owner['id'],
+            'TC-11-03 test reply from owner.'
+        ]);
+
+        // Log in as the owner of both listings.
+        $this->logInAs($owner['email']);
+
+        // Retrieve analytics for Listing A.
+        $responseA = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $listingIdA
+        );
+
+        // Retrieve analytics for Listing B.
+        $responseB = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $listingIdB
+        );
+
+        // Both requests should succeed.
+        $this->assertSame(200, $responseA['status'], $responseA['body']);
+        $this->assertSame(200, $responseB['status'], $responseB['body']);
+
+        // Verify that each response identifies the correct listing.
+        $this->assertStringContainsString(
+            $listingNameA,
+            $responseA['body']
+        );
+
+        $this->assertStringContainsString(
+            $listingNameB,
+            $responseB['body']
+        );
+
+        // Neither page should show the other listing's name.
+        $this->assertStringNotContainsString(
+            $listingNameB,
+            $responseA['body']
+        );
+
+        $this->assertStringNotContainsString(
+            $listingNameA,
+            $responseB['body']
+        );
+        
+        // Extract the metrics from each response.
+        $metricsA = $this->extractAnalyticsMetrics(
+            $responseA['body']
+        );
+
+        $metricsB = $this->extractAnalyticsMetrics(
+            $responseB['body']
+        );
+
+        // Listing A must show only its own activity.
+        $this->assertSame(
+            [
+                'Total Views' => 3,
+                'Unique Viewers' => 2,
+                'Views in Last 7 Days' => 2,
+                'Wishlist Saves' => 2,
+                'Total Conversations' => 1,
+                'Total Messages' => 2,
+            ],
+            $metricsA
+        );
+
+        // Listing B must not include Listing A's activity.
+        $this->assertSame(
+            [
+                'Total Views' => 1,
+                'Unique Viewers' => 1,
+                'Views in Last 7 Days' => 1,
+                'Wishlist Saves' => 0,
+                'Total Conversations' => 0,
+                'Total Messages' => 0,
+            ],
+            $metricsB
+        );
+    }
+
+    // =========================================
     // TC-11-06: ANALYTICS REQUIRES LOGIN
     // =========================================
 
@@ -544,4 +725,49 @@ final class ListingAnalyticsTest extends TestCase
         return $csrfToken;
     }
 
+    private function extractAnalyticsMetrics(string $html): array
+    {
+        $document = new \DOMDocument();
+
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML($html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $xpath = new \DOMXPath($document);
+
+        $cards = $xpath->query(
+            "//*[contains(concat(' ', normalize-space(@class), ' '), ' listing-analytics__card ')]"
+        );
+
+        $actualMetrics = [];
+
+        foreach ($cards as $card) {
+            $labelNode = $xpath->query(
+                ".//*[contains(concat(' ', normalize-space(@class), ' '), ' listing-analytics__card-label ')]",
+                $card
+            )->item(0);
+
+            $valueNode = $xpath->query(
+                ".//*[contains(concat(' ', normalize-space(@class), ' '), ' listing-analytics__card-value ')]",
+                $card
+            )->item(0);
+
+            if ($labelNode === null || $valueNode === null) {
+                continue;
+            }
+
+            $label = trim($labelNode->textContent);
+
+            $value = str_replace(
+                ',',
+                '',
+                trim($valueNode->textContent)
+            );
+
+            $actualMetrics[$label] = (int) $value;
+        }
+
+        return $actualMetrics;
+    }
 }
