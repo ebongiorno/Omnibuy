@@ -243,9 +243,13 @@ a listing they own.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+The automated PHPUnit test passed successfully. A temporary user, category, and active listing were created, and the user was authenticated as the listing owner. The My Listings page returned HTTP 200 and correctly displayed the newly created listing.
 
-**Status:** Not Run
+The test confirmed that the listing contained a View Analytics link with the correct listing ID. Accessing this link returned HTTP 200 and displayed the Listing Analytics page with the correct listing name and expected price of $25.00.
+
+The analytics page successfully rendered all six metric-label elements. All assertions passed, confirming that an authenticated listing owner can access their listing analytics and view the corresponding information.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 

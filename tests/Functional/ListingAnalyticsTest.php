@@ -88,6 +88,99 @@ final class ListingAnalyticsTest extends TestCase
     }
 
     // =========================================
+    // TC-11-01: VIEW ANALYTICS FOR OWN LISTING
+    // =========================================
+
+    public function testUserCanViewOwnListingAnalytics(): void
+    {
+        // Create a temporary listing owner.
+        $owner = $this->createListingOwner();
+
+        // Create a category for the listing.
+        $categoryId = $this->createCategory();
+
+        // Generate a unique listing name.
+        $listingName = 'UC11 Analytics Test '
+            . bin2hex(random_bytes(4));
+
+        // Create a listing owned by the test user.
+        $listingId = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Authenticate as the listing owner.
+        $this->logInAs($owner['email']);
+
+        // Open My Listings.
+        $myListingsResponse = $this->browser->get(
+            '/pages/my-listings.php'
+        );
+
+        // Verify the page loads successfully.
+        $this->assertSame(
+            200,
+            $myListingsResponse['status']
+        );
+
+        // Verify the owner's listing appears.
+        $this->assertStringContainsString(
+            $listingName,
+            $myListingsResponse['body']
+        );
+
+        // Build the expected analytics URL.
+        $analyticsUrl = '/pages/listing-analytics.php?id='
+            . $listingId;
+
+        // Verify My Listings contains the correct link.
+        $this->assertStringContainsString(
+            $analyticsUrl,
+            $myListingsResponse['body']
+        );
+
+        // Open analytics for the owned listing.
+        $analyticsResponse = $this->browser->get(
+            $analyticsUrl
+        );
+
+        // Verify successful access.
+        $this->assertSame(
+            200,
+            $analyticsResponse['status'],
+            $analyticsResponse['body']
+        );
+
+        // Verify the analytics page heading.
+        $this->assertStringContainsString(
+            'Listing Analytics',
+            $analyticsResponse['body']
+        );
+
+        // Verify the correct listing is displayed.
+        $this->assertStringContainsString(
+            $listingName,
+            $analyticsResponse['body']
+        );
+
+        // Verify the listing's price.
+        $this->assertStringContainsString(
+            '$25.00',
+            $analyticsResponse['body']
+        );
+
+        // Verify all six analytics metrics are displayed.
+        $this->assertSame(
+            6,
+            substr_count(
+                $analyticsResponse['body'],
+                'class="listing-analytics__card-label"'
+            )
+        );
+    }
+
+    // =========================================
     // TC-11-06: ANALYTICS REQUIRES LOGIN
     // =========================================
 
