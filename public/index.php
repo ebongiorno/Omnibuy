@@ -12,45 +12,46 @@ $extraStylesheets = [
 
 
 
+// UC-16: Use recorded search and listing-view activity to personalize
+// the homepage feed. Guests and members without usable category interests
+// sort all eligible listings before taking ten. Members with interests
+// select their top ten recommendations first, then sort those ten.
+require_once __DIR__ . '/../includes/recommendations.php';
+
 $sort = $_GET['sort'] ?? 'recent';
+$allowedSortOptions = ['recent', 'price_low', 'price_high'];
 
-$sortOptions = [
-    'recent' => 'COALESCE(l.renewed_at, l.created_at) DESC, l.listing_id DESC',
-    'price_low' => 'l.price ASC, l.created_at DESC',
-    'price_high' => 'l.price DESC, l.created_at DESC'
-];
-
-if (!is_string($sort) || !array_key_exists($sort, $sortOptions)) {
+if (!is_string($sort) || !in_array($sort, $allowedSortOptions, true)) {
     $sort = 'recent';
 }
 
-$sortType = $sortOptions[$sort];
-
-$sql = "SELECT l.listing_id, l.`condition`, l.item_name,
-            l.price, l.category_id, l.fulfillment_type,
-            li.image_url, c.category_name
-            FROM listings as l
-            INNER JOIN users AS u
-                ON u.user_id = l.seller_user_id
-            LEFT JOIN listing_images as li
-                ON l.listing_id = li.listing_id
-                AND li.display_order = 1
-            LEFT JOIN categories as c
-                ON l.category_id = c.category_id
-            WHERE l.listing_status = 'active'
-                AND u.account_status = 'active'
-            ORDER BY $sortType
-            LIMIT 10";
+// The recommendation helper accepts null for guests. It also excludes
+// the signed-in user's own listings and enforces listing/seller eligibility.
+$recommendationUserId = null;
+if (isLoggedIn() && isset($_SESSION['user_id'])) {
+    $sessionUserId = filter_var(
+        $_SESSION['user_id'],
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1]]
+    );
+    if ($sessionUserId !== false) {
+        $recommendationUserId = $sessionUserId;
+    }
+}
 
 $listings = [];
 $feedError = false;
 
 try {
-    // establish connection and query
-    $stmt = $pdo->query($sql);
-    $listings = $stmt->fetchAll();
-} catch (PDOException $e) {
+    $listings = getPersonalizedRecommendations(
+        $pdo,
+        $recommendationUserId,
+        10,
+        $sort
+    );
+} catch (PDOException $exception) {
     $feedError = true;
+    error_log('OmniBuy homepage recommendation feed failed: ' . $exception->getMessage());
 }
 
 
@@ -225,7 +226,7 @@ include __DIR__ . '/components/header.php';
                     </div>
 
 
-                    <!-- Initial/simple sorting control -->
+                    <!-- General feeds sort before LIMIT; personalized feeds sort their selected ten. -->
                     <form class="feed-controls" method="get" action="index.php#browse-feed">
                         <label for="feed-sort">
                             Sort by
@@ -285,10 +286,6 @@ include __DIR__ . '/components/header.php';
                         </p>
                     </div>
                 <?php else: ?>
-                    <!--
-                    PHP will eventually loop through database
-                    results and generate these cards.
-                    -->
                     <div class="listing-grid">
                         <?php foreach ($listings as $listing): ?>
                             <?php include 'components/listing-card-component.php'; ?>

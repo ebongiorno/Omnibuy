@@ -1236,9 +1236,9 @@ active listings available to buyers.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Marketplace Browse: `Browse feed displays active seeded listing` passed; the browse feed displayed an eligible seeded listing.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1275,9 +1275,9 @@ marketplace browse feed.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Marketplace Browse: `Browse feed excludes inactive listings` passed; inactive listings were excluded from the displayed homepage feed.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1313,9 +1313,9 @@ without requiring a search keyword.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Marketplace Browse: `Browse all displays active seeded listing` passed; Browse All returned an active listing without a keyword.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1357,6 +1357,668 @@ Not yet recorded.
 **Related Jira Defect:** None
 
 
+**Personalized recommendation PHPUnit source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Execution evidence:** User-confirmed successful targeted recommendation tests and complete PHPUnit test suite. These tests validate the recommendation helper; homepage rendering should be verified separately.
+
+### TC-16-05: Calculate Category Scores From Search and Listing Views
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testCategoryScoresCombineViewAndSearchWeights`
+
+**Objective:**
+Verify that item searches contribute two points and listing views contribute three points to category interests.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A temporary buyer, active seller, category, searchable listing, two recorded listing views, and one matching item search.
+
+**Test Steps:**
+1. Create a buyer, seller, and active listing in a temporary category.
+2. Insert two views of the listing and one matching item search for the buyer.
+3. Call `recommendationCategoryScores()` and inspect the category score.
+
+**Expected Result:**
+- The category receives six points for views and two for the search.
+- The combined category score is exactly eight.
+
+**Actual Result:**
+The category score was asserted to equal eight (3 + 3 + 2). The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-06: Count Each Search Once Per Matching Parent Category
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testOneSearchContributesOncePerMatchingRootCategory`
+
+**Objective:**
+Verify that one keyword search does not gain additional weight merely because multiple listings in the same category match.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A buyer, two active listings with a shared unique keyword in one category, and one recorded item search.
+
+**Test Steps:**
+1. Create two active listings in the same category sharing a unique search keyword.
+2. Record one matching item search for the buyer.
+3. Calculate scores for the buyer and inspect the matched category.
+
+**Expected Result:**
+- The single search contributes exactly two points to that category.
+- The number of matching listings does not multiply the search weight.
+
+**Actual Result:**
+One search matched two listings, and the test asserted exactly two points for their category. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-07: Group Subcategory Activity Under the Parent Category
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testSubcategoryActivityAccumulatesUnderParentCategory`
+
+**Objective:**
+Verify that searches and views of a subcategory listing contribute to its parent-category score.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+A parent category, child category, active listing in the child, one view, and one matching search.
+
+**Test Steps:**
+1. Create a parent category and its child category.
+2. Record a buyer view and matching item search for the child-category listing.
+3. Calculate category scores and inspect both parent and child IDs.
+
+**Expected Result:**
+- The parent category receives five points.
+- No separate score entry remains for the child category.
+
+**Actual Result:**
+The parent received five points (3 + 2) and the child had no independent score entry. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-08: Keep Recommendation Activity Separate by User
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testCategoryScoresAreIsolatedPerUser`
+
+**Objective:**
+Verify that one buyer's history does not influence another buyer's category scores.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Two buyers; two categories; one viewed listing per buyer; invalid user ID 0.
+
+**Test Steps:**
+1. Record a view in Category A for Buyer A and a view in Category B for Buyer B.
+2. Calculate category scores separately for both buyers.
+3. Verify a nonpositive user ID produces no scores.
+
+**Expected Result:**
+- Buyer A receives only Category A: 3 points.
+- Buyer B receives only Category B: 3 points.
+- User ID 0 returns an empty score array.
+
+**Actual Result:**
+The test verified independent per-user score arrays and an empty result for user ID 0. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-09: Ignore Expired and Non-Recommendation Activity
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testIrrelevantOrExpiredActivityDoesNotIncreaseScores`
+
+**Objective:**
+Verify that outdated actions, seller-profile searches, and views of the user's own listings are excluded from interest scoring.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+An authenticated seller/buyer; search and view events older than 90 days; seller-profile search; own-listing view.
+
+**Test Steps:**
+1. Create controlled item and seller-profile search records, including activity older than 90 days.
+2. Insert an old view of another seller's listing and a current view of an owned listing.
+3. Calculate the user's category interests.
+
+**Expected Result:**
+- Expired search and view records do not add points.
+- Seller-profile searches and own-listing views do not add points.
+- The resulting category score array is empty.
+
+**Actual Result:**
+The test confirmed no scores were assigned from expired, seller-profile, or own-listing activity. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-10: Exclude Unavailable Listing and Inactive Seller Activity From Scores
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testInactiveListingAndSellerActivityIsExcludedFromScores`
+
+**Objective:**
+Verify that previously recorded signals stop contributing when their listing becomes sold or their seller becomes inactive.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+One active listing with search/view history; statuses `sold` and seller `suspended`.
+
+**Test Steps:**
+1. Record an item search and listing view for an active seller's listing.
+2. Mark the listing sold and calculate category interests.
+3. Reactivate the listing, suspend the seller, and recalculate.
+
+**Expected Result:**
+- Sold listings do not contribute category points.
+- Listings owned by suspended sellers do not contribute category points.
+
+**Actual Result:**
+The test asserted empty category scores after selling the listing and again after suspending its seller. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-11: Select Higher-Scoring Categories Before Sorting Personalized Results
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testRecentFeedPrioritizesHigherScoringCategories`
+
+**Objective:**
+Verify that a signed-in user with meaningful category-interest scores receives the highest-ranked eligible recommendations as the selected candidate set, before the user-selected display sort is applied.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Temporary buyer, seller, and listing fixtures are available with transaction rollback.
+
+**Test Data:**
+Three categories with strong, weak, and zero interest; eligible listings with controlled timestamps.
+
+**Test Steps:**
+1. Record two eligible views in the strong category and one in the weak category.
+2. Create eligible listings in those categories and an unrelated category.
+3. Request the personalized feed with a limit that makes candidate selection observable.
+4. Verify higher-scoring categories are selected before unscored fallback candidates, regardless of the final Newest display order.
+
+**Expected Result:**
+- The algorithm selects eligible candidates by category-interest score descending, using effective recency and listing ID as candidate-selection tie-breakers.
+- Unscored eligible items fill remaining slots if needed.
+- The final `recent` display order may place a newer lower-scored recommendation before an older higher-scored recommendation; that does not change the selected set.
+
+**Actual Result:**
+Personalized Recommendations: `Recent feed prioritizes higher scoring categories` passed in the complete PHPUnit suite. The test verifies category-based recommendation ranking; separate manual testing confirmed changes in displayed categories after browsing activity. The test output alone does not establish every candidate-set assertion described in the expanded steps.
+
+**Status:** Pass (automated ranking; manual personalization verified)
+
+**Related Jira Defect:** None
+
+### TC-16-12: Use Renewal Time and Listing ID for Deterministic Ordering
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testEqualScoresUseRenewalAndListingIdTieBreakers`
+
+**Objective:**
+Verify deterministic tie-breaking when selecting equally scored candidates and when sorting the selected recommendations by Newest.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Controlled listings have known creation and renewal times.
+
+**Test Data:**
+Three eligible listings with equal category scores, varying effective recency, and optionally identical timestamps.
+
+**Test Steps:**
+1. Create listings with equal category scores and different creation/renewal timestamps.
+2. Confirm the selection uses newest effective timestamp when category scores tie.
+3. Request `recent` and verify the selected set is displayed by `COALESCE(renewed_at, created_at)` descending.
+4. Give two listings the same effective timestamp and verify descending listing ID breaks the tie.
+
+**Expected Result:**
+- Equal-scored candidates use effective recency, then descending listing ID, for deterministic selection.
+- Newest displays the selected candidates by effective recency, then descending listing ID.
+- Selection and final display order are separate operations.
+
+**Actual Result:**
+Personalized Recommendations: `Equal scores use renewal and listing id tie breakers` passed in the complete PHPUnit suite, confirming the tested renewal-date and listing-ID ordering.
+
+**Status:** Pass (automated)
+
+**Related Jira Defect:** None
+
+### TC-16-13: Use Full-Catalog Sorting for Guests and Users Without Category Interests
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Manual Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testGuestAndNewUserReceiveNewestEligibleFallback`
+
+**Objective:**
+Verify that guests and signed-in users with no usable category-interest scores sort the entire eligible marketplace first and then receive up to ten results, instead of sorting a fixed set of ten newest listings.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- An unauthenticated session and a signed-in account without usable category-interest scores are available.
+- Eligible listings span different dates and prices.
+
+**Test Data:**
+Guest user ID `null`; new buyer account; active listings with contrasting prices and dates; sort values `recent`, `price_low`, `price_high`.
+
+**Test Steps:**
+1. Open the homepage as a guest and record the listing IDs shown under Newest.
+2. Select Price: Low to High and Price: High to Low, recording the results of each.
+3. Verify the price sorts select the cheapest or most expensive eligible listings from the full marketplace, not only from the newest ten.
+4. Repeat for a signed-in account without usable category scores.
+5. Confirm both visitor types follow the same full-catalog sort-before-limit rule, except that the signed-in account excludes its own listings.
+
+**Expected Result:**
+- `recent` returns up to ten newest eligible listings.
+- `price_low` returns up to ten cheapest eligible listings across the marketplace.
+- `price_high` returns up to ten most expensive eligible listings across the marketplace.
+- The returned listing set may differ across sort choices.
+- Signed-in visitors still cannot see their own listings in their feed.
+
+**Actual Result:**
+Personalized Recommendations: `Guest and new user receive newest eligible fallback` passed in the complete PHPUnit suite. Separately, manual homepage testing confirmed that guests and signed-in users without usable activity can sort the full eligible marketplace by newest or price. The testdox name alone does not establish all expanded price-sort assertions.
+
+**Status:** Pass (automated fallback; manual full-catalog sorting verified)
+
+**Related Jira Defect:** None
+
+### TC-16-14: Exclude a Viewer's Own Listings From Personalized Results
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testAuthenticatedFeedExcludesViewerOwnedListings`
+
+**Objective:**
+Verify that signed-in users do not receive recommendations for listings they own.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+An authenticated seller/viewer, another seller, one owned listing, and one other-seller listing.
+
+**Test Steps:**
+1. Create active listings owned by the current viewer and a different seller.
+2. Retrieve recommendations for the authenticated viewer.
+3. Retrieve general recommendations for a guest.
+4. Compare presence of the owned listing in each response.
+
+**Expected Result:**
+- Signed-in results exclude the user's own listing.
+- Another seller's listing remains eligible.
+- The owned listing is not globally removed from the guest feed.
+
+**Actual Result:**
+The authenticated feed omitted the viewer-owned listing, while the other-seller listing and guest eligibility were retained. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-15: Exclude Unavailable Listings and Inactive Sellers From the Feed
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testFeedExcludesUnavailableListingsAndInactiveSellers`
+
+**Objective:**
+Verify that only active listings belonging to active sellers are recommended.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+One active control listing, listings in `sold`, `hidden`, `archived`, and `draft` states, and a restricted seller's listing.
+
+**Test Steps:**
+1. Create the eligible control listing and several ineligible listings.
+2. Set the inactive listing statuses and restrict another seller account.
+3. Retrieve the recommendation feed for the buyer.
+4. Check inclusion and exclusion of each controlled listing ID.
+
+**Expected Result:**
+- The active control listing appears.
+- Inactive listings and listings owned by restricted sellers are excluded.
+
+**Actual Result:**
+The active control was present and all ineligible listing IDs were absent. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-16: Sort the Same Ten Personalized Listings by Newest or Price
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Manual Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testPriceSortOverridesRecommendationRelevance`
+
+**Objective:**
+Verify that once a signed-in user's recorded activity produces usable category scores, the helper selects the top ten recommendations by relevance and only reorders those same listing IDs for Newest and price sorting.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- The user has at least one eligible activity signal that contributes to a category score.
+- The marketplace contains eligible listings with different dates and prices.
+
+**Test Data:**
+A buyer with recorded category interest, eligible recommendations at different prices, and additional eligible listings outside the top ten.
+
+**Test Steps:**
+1. Retrieve the feed with `recent` and record its listing IDs.
+2. Retrieve `price_low` and confirm prices are nondecreasing.
+3. Retrieve `price_high` and confirm prices are nonincreasing.
+4. Compare the unordered ID sets across all three options.
+5. Verify no lower-ranked marketplace listing replaces a selected personalized recommendation only because of its price.
+
+**Expected Result:**
+- The same up-to-ten recommendation IDs are returned under all three sort options while the activity scores and inventory remain unchanged.
+- Newest orders that selected set by effective recency; the price sorts order only that set by price.
+- Price sorting does not select the cheapest or most expensive items from the entire marketplace for a user with category interests.
+
+**Actual Result:**
+Personalized Recommendations: `Price sort overrides recommendation relevance` passed in the complete PHPUnit suite, confirming the tested price-sorting behavior. The final fixed-set rule for users with usable category interests was also checked manually; the testdox output alone does not show whether the test asserts equality of listing-ID sets across sort choices.
+
+**Status:** Pass (automated price sorting; manual fixed-set verification)
+
+**Related Jira Defect:** None
+
+### TC-16-17: Handle Unsupported Sort Values and Enforce Result Limits
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testInvalidSortAndLimitValuesFallBackSafely`
+
+**Objective:**
+Verify that unsupported sort values and out-of-range requested limits are handled safely.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+Sort `invalid_sort`; limits `0` and `500`; newest active test listing.
+
+**Test Steps:**
+1. Request recommendations with an unsupported sort and limit zero.
+2. Verify a single newest eligible listing is returned.
+3. Request a result limit greater than the supported maximum.
+4. Check that no more than 50 rows are returned.
+
+**Expected Result:**
+- Invalid sorts fall back to default ordering.
+- The requested limit is clamped between 1 and 50.
+
+**Actual Result:**
+The invalid-sort request returned one eligible listing and the oversized-limit request returned at most 50. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+
+### TC-16-18: Return Unique Listings With Homepage-Compatible Fields
+
+**Use Case:** UC-16
+
+**Test Type:** Automated Integration / Functional
+
+**PHPUnit Source:** `tests/Functional/PersonalizedRecommendationsTest.php`  
+**Automated Test:** `testResultsContainUniqueListingsAndHomepageCardFields`
+
+**Objective:**
+Verify that the recommendation result can safely populate the existing homepage listing-card component.
+
+**Preconditions:**
+- OmniBuy is running in Docker with the latest recommendation helper and MySQL schema.
+- Each PHPUnit test uses temporary InnoDB fixtures with transaction rollback.
+
+**Test Data:**
+An active listing with a primary image and the existing homepage listing-card field requirements.
+
+**Test Steps:**
+1. Create an active listing and primary image record.
+2. Retrieve recommended listings and collect their IDs.
+3. Verify all listing IDs are unique.
+4. Verify the primary image URL and required homepage listing-card fields are present.
+
+**Expected Result:**
+- No duplicate listing IDs appear in the result array.
+- Each relevant result provides listing ID, condition, name, price, category, fulfillment, image URL, and category name.
+
+**Actual Result:**
+The test verified unique IDs, all required homepage-card fields, and the selected primary image URL. The targeted PHPUnit test and complete PHPUnit test suite were confirmed passing by the developer.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
+### TC-16-19: Activate Personalization After Eligible Search or Listing Activity
+
+**Use Case:** UC-16, UC-17, UC-25
+
+**Test Type:** Manual Functional / End-to-End
+
+**Objective:**
+Verify that a signed-in account transitions from full-marketplace fallback sorting to category-based candidate selection once recorded activity produces a usable category score.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A signed-in test account initially has no usable category-interest scores.
+- Eligible listings exist in multiple categories.
+
+**Test Data:**
+Test account without category interests; Electronics search terms and eligible Electronics listings.
+
+**Test Steps:**
+1. Record the initial homepage feed under the available sort choices.
+2. Search for an Electronics item and open eligible Electronics listings owned by other sellers.
+3. Return to the homepage and inspect the recommended listing categories.
+4. Change the sort options and compare the selected personalized listing IDs.
+
+**Expected Result:**
+- Before usable activity, sorting searches the full eligible marketplace before applying the ten-result limit.
+- After usable Electronics activity, Electronics is favored in the personalized candidate selection.
+- Sorting the personalized feed does not change which selected recommendations are included, assuming unchanged activity and listing availability.
+
+**Actual Result:**
+Manual before-and-after testing confirmed that the homepage feed changed to feature more Electronics listings after searches and listing views.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
+### TC-16-20: Update Personalized Recommendations When Category Interests Change
+
+**Use Case:** UC-16, UC-17, UC-25
+
+**Test Type:** Manual Functional / End-to-End
+
+**Objective:**
+Verify that additional browsing in a different category changes recommendations according to the updated category-interest scores.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A signed-in account has existing category-related search/view activity.
+
+**Test Data:**
+Existing Electronics activity; additional searches and eligible listing views in Home & Furniture.
+
+**Test Steps:**
+1. Record the personalized homepage listings after Electronics activity.
+2. Search for Furniture-related items and view eligible listings in that category.
+3. Reload the homepage and compare the recommended categories with the earlier feed.
+4. Confirm the changes are consistent with the user's more recent and accumulated interests.
+
+**Expected Result:**
+- New eligible activity contributes to the appropriate category scores.
+- Higher-scoring categories are prioritized in candidate selection.
+- The recommendation set can change after meaningful new category activity.
+
+**Actual Result:**
+Manual testing confirmed that additional Furniture searches and listing views changed the feed from Electronics-focused to Furniture-focused recommendations.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
+### TC-16-21: Preserve Personalized Interests Across Logout and Login
+
+**Use Case:** UC-16
+
+**Test Type:** Manual Functional / End-to-End
+
+**Objective:**
+Verify that a signed-in user's personalization is derived from persisted database activity and remains available after logging out and back in.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A test account has eligible saved search-history or listing-view activity.
+
+**Test Data:**
+Signed-in user with established category interests; login/logout session transitions.
+
+**Test Steps:**
+1. View and record the signed-in personalized homepage feed.
+2. Log out and confirm the guest feed uses general marketplace sorting.
+3. Log in again using the same account.
+4. Return to the homepage and check that the account's category-based recommendations are restored.
+
+**Expected Result:**
+- Logout changes the feed to guest behavior without deleting recorded activity.
+- Logging back into the same account restores personalization based on saved eligible activity.
+
+**Actual Result:**
+Manual testing previously confirmed that personalized recommendations persisted after logging out and logging back into the same account.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
+### TC-16-22: Exclude Own Listings From Every Signed-In Sorting Option
+
+**Use Case:** UC-16
+
+**Test Type:** Manual Functional / End-to-End / Negative Testing
+
+**Objective:**
+Verify that a signed-in user's own active listings are excluded from the recommendation feed regardless of personalized or fallback state and selected sort.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- A signed-in account can create an active listing.
+
+**Test Data:**
+A newly created listing owned by the signed-in test user; sort options Newest, Price: Low to High, and Price: High to Low.
+
+**Test Steps:**
+1. Create an active test listing using the signed-in account.
+2. Open the homepage and check the feed under each sort option.
+3. Confirm the owned listing ID is absent from all three feed results.
+4. Confirm eligible listings belonging to other sellers remain available.
+
+**Expected Result:**
+- The user's own listing is not returned under any homepage sort option.
+- Other sellers' eligible listings can still be returned.
+
+**Actual Result:**
+Manual testing confirmed that the newly created listing did not appear in the signed-in user's personalized feed under any of the three sorting options.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
+
 ## UC-17: Search for Items
 ### TC-17-01: Search for an Existing Item
 
@@ -1390,9 +2052,9 @@ matching active listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Exact item search returns seeded listing` passed; the exact-match search returned the expected seeded listing.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1427,9 +2089,9 @@ active item listings.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Partial item search returns expected listing` passed; the partial keyword located the expected listing.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1463,9 +2125,9 @@ when no active listing matches the keyword.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Item search displays no results state` passed; an unmatched item query displayed the expected empty state.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1500,9 +2162,9 @@ hidden, sold, archived, draft, or otherwise inactive.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Item Search: `Item search excludes inactive listings` passed; inactive listings were excluded from item search results.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1574,9 +2236,9 @@ Verify that a valid item-search event is saved with its authenticated user, norm
 - The stored user ID is correct and `searched_at` is populated.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Item search is saved with normalized query and timestamp` passed; a valid item search was recorded with its normalized keyword and timestamp.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1610,9 +2272,9 @@ Verify that a repeated search by the same user is not counted twice within the f
 - Exactly one search-history row exists for the user.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Same search is deduplicated within five minutes` passed; an equivalent repeated search did not create a duplicate event in the five-minute window.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1647,9 +2309,9 @@ Verify that a new search is recorded after the previous matching search falls ou
 - Two activity rows exist because the earlier search is outside the deduplication window.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Same search can be recorded after five minutes` passed; an item search could be recorded again after the deduplication interval.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1683,9 +2345,9 @@ Verify that different keywords and different users produce independent search-hi
 - Deduplication does not suppress a different keyword or another user's search.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Searches are independent by user and keyword` passed; independent users and keywords were tracked separately.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1720,9 +2382,9 @@ Verify that invalid user IDs, blank queries, and queries exceeding the schema le
 - No search-history rows are inserted for the test user.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Invalid search activity is not saved` passed; invalid search input was rejected without a saved activity event.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1755,9 +2417,9 @@ Verify that activity recording fails safely without interrupting a calling page 
 - No uncaught database exception is propagated to the caller.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Search tracking write error is handled without throwing` passed; the simulated database write failure was handled without propagating an exception.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -1793,9 +2455,9 @@ matching seller profile.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Exact seller search returns seeded seller` passed; exact-match seller search returned the expected active seller.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1830,9 +2492,9 @@ active seller profiles.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Partial seller search returns expected seller` passed; a partial seller query returned the expected profile.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1872,9 +2534,9 @@ first name, and permitted visible name fields.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Partial seller search returns expected seller` passed, providing partial-name search coverage. Manual test output establishes that each separate username, first-name, visible-last-name, and full-name variation in this broader case was exercised.
 
-**Status:** Not Run
+**Status:** Pass (automated partial-name search; manual name variations search)
 
 **Related Jira Defect:** None
 
@@ -1907,9 +2569,9 @@ when no active seller matches the query.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Seller search displays no results state` passed; an unmatched seller query produced the expected empty result.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1944,9 +2606,9 @@ inactive are excluded from Seller Search.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Seller search excludes inactive sellers` passed; inactive sellers were excluded from search results.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -1985,9 +2647,9 @@ account or payout information.
 - Only intended public seller information should appear.
 
 **Actual Result:**
-Not yet recorded.
+Seller Search: `Seller search does not expose restricted data` passed; the test checked that restricted seller data was not rendered in search results.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -3224,17 +3886,9 @@ that support meetup delivery.
 - The Meetup Distance filter should remain visible.
 
 **Actual Result:**
-The automated test confirmed that the number of active
-meetup listings returned by the search page matched
-the corresponding MySQL count.
+Search Page: `Meetup filter matches database` passed in the complete PHPUnit suite. The existing manual result also confirms meetup-only listings, selected control state, and filter visibility.
 
-The Meetup radio button remained selected, and the
-Meetup Distance filter was visible.
-
-Manual testing confirmed that only meetup listings
-appeared in the search results.
-
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -4458,9 +5112,9 @@ active marketplace listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Active listing displays its database information` passed; an active listing detail page returned the expected listing information.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4502,9 +5156,9 @@ information for the selected listing.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Active listing displays its database information`, `Shipping information matches database`, `Meetup information matches database without exposing coordinates`, and listing-image tests all passed; the rendered listing detail data matched tested database values.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -4540,9 +5194,9 @@ are handled safely.
 - No unrelated listing data should be displayed.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Missing listing id is rejected`, `Invalid listing id is rejected` (all displayed datasets), and `Nonexistent listing is unavailable` passed; invalid and nonexistent identifiers were handled safely.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -4577,9 +5231,9 @@ as an available marketplace item.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Inactive listing cannot be opened` passed for hidden, sold, archived, and draft datasets. `Listing from inactive seller is unavailable` also passed.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -4616,9 +5270,9 @@ requested listing ID.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Listing Detail: `Listing id selects the correct listing` passed; requests returned the selected listing instead of another listing's data.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4651,9 +5305,9 @@ Verify that viewing an active listing owned by another active user creates a lis
 - User ID and listing ID match; `viewed_at` is populated.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Eligible listing view is saved with timestamp` passed; the buyer’s eligible listing-view event was saved.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4687,9 +5341,9 @@ Verify that refreshing the same listing does not create another activity event w
 - Exactly one view exists for the buyer/listing pair.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Same listing view is deduplicated within fifteen minutes` passed; refreshing a listing within the interval did not create a duplicate view.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4724,9 +5378,9 @@ Verify that a view may be recorded again once an earlier matching view is outsid
 - Two view rows exist because the first event is outside the window.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Listing view can be recorded after fifteen minutes` passed; a subsequent view outside the deduplication window was saved.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4759,9 +5413,9 @@ Verify that a seller opening their own listing does not generate a buyer-interes
 - No view row is created for the seller viewing their own listing.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Seller own listing view is not saved` passed; viewing an owned listing did not create the buyer-interest event.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4795,9 +5449,9 @@ Verify that sold, hidden, archived, and draft listings cannot create new listing
 - No views are recorded while the listing is inactive.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Inactive listings do not generate views` passed; inactive listings did not produce new view records.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4832,9 +5486,9 @@ Verify that an active listing cannot generate views while its seller is suspende
 - Restoring active status allows one eligible view.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Inactive seller listings do not generate views` passed; listings owned by inactive sellers did not produce eligible view records.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4868,9 +5522,9 @@ Verify that view deduplication applies to a specific user/listing pair, not to a
 - Buyer A has two rows; Buyer B has one row for Listing A.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Listing views are independent by buyer and listing` passed; view events remained independent for distinct buyer/listing pairs.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4905,9 +5559,9 @@ Verify that invalid user IDs, invalid listing IDs, and nonexistent listings cann
 - No invalid view records are created.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Invalid listing view identifiers are rejected` passed; invalid or nonexistent identifiers were rejected.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4940,9 +5594,9 @@ Verify that a database insertion failure does not propagate an uncaught exceptio
 - No uncaught database exception reaches the caller.
 
 **Actual Result:**
-Not yet recorded; run the new PHPUnit test class in Docker.
+Marketplace Activity: `Listing view write error is handled without throwing` passed; a simulated database write failure was handled safely.
 
-**Status:** Not Run
+**Status:** Pass (automated)
 
 **Related Jira Defect:** None
 
@@ -4982,9 +5636,9 @@ Verify that a listing assigned to a subcategory displays its parent category und
 **Automated PHPUnit Test:** `testSubcategoryListingDisplaysParentCategoryAndSubcategory` in `tests/Functional/ListingDetailTest.php`
 
 **Actual Result:**
-Not yet recorded; run the updated PHPUnit test against the corresponding listing-detail implementation.
+Listing Detail: `Subcategory listing displays parent category and subcategory` passed; the listing detail page displayed the correct parent and child category fields.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None
 
@@ -5024,8 +5678,8 @@ Verify that a listing assigned directly to a top-level category displays its cat
 **Automated PHPUnit Test:** `testParentCategoryListingDoesNotDisplaySubcategoryField` in `tests/Functional/ListingDetailTest.php`
 
 **Actual Result:**
-Not yet recorded; run the updated PHPUnit test against the corresponding listing-detail implementation.
+Listing Detail: `Parent category listing does not display subcategory field` passed; a root-category listing omitted the Subcategory row.
 
-**Status:** Not Run
+**Status:** Pass (automated and manual)
 
 **Related Jira Defect:** None

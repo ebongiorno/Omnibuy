@@ -59,7 +59,7 @@ final class ListingDetailTest extends DatabaseTestCase
         }
     }
 
-    /** TC-25-06: A child category displays its parent and child in separate spec rows. */
+    /** TC-25-15: A child category displays its parent and child in separate spec rows. */
     public function testSubcategoryListingDisplaysParentCategoryAndSubcategory(): void
     {
         $this->withListingFixture(function (PDO $db, array &$created): void {
@@ -94,7 +94,7 @@ final class ListingDetailTest extends DatabaseTestCase
         });
     }
 
-    /** TC-25-07: A parent-only category must not create an empty subcategory row. */
+    /** TC-25-16: A parent-only category must not create an empty subcategory row. */
     public function testParentCategoryListingDoesNotDisplaySubcategoryField(): void
     {
         $this->withListingFixture(function (PDO $db, array &$created): void {
