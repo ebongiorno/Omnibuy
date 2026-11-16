@@ -100,3 +100,10 @@ $messagesStmt->execute([
     'listing_id' => $listingId
 ]);
 $totalMessages = (int) $messagesStmt->fetchColumn();
+
+// Page configuration
+$pageTitle = 'Listing Analytics | OmniBuy';
+$activeNav = 'my-listings';
+$pageStylesheet = '/assets/css/listing-analytics.css';
+include __DIR__ . '/../components/header.php';
+?>
