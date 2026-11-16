@@ -1,0 +1,18 @@
+/* =========================================
+   OMNIBUY LISTING ANALYTICS
+   ========================================= */
+.listing-analytics-page {
+    padding-block: var(--space-8);
+}
+
+.listing-analytics__back {
+    display: inline-block;
+    margin-bottom: var(--space-4);
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.listing-analytics__back:hover {
+    text-decoration: underline;
+}
