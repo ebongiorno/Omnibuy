@@ -422,9 +422,15 @@ belonging to another seller.
 - The listing owner should retain authorized access.
 
 **Actual Result:**
-Not yet recorded.
+The PHPUnit test passed successfully. Two temporary user accounts were created, with User A owning a listing containing recorded analytics activity.
 
-**Status:** Not Run
+When User B attempted to access User A's listing analytics, the application returned HTTP 404. The unauthorized response did not disclose the listing name or any analytics metrics.
+
+A separate authenticated session was established for User A, who successfully accessed the same listing's analytics page with HTTP 200. The correct listing information and recorded view metrics were displayed.
+
+All assertions passed, confirming that analytics access is restricted to the listing owner without preventing authorized access.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 

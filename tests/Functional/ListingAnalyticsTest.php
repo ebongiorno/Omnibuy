@@ -631,6 +631,123 @@ final class ListingAnalyticsTest extends TestCase
     }
 
     // =========================================
+    // TC-11-05: PREVENT UNAUTHORIZED ANALYTICS ACCESS
+    // =========================================
+
+    public function testUserCannotViewAnotherUsersListingAnalytics(): void
+    {
+        // Create the listing owner (User A).
+        $owner = $this->createListingOwner();
+
+        // Create a different user (User B).
+        $otherUser = $this->createListingOwner();
+
+        // Create a category.
+        $categoryId = $this->createCategory();
+
+        // Create a unique listing name.
+        $listingName = 'UC11 Restricted Listing '
+            . bin2hex(random_bytes(4));
+
+        // Create a listing owned by User A.
+        $listingId = $this->createListing(
+            $owner['id'],
+            $categoryId,
+            $listingName
+        );
+
+        // Create one recorded view for the listing.
+        $viewStmt = $this->pdo->prepare(
+            'INSERT INTO listing_views (
+                user_id,
+                listing_id,
+                viewed_at
+            ) VALUES (?, ?, NOW())'
+        );
+
+        $viewStmt->execute([
+            $otherUser['id'],
+            $listingId
+        ]);
+
+        // Log in as User B, who does not own the listing.
+        $this->logInAs($otherUser['email']);
+
+        // Attempt to access User A's analytics.
+        $unauthorizedResponse = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $listingId
+        );
+
+        // Verify unauthorized access returns HTTP 404.
+        $this->assertSame(
+            404,
+            $unauthorizedResponse['status'],
+            $unauthorizedResponse['body']
+        );
+
+        // Verify the listing name is not disclosed.
+        $this->assertStringNotContainsString(
+            $listingName,
+            $unauthorizedResponse['body']
+        );
+
+        // Verify no analytics metric cards are disclosed.
+        $unauthorizedMetrics = $this->extractAnalyticsMetrics(
+            $unauthorizedResponse['body']
+        );
+
+        $this->assertSame(
+            [],
+            $unauthorizedMetrics
+        );
+
+        // Start a fresh browser session for User A.
+        $this->browser = HttpClient::fromEnvironment();
+
+        // Authenticate as the actual listing owner.
+        $this->logInAs($owner['email']);
+
+        // The owner accesses their own listing analytics.
+        $authorizedResponse = $this->browser->get(
+            '/pages/listing-analytics.php?id=' . $listingId
+        );
+
+        // Verify the analytics page returns HTTP 200.
+        $this->assertSame(
+            200,
+            $authorizedResponse['status'],
+            $authorizedResponse['body']
+        );
+
+        // Verify the correct listing is displayed.
+        $this->assertStringContainsString(
+            $listingName,
+            $authorizedResponse['body']
+        );
+
+        // Extract the owner's analytics metrics.
+        $authorizedMetrics = $this->extractAnalyticsMetrics(
+            $authorizedResponse['body']
+        );
+
+        // Verify the owner can see the recorded view.
+        $this->assertSame(
+            1,
+            $authorizedMetrics['Total Views']
+        );
+
+        $this->assertSame(
+            1,
+            $authorizedMetrics['Unique Viewers']
+        );
+
+        $this->assertSame(
+            1,
+            $authorizedMetrics['Views in Last 7 Days']
+        );
+    }
+
+    // =========================================
     // TC-11-06: ANALYTICS REQUIRES LOGIN
     // =========================================
 
