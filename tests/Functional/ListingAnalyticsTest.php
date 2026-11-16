@@ -18,5 +18,23 @@ final class ListingAnalyticsTest extends TestCase
         $this->browser = HttpClient::fromEnvironment();
     }
 
-    
+    // =========================================
+    // TC-11-06: ANALYTICS REQUIRES LOGIN
+    // =========================================
+
+    public function testAnalyticsPageRequiresLogin(): void
+    {
+        $response = $this->browser->get(
+            '/pages/listing-analytics.php?id=1'
+        );
+
+        $this->assertSame(302, $response['status']);
+
+        $this->assertStringStartsWith(
+            '/pages/login.php?redirect=',
+            $response['location'] ?? ''
+        );
+    }
+
+
 }

@@ -413,6 +413,43 @@ Not yet recorded.
 **Status:** Not Run
 
 **Related Jira Defect:** None
+
+
+### TC-11-06: Analytics Page Requires Login
+
+**Use Case:** UC-11
+
+**Test Type:** Automated Functional / Negative Testing
+
+**Objective:**
+Verify that unauthenticated users are redirected to the login page when attempting to access listing analytics.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Listing analytics functionality is implemented.
+- The user is not authenticated.
+
+**Test Data:**
+- Listing ID: 1
+- Unauthenticated HTTP request
+
+**Test Steps:**
+1. Send an unauthenticated GET request to the listing analytics page.
+2. Verify that the response returns HTTP 302.
+3. Verify that the redirect points to the login page.
+
+**Expected Result:**
+- Unauthenticated users should be redirected to the login page.
+- The response should return HTTP 302.
+- The redirect URL should include the original destination.
+
+**Actual Result:**
+The PHPUnit test passed. The application returned HTTP 302 and redirected to the login page as expected.
+
+**Status:** Pass
+
+**Related Jira Defect:** None
+
 ## UC-14: Mark Listing as Sold
 ### TC-14-01: Mark an Active Listing as Sold
 
