@@ -37,3 +37,66 @@ if (!$listing) {
     http_response_code(404);
     exit('Listing not found or unavailable.');
 }
+
+$viewsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total_views
+     FROM listing_views
+     WHERE listing_id = :listing_id"
+);
+$viewsStmt->execute([
+    'listing_id' => $listingId
+]);
+$totalViews = (int) $viewsStmt->fetchColumn();
+
+$uniqueViewersStmt = $pdo->prepare(
+    "SELECT COUNT(DISTINCT user_id) AS unique_viewers
+     FROM listing_views
+     WHERE listing_id = :listing_id"
+);
+$uniqueViewersStmt->execute([
+    'listing_id' => $listingId
+]);
+$uniqueViewers = (int) $uniqueViewersStmt->fetchColumn();
+
+$recentViewsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS views_last_7_days
+     FROM listing_views
+     WHERE listing_id = :listing_id
+       AND viewed_at >= NOW() - INTERVAL 7 DAY"
+);
+$recentViewsStmt->execute([
+    'listing_id' => $listingId
+]);
+$recentViews = (int) $recentViewsStmt->fetchColumn();
+
+$wishlistStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS wishlist_saves
+     FROM wishlist_items
+     WHERE listing_id = :listing_id"
+);
+$wishlistStmt->execute([
+    'listing_id' => $listingId
+]);
+$wishlistSaves = (int) $wishlistStmt->fetchColumn();
+
+$conversationsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total_conversations
+     FROM conversations
+     WHERE listing_id = :listing_id"
+);
+$conversationsStmt->execute([
+    'listing_id' => $listingId
+]);
+$totalConversations = (int) $conversationsStmt->fetchColumn();
+
+$messagesStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total_messages
+     FROM messages AS m
+     INNER JOIN conversations AS c
+         ON m.conversation_id = c.conversation_id
+     WHERE c.listing_id = :listing_id"
+);
+$messagesStmt->execute([
+    'listing_id' => $listingId
+]);
+$totalMessages = (int) $messagesStmt->fetchColumn();
