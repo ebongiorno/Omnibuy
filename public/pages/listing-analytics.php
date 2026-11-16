@@ -137,6 +137,66 @@ include __DIR__ . '/../components/header.php';
             ) ?>
         </p>
     </div>
+
+    <div class="listing-analytics__metrics">
+        <h2>Performance Overview</h2>
+        <div class="listing-analytics__grid">
+            <!-- Card 1: Total Views -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Total Views
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $totalViews ?>
+                </p>
+            </div>
+            <!-- Card 2: Unique Viewers -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Unique Viewers
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $uniqueViewers ?>
+                </p>
+            </div>
+            <!-- Card 3: Views in Last 7 Days -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Views in Last 7 Days
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $recentViews ?>
+                </p>
+            </div>
+            <!-- Card 4: Wishlist Saves -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Wishlist Saves
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $wishlistSaves ?>
+                </p>
+            </div>
+            <!-- Card 5: Total Conversations -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Total Conversations
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $totalConversations ?>
+                </p>
+            </div>
+            <!-- Card 6: Total Messages -->
+            <div class="listing-analytics__card">
+                <h3 class="listing-analytics__card-label">
+                    Total Messages
+                </h3>
+                <p class="listing-analytics__card-value">
+                    <?= (int) $totalMessages ?>
+                </p>
+            </div>
+        </div>
+    </div>
 </section>
 
 <?php
