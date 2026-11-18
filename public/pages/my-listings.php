@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? null;
 
     if (!is_string($action) ||
-        !in_array($action, ['mark_sold', 'renew_listing'], true)) {
+        !in_array($action, ['mark_sold', 'renew_listing', 'pause_listing', 'resume_listing'], true)) {
         http_response_code(400);
         exit('Invalid action.');
     }
@@ -113,6 +113,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: /pages/my-listings.php?renewed=1', true, 303);
         exit;
     }
+
+    // UC-12: Pause an active listing without deleting it.
+    if ($action === 'pause_listing') {
+        $stmt = $pdo->prepare(
+            "UPDATE listings SET listing_status = 'hidden'
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status = 'active'"
+        );
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId,
+        ]);
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for pausing.');
+        }
+        header('Location: /pages/my-listings.php?paused=1', true, 303);
+        exit;
+    }
+
+    // UC-12: Resume a hidden listing belonging to this seller.
+    if ($action === 'resume_listing') {
+        $stmt = $pdo->prepare(
+            "UPDATE listings SET listing_status = 'active'
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status = 'hidden'"
+        );
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId,
+        ]);
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for resuming.');
+        }
+        header('Location: /pages/my-listings.php?resumed=1', true, 303);
+        exit;
+    }
+
 }
 
 $currentUser = [
@@ -237,6 +278,18 @@ include $header;
             </p>
         <?php endif; ?>
 
+
+        <?php if (($_GET['paused'] ?? '') === '1'): ?>
+            <p class="my-listings-success" role="status">
+                Your listing was paused successfully!
+            </p>
+        <?php endif; ?>
+
+        <?php if (($_GET['resumed'] ?? '') === '1'): ?>
+            <p class="my-listings-success" role="status">
+                Your listing was resumed successfully!
+            </p>
+        <?php endif; ?>
 
         <?php if (empty($listings)): ?>
 
@@ -367,6 +420,15 @@ include $header;
                                 >
                                     Edit Listing
                                 </a>
+                                <form action="/pages/my-listings.php" method="POST"
+                                    onsubmit="return confirm('Pause this listing? It will be hidden from buyers.');">
+                                    <input type="hidden" name="action" value="pause_listing">
+                                    <input type="hidden" name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>">
+                                    <input type="hidden" name="csrf_token"
+                                        value="<?= htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" class="my-listings__pause">Pause Listing</button>
+                                </form>
                                 <form
                                     action="/pages/my-listings.php"
                                     method="POST"
@@ -433,6 +495,18 @@ include $header;
                                     >
                                         Renew Listing
                                     </button>
+                                </form>
+                            </div>
+
+                        <?php elseif ($listing['listing_status'] === 'hidden'): ?>
+                            <div class="my-listings__actions">
+                                <form action="/pages/my-listings.php" method="POST">
+                                    <input type="hidden" name="action" value="resume_listing">
+                                    <input type="hidden" name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>">
+                                    <input type="hidden" name="csrf_token"
+                                        value="<?= htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" class="my-listings__resume">Resume Listing</button>
                                 </form>
                             </div>
 

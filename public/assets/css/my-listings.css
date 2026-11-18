@@ -248,3 +248,45 @@
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
+
+/* Sprint 5: Consistent listing action buttons */
+
+.my-listings__pause,
+.my-listings__resume,
+.my-listings__renew {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.my-listings__pause:hover,
+.my-listings__resume:hover,
+.my-listings__renew:hover {
+    background-color: #1d4ed8;
+    color: #ffffff;
+}
+/* Make all listing action buttons match Edit Listing */
+
+.my-listings__edit,
+.my-listings__pause,
+.my-listings__resume,
+.my-listings__renew {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: normal;
+    text-transform: none;
+}
