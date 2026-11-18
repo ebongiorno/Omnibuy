@@ -1811,24 +1811,8 @@ $hasNoResults =
 
     <script>
 
-        const navToggle =
-            document.querySelector('.mobile-nav-toggle');
+        // Mobile nav and account menu are handled by shared-navigation.js.
 
-        const primaryNav =
-            document.querySelector('.primary-nav');
-
-        navToggle?.addEventListener('click', () => {
-
-            const isOpen =
-                primaryNav.classList.toggle('is-open');
-
-            navToggle.setAttribute(
-                'aria-expanded',
-                String(isOpen)
-            );
-
-        });
-        
         // =========================================
         // MEETUP DISTANCE FILTER VISIBILITY
         // =========================================
@@ -1967,5 +1951,6 @@ $hasNoResults =
 
     <script src="/assets/js/image-fallback.js" defer></script>
     <script src="/assets/js/seller-image-fallback.js" defer></script>
+    <script src="/assets/js/shared-navigation.js" defer></script>
 </body>
 </html>
