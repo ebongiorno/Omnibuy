@@ -271,3 +271,53 @@ FROM listing_views
 WHERE listing_id = @demo_listing_id;
 
 
+-- ============================================================
+-- SECTION 4: POPULATE WISHLIST SAVES
+-- ============================================================
+
+-- Add the demonstration listing to Viewer 1's wishlist.
+-- Skip insertion if the user already saved the listing.
+INSERT INTO wishlist_items (
+    user_id,
+    listing_id
+)
+SELECT
+    @demo_viewer_1_id,
+    @demo_listing_id
+WHERE @demo_listing_id IS NOT NULL
+  AND @demo_viewer_1_id IS NOT NULL
+  AND @demo_viewer_1_id <> @demo_owner_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM wishlist_items
+      WHERE user_id = @demo_viewer_1_id
+        AND listing_id = @demo_listing_id
+  );
+
+-- Add the demonstration listing to Viewer 2's wishlist.
+-- Skip insertion if the user already saved the listing.
+INSERT INTO wishlist_items (
+    user_id,
+    listing_id
+)
+SELECT
+    @demo_viewer_2_id,
+    @demo_listing_id
+WHERE @demo_listing_id IS NOT NULL
+  AND @demo_viewer_2_id IS NOT NULL
+  AND @demo_viewer_2_id <> @demo_owner_id
+  AND @demo_viewer_2_id <> @demo_viewer_1_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM wishlist_items
+      WHERE user_id = @demo_viewer_2_id
+        AND listing_id = @demo_listing_id
+  );
+
+-- Verify the number of wishlist saves.
+SELECT
+    COUNT(*) AS wishlist_saves
+FROM wishlist_items
+WHERE listing_id = @demo_listing_id;
+
+
