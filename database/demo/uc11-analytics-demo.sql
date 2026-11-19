@@ -799,3 +799,25 @@ SELECT
         WHERE c.listing_id = @demo_sold_listing_id
     ) AS total_messages;
 
+-- ============================================================
+-- SECTION 9: MARK SECOND DEMONSTRATION LISTING AS SOLD
+-- ============================================================
+
+-- Mark the Bluetooth speaker as sold.
+-- Only update the dedicated demonstration listing.
+UPDATE listings
+SET listing_status = 'sold'
+WHERE listing_id = @demo_sold_listing_id
+  AND seller_user_id = @demo_owner_id
+  AND item_name = @demo_sold_listing_name
+  AND listing_status = 'active';
+
+-- Verify the Bluetooth speaker is marked as sold.
+SELECT
+    listing_id,
+    item_name,
+    price,
+    listing_status
+FROM listings
+WHERE listing_id = @demo_sold_listing_id
+  AND seller_user_id = @demo_owner_id;
