@@ -29,7 +29,7 @@
 SET @demo_username = 'omnibuy_tester';
 
 -- Listing used specifically for the UC-11 demonstration.
-SET @demo_listing_name = 'Wireless Noise-Canceling Headphones';
+SET @demo_listing_name = 'UC11 Demo - Wireless Noise-Canceling Headphones';
 
 -- Find the demonstration account's user ID.
 SET @demo_owner_id = (
@@ -821,3 +821,75 @@ SELECT
 FROM listings
 WHERE listing_id = @demo_sold_listing_id
   AND seller_user_id = @demo_owner_id;
+
+-- ============================================================
+-- SECTION 10: VERIFY BOTH DEMONSTRATION LISTINGS
+-- ============================================================
+
+-- Verify the status and all six analytics metrics
+-- for both demonstration listings.
+
+SELECT
+    l.listing_id,
+    l.item_name,
+    l.listing_status,
+
+    -- Total Views
+    (
+        SELECT COUNT(*)
+        FROM listing_views AS lv
+        WHERE lv.listing_id = l.listing_id
+    ) AS total_views,
+
+    -- Unique Viewers
+    (
+        SELECT COUNT(DISTINCT user_id)
+        FROM listing_views AS lv
+        WHERE lv.listing_id = l.listing_id
+    ) AS unique_viewers,
+
+    -- Views in Last 7 Days
+    (
+        SELECT COUNT(*)
+        FROM listing_views AS lv
+        WHERE lv.listing_id = l.listing_id
+          AND lv.viewed_at >= NOW() - INTERVAL 7 DAY
+    ) AS views_last_7_days,
+
+    -- Wishlist Saves
+    (
+        SELECT COUNT(*)
+        FROM wishlist_items AS wi
+        WHERE wi.listing_id = l.listing_id
+    ) AS wishlist_saves,
+
+    -- Total Conversations
+    (
+        SELECT COUNT(*)
+        FROM conversations AS c
+        WHERE c.listing_id = l.listing_id
+    ) AS total_conversations,
+
+    -- Total Messages
+    (
+        SELECT COUNT(*)
+        FROM messages AS m
+        INNER JOIN conversations AS c
+            ON m.conversation_id = c.conversation_id
+        WHERE c.listing_id = l.listing_id
+    ) AS total_messages
+
+FROM listings AS l
+
+WHERE l.seller_user_id = @demo_owner_id
+  AND (
+      (l.listing_id = @demo_listing_id
+       AND l.item_name = @demo_listing_name)
+
+      OR
+
+      (l.listing_id = @demo_sold_listing_id
+       AND l.item_name = @demo_sold_listing_name)
+  )
+
+ORDER BY l.listing_id;
