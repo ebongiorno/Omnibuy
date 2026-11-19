@@ -526,3 +526,73 @@ SELECT
             ON m.conversation_id = c.conversation_id
         WHERE c.listing_id = @demo_listing_id
     ) AS total_messages;
+
+-- ============================================================
+-- SECTION 7: CREATE SECOND DEMONSTRATION LISTING
+-- ============================================================
+
+-- Dedicated listing used to demonstrate sold-listing analytics.
+SET @demo_sold_listing_name = 'UC11 Demo - Portable Bluetooth Speaker';
+
+-- Create the second listing only if it does not exist.
+INSERT INTO listings (
+    seller_user_id,
+    category_id,
+    item_name,
+    item_description,
+    sale_type,
+    fulfillment_type,
+    shipping_cost,
+    estimated_shipping_days,
+    price,
+    `condition`,
+    quantity,
+    listing_status
+)
+SELECT
+    @demo_owner_id,
+    @demo_category_id,
+    @demo_sold_listing_name,
+    'Compact portable Bluetooth speaker in good condition. Fully functional and includes charging cable.',
+    'fixed_price',
+    'shipping',
+    0.00,
+    3,
+    45.00,
+    'good',
+    1,
+    'active'
+WHERE @demo_owner_id IS NOT NULL
+  AND @demo_category_id IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM seller_profiles
+      WHERE user_id = @demo_owner_id
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM listings
+      WHERE seller_user_id = @demo_owner_id
+        AND item_name = @demo_sold_listing_name
+  );
+
+-- Find the second demonstration listing.
+SET @demo_sold_listing_id = (
+    SELECT listing_id
+    FROM listings
+    WHERE seller_user_id = @demo_owner_id
+      AND item_name = @demo_sold_listing_name
+    LIMIT 1
+);
+
+-- Verify the second listing was created.
+SELECT
+    listing_id,
+    item_name,
+    price,
+    listing_status,
+    seller_user_id
+FROM listings
+WHERE listing_id = @demo_sold_listing_id;
+
+
