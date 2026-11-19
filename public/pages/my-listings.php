@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? null;
 
     if (!is_string($action) ||
-        !in_array($action, ['mark_sold', 'renew_listing', 'pause_listing', 'resume_listing'], true)) {
+        !in_array($action, ['mark_sold', 'renew_listing', 'pause_listing', 'resume_listing', 'delete_listing'], true)) {
         http_response_code(400);
         exit('Invalid action.');
     }
@@ -154,6 +154,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+
+    // UC-13: Archive an active or paused listing owned by this seller.
+    if ($action === 'delete_listing') {
+        $stmt = $pdo->prepare(
+            "UPDATE listings SET listing_status = 'archived'
+             WHERE listing_id = :listing_id
+               AND seller_user_id = :seller_id
+               AND listing_status IN ('active', 'hidden')"
+        );
+        $stmt->execute([
+            'listing_id' => $listingId,
+            'seller_id' => $currentSellerId,
+        ]);
+        if ($stmt->rowCount() !== 1) {
+            http_response_code(404);
+            exit('Listing not found or unavailable for deletion.');
+        }
+        header('Location: /pages/my-listings.php?deleted=1', true, 303);
+        exit;
+    }
+
 }
 
 $currentUser = [
@@ -188,6 +209,7 @@ if ($isLoggedIn) {
             ) AS image_url
         FROM listings AS l
         WHERE l.seller_user_id = :seller_user_id
+          AND l.listing_status <> 'archived'
         ORDER BY l.created_at DESC, l.listing_id DESC"
     );
 
@@ -288,6 +310,12 @@ include $header;
         <?php if (($_GET['resumed'] ?? '') === '1'): ?>
             <p class="my-listings-success" role="status">
                 Your listing was resumed successfully!
+            </p>
+        <?php endif; ?>
+
+        <?php if (($_GET['deleted'] ?? '') === '1'): ?>
+            <p class="my-listings-success" role="status">
+                Your listing was deleted successfully!
             </p>
         <?php endif; ?>
 
@@ -510,6 +538,35 @@ include $header;
                                 </form>
                             </div>
 
+                        <?php endif; ?>
+
+                        <?php if (in_array($listing['listing_status'], ['active', 'hidden'], true)): ?>
+                            <div class="my-listings__actions">
+                                <form
+                                    action="/pages/my-listings.php"
+                                    method="POST"
+                                    onsubmit="return confirm('Are you sure you want to delete this listing? It will be removed from My Listings.');"
+                                >
+                                    <input type="hidden" name="action" value="delete_listing">
+                                    <input
+                                        type="hidden"
+                                        name="listing_id"
+                                        value="<?= (int) $listing['listing_id'] ?>"
+                                    >
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+                                    <button
+                                        type="submit"
+                                        class="my-listings__delete"
+                                        style="background-color: #dc2626; color: white; border: none; border-radius: 8px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;"
+                                    >
+                                        Delete Listing    
+                                    </button>
+                                </form>
+                            </div>
                         <?php endif; ?>
 
                          <p>
