@@ -321,3 +321,155 @@ FROM wishlist_items
 WHERE listing_id = @demo_listing_id;
 
 
+-- ============================================================
+-- SECTION 5: POPULATE CONVERSATIONS AND MESSAGES
+-- ============================================================
+
+-- Create the first demonstration conversation.
+INSERT INTO conversations (
+    buyer_id,
+    seller_id,
+    listing_id
+)
+SELECT
+    @demo_viewer_1_id,
+    @demo_owner_id,
+    @demo_listing_id
+WHERE @demo_viewer_1_id IS NOT NULL
+  AND @demo_owner_id IS NOT NULL
+  AND @demo_listing_id IS NOT NULL
+  AND @demo_viewer_1_id <> @demo_owner_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM conversations
+      WHERE buyer_id = @demo_viewer_1_id
+        AND seller_id = @demo_owner_id
+        AND listing_id = @demo_listing_id
+  );
+
+-- Create the second demonstration conversation.
+INSERT INTO conversations (
+    buyer_id,
+    seller_id,
+    listing_id
+)
+SELECT
+    @demo_viewer_2_id,
+    @demo_owner_id,
+    @demo_listing_id
+WHERE @demo_viewer_2_id IS NOT NULL
+  AND @demo_owner_id IS NOT NULL
+  AND @demo_listing_id IS NOT NULL
+  AND @demo_viewer_2_id <> @demo_owner_id
+  AND @demo_viewer_2_id <> @demo_viewer_1_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM conversations
+      WHERE buyer_id = @demo_viewer_2_id
+        AND seller_id = @demo_owner_id
+        AND listing_id = @demo_listing_id
+  );
+
+-- Retrieve the first conversation ID.
+SET @demo_conversation_1_id = (
+    SELECT conversation_id
+    FROM conversations
+    WHERE buyer_id = @demo_viewer_1_id
+      AND seller_id = @demo_owner_id
+      AND listing_id = @demo_listing_id
+    LIMIT 1
+);
+
+-- Retrieve the second conversation ID.
+SET @demo_conversation_2_id = (
+    SELECT conversation_id
+    FROM conversations
+    WHERE buyer_id = @demo_viewer_2_id
+      AND seller_id = @demo_owner_id
+      AND listing_id = @demo_listing_id
+    LIMIT 1
+);
+
+SELECT
+    conversation_id,
+    buyer_id,
+    seller_id,
+    listing_id
+FROM conversations
+WHERE listing_id = @demo_listing_id;
+
+-- Create five identifiable demonstration messages.
+INSERT INTO messages (
+    conversation_id,
+    sender_user_id,
+    message_text
+)
+SELECT
+    demo_messages.conversation_id,
+    demo_messages.sender_user_id,
+    demo_messages.message_text
+FROM (
+    -- Conversation 1: Three messages.
+    SELECT
+        @demo_conversation_1_id AS conversation_id,
+        @demo_viewer_1_id AS sender_user_id,
+        '[UC11-DEMO-01] Hi, are the headphones still available?'
+            AS message_text
+
+    UNION ALL
+
+    SELECT
+        @demo_conversation_1_id,
+        @demo_owner_id,
+        '[UC11-DEMO-02] Yes, they are still available.'
+
+    UNION ALL
+
+    SELECT
+        @demo_conversation_1_id,
+        @demo_viewer_1_id,
+        '[UC11-DEMO-03] Does the carrying case come with them?'
+
+    -- Conversation 2: Two messages.
+    UNION ALL
+
+    SELECT
+        @demo_conversation_2_id,
+        @demo_viewer_2_id,
+        '[UC11-DEMO-04] Could you ship these this week?'
+
+    UNION ALL
+
+    SELECT
+        @demo_conversation_2_id,
+        @demo_owner_id,
+        '[UC11-DEMO-05] Yes, I can ship within two days.'
+) AS demo_messages
+WHERE demo_messages.conversation_id IS NOT NULL
+  AND demo_messages.sender_user_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM messages AS existing
+      WHERE existing.conversation_id =
+            demo_messages.conversation_id
+        AND existing.message_text =
+            demo_messages.message_text
+  );
+
+-- Verify conversation and message totals.
+SELECT
+    (
+        SELECT COUNT(*)
+        FROM conversations
+        WHERE listing_id = @demo_listing_id
+    ) AS total_conversations,
+
+    (
+        SELECT COUNT(*)
+        FROM messages AS m
+        INNER JOIN conversations AS c
+            ON m.conversation_id = c.conversation_id
+        WHERE c.listing_id = @demo_listing_id
+    ) AS total_messages;
+
+
