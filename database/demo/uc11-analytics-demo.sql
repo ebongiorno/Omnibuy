@@ -585,6 +585,32 @@ SET @demo_sold_listing_id = (
     LIMIT 1
 );
 
+-- Add a product image to the Bluetooth speaker listing.
+-- Skip insertion if the listing already has an image.
+INSERT INTO listing_images (
+    listing_id,
+    image_url,
+    display_order
+)
+SELECT
+    @demo_sold_listing_id,
+    '/assets/images/listing/listing-speaker.jpg',
+    1
+WHERE @demo_sold_listing_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM listing_images
+      WHERE listing_id = @demo_sold_listing_id
+  );
+
+-- Verify the Bluetooth speaker has an image.
+SELECT
+    listing_id,
+    image_url,
+    display_order
+FROM listing_images
+WHERE listing_id = @demo_sold_listing_id;
+
 -- Verify the second listing was created.
 SELECT
     listing_id,
