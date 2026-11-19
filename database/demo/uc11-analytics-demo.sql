@@ -473,3 +473,56 @@ SELECT
     ) AS total_messages;
 
 
+-- ============================================================
+-- SECTION 6: FINAL DEMONSTRATION DATA VERIFICATION
+-- ============================================================
+
+-- Verify all six UC-11 analytics metrics.
+SELECT
+    @demo_listing_id AS listing_id,
+    @demo_listing_name AS listing_name,
+
+    -- Total Views
+    (
+        SELECT COUNT(*)
+        FROM listing_views
+        WHERE listing_id = @demo_listing_id
+    ) AS total_views,
+
+    -- Unique Viewers
+    (
+        SELECT COUNT(DISTINCT user_id)
+        FROM listing_views
+        WHERE listing_id = @demo_listing_id
+    ) AS unique_viewers,
+
+    -- Views in Last 7 Days
+    (
+        SELECT COUNT(*)
+        FROM listing_views
+        WHERE listing_id = @demo_listing_id
+          AND viewed_at >= NOW() - INTERVAL 7 DAY
+    ) AS views_last_7_days,
+
+    -- Wishlist Saves
+    (
+        SELECT COUNT(*)
+        FROM wishlist_items
+        WHERE listing_id = @demo_listing_id
+    ) AS wishlist_saves,
+
+    -- Total Conversations
+    (
+        SELECT COUNT(*)
+        FROM conversations
+        WHERE listing_id = @demo_listing_id
+    ) AS total_conversations,
+
+    -- Total Messages
+    (
+        SELECT COUNT(*)
+        FROM messages AS m
+        INNER JOIN conversations AS c
+            ON m.conversation_id = c.conversation_id
+        WHERE c.listing_id = @demo_listing_id
+    ) AS total_messages;
