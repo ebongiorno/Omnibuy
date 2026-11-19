@@ -182,3 +182,92 @@ WHERE u.username = @demo_username
   AND l.item_name = @demo_listing_name;
 
 
+-- ============================================================
+-- SECTION 3: POPULATE LISTING VIEWS
+-- ============================================================
+
+-- Find the three users who will generate demonstration views.
+SET @demo_viewer_1_id = (
+    SELECT user_id
+    FROM users
+    WHERE username = 'alexm'
+      AND account_status = 'active'
+    LIMIT 1
+);
+
+SET @demo_viewer_2_id = (
+    SELECT user_id
+    FROM users
+    WHERE username = 'jordanlee'
+      AND account_status = 'active'
+    LIMIT 1
+);
+
+SET @demo_viewer_3_id = (
+    SELECT user_id
+    FROM users
+    WHERE username = 'taylorn'
+      AND account_status = 'active'
+    LIMIT 1
+);
+
+-- Refresh only the designated demo viewers' activity
+-- on the dedicated UC-11 demonstration listing.
+-- Do not use this approach on a real marketplace listing.
+
+DELETE FROM listing_views
+WHERE listing_id = @demo_listing_id
+  AND user_id IN (
+      @demo_viewer_1_id,
+      @demo_viewer_2_id,
+      @demo_viewer_3_id
+  )
+  AND @demo_listing_id IS NOT NULL
+  AND @demo_viewer_1_id IS NOT NULL
+  AND @demo_viewer_2_id IS NOT NULL
+  AND @demo_viewer_3_id IS NOT NULL;
+
+-- Insert eight controlled demonstration views.
+INSERT INTO listing_views (
+    user_id,
+    listing_id,
+    viewed_at
+)
+SELECT
+    demo_views.user_id,
+    @demo_listing_id,
+    NOW() - INTERVAL demo_views.days_ago DAY
+FROM (
+    -- Viewer 1: three recent views and one older view.
+    SELECT @demo_viewer_1_id AS user_id, 1 AS days_ago
+    UNION ALL SELECT @demo_viewer_1_id, 2
+    UNION ALL SELECT @demo_viewer_1_id, 3
+    UNION ALL SELECT @demo_viewer_1_id, 10
+
+    -- Viewer 2: two recent views and one older view.
+    UNION ALL SELECT @demo_viewer_2_id, 1
+    UNION ALL SELECT @demo_viewer_2_id, 4
+    UNION ALL SELECT @demo_viewer_2_id, 12
+
+    -- Viewer 3: one older view.
+    UNION ALL SELECT @demo_viewer_3_id, 15
+) AS demo_views
+WHERE @demo_listing_id IS NOT NULL
+  AND @demo_viewer_1_id IS NOT NULL
+  AND @demo_viewer_2_id IS NOT NULL
+  AND @demo_viewer_3_id IS NOT NULL;
+
+-- Verify the first three analytics metrics.
+SELECT
+    COUNT(*) AS total_views,
+    COUNT(DISTINCT user_id) AS unique_viewers,
+    COUNT(
+        CASE
+            WHEN viewed_at >= NOW() - INTERVAL 7 DAY
+            THEN 1
+        END
+    ) AS views_last_7_days
+FROM listing_views
+WHERE listing_id = @demo_listing_id;
+
+
