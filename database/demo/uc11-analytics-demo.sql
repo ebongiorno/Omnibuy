@@ -596,3 +596,180 @@ FROM listings
 WHERE listing_id = @demo_sold_listing_id;
 
 
+-- ============================================================
+-- SECTION 8: POPULATE SOLD LISTING ANALYTICS
+-- ============================================================
+
+-- Create four views for the second listing.
+-- Only insert if this demonstration listing has no views yet.
+-- This preserves the existing history when the script is rerun.
+
+INSERT INTO listing_views (
+    user_id,
+    listing_id,
+    viewed_at
+)
+SELECT
+    demo_views.user_id,
+    @demo_sold_listing_id,
+    NOW() - INTERVAL demo_views.days_ago DAY
+FROM (
+    -- Viewer 1: two recent views and one older view.
+    SELECT @demo_viewer_1_id AS user_id, 1 AS days_ago
+    UNION ALL SELECT @demo_viewer_1_id, 3
+    UNION ALL SELECT @demo_viewer_1_id, 10
+
+    -- Viewer 2: one older view.
+    UNION ALL SELECT @demo_viewer_2_id, 12
+) AS demo_views
+WHERE @demo_sold_listing_id IS NOT NULL
+  AND @demo_viewer_1_id IS NOT NULL
+  AND @demo_viewer_2_id IS NOT NULL
+  AND @demo_viewer_1_id <> @demo_owner_id
+  AND @demo_viewer_2_id <> @demo_owner_id
+  AND @demo_viewer_1_id <> @demo_viewer_2_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM listing_views
+      WHERE listing_id = @demo_sold_listing_id
+  );
+
+-- Add one wishlist save for the Bluetooth speaker.
+
+INSERT INTO wishlist_items (
+    user_id,
+    listing_id
+)
+SELECT
+    @demo_viewer_1_id,
+    @demo_sold_listing_id
+WHERE @demo_sold_listing_id IS NOT NULL
+  AND @demo_viewer_1_id IS NOT NULL
+  AND @demo_viewer_1_id <> @demo_owner_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM wishlist_items
+      WHERE user_id = @demo_viewer_1_id
+        AND listing_id = @demo_sold_listing_id
+  );
+
+-- Create a conversation about the Bluetooth speaker.
+
+INSERT INTO conversations (
+    buyer_id,
+    seller_id,
+    listing_id
+)
+SELECT
+    @demo_viewer_2_id,
+    @demo_owner_id,
+    @demo_sold_listing_id
+WHERE @demo_viewer_2_id IS NOT NULL
+  AND @demo_owner_id IS NOT NULL
+  AND @demo_sold_listing_id IS NOT NULL
+  AND @demo_viewer_2_id <> @demo_owner_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM conversations
+      WHERE buyer_id = @demo_viewer_2_id
+        AND seller_id = @demo_owner_id
+        AND listing_id = @demo_sold_listing_id
+  );
+
+-- Find the Bluetooth speaker conversation.
+
+SET @demo_sold_conversation_id = (
+    SELECT conversation_id
+    FROM conversations
+    WHERE buyer_id = @demo_viewer_2_id
+      AND seller_id = @demo_owner_id
+      AND listing_id = @demo_sold_listing_id
+    LIMIT 1
+);
+
+-- Buyer asks about the Bluetooth speaker.
+
+INSERT INTO messages (
+    conversation_id,
+    sender_user_id,
+    message_text
+)
+SELECT
+    @demo_sold_conversation_id,
+    @demo_viewer_2_id,
+    '[UC11-SOLD-01] Is the Bluetooth speaker still available?'
+WHERE @demo_sold_conversation_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM messages
+      WHERE conversation_id = @demo_sold_conversation_id
+        AND message_text =
+            '[UC11-SOLD-01] Is the Bluetooth speaker still available?'
+  );
+
+  -- Listing owner responds.
+
+INSERT INTO messages (
+    conversation_id,
+    sender_user_id,
+    message_text
+)
+SELECT
+    @demo_sold_conversation_id,
+    @demo_owner_id,
+    '[UC11-SOLD-02] Yes, it is available and works perfectly!'
+WHERE @demo_sold_conversation_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM messages
+      WHERE conversation_id = @demo_sold_conversation_id
+        AND message_text =
+            '[UC11-SOLD-02] Yes, it is available and works perfectly!'
+  );
+
+-- ============================================================
+-- VERIFY BLUETOOTH SPEAKER ANALYTICS
+-- ============================================================
+
+SELECT
+    @demo_sold_listing_id AS listing_id,
+
+    (
+        SELECT COUNT(*)
+        FROM listing_views
+        WHERE listing_id = @demo_sold_listing_id
+    ) AS total_views,
+
+    (
+        SELECT COUNT(DISTINCT user_id)
+        FROM listing_views
+        WHERE listing_id = @demo_sold_listing_id
+    ) AS unique_viewers,
+
+    (
+        SELECT COUNT(*)
+        FROM listing_views
+        WHERE listing_id = @demo_sold_listing_id
+          AND viewed_at >= NOW() - INTERVAL 7 DAY
+    ) AS views_last_7_days,
+
+    (
+        SELECT COUNT(*)
+        FROM wishlist_items
+        WHERE listing_id = @demo_sold_listing_id
+    ) AS wishlist_saves,
+
+    (
+        SELECT COUNT(*)
+        FROM conversations
+        WHERE listing_id = @demo_sold_listing_id
+    ) AS total_conversations,
+
+    (
+        SELECT COUNT(*)
+        FROM messages AS m
+        INNER JOIN conversations AS c
+            ON m.conversation_id = c.conversation_id
+        WHERE c.listing_id = @demo_sold_listing_id
+    ) AS total_messages;
+
