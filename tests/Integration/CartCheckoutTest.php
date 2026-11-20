@@ -287,6 +287,70 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertSame('0.00', $items[0]['shipping_cost']);
     }
 
+        public function testMixedDeliveryOrderSavesBothFulfillmentTypes(): void
+    {
+        // Create one shipping listing and one meetup listing.
+        $shippingListing = $this->createListing([
+            'item_name' => 'Shipping Test Item',
+            'fulfillment_type' => 'shipping',
+            'shipping_cost' => 5.00,
+            'price' => 20.00,
+        ]);
+
+        $meetupListing = $this->createListing([
+            'item_name' => 'Meetup Test Item',
+            'fulfillment_type' => 'meetup',
+            'shipping_cost' => null,
+            'price' => 40.00,
+        ]);
+
+        // Add both listings to the buyer's cart.
+        addToCart($this->pdo, $this->buyer, $shippingListing, 1);
+        addToCart($this->pdo, $this->buyer, $meetupListing, 1);
+
+        // Place one order containing both delivery methods.
+        $result = placeOrder($this->pdo, $this->buyer, self::ADDRESS, null);
+
+        self::assertSame([], $result['errors']);
+        self::assertNotNull($result['order_id']);
+
+        // Retrieve both saved order items.
+        $stmt = $this->pdo->prepare('
+            SELECT listing_id, fulfillment_type, shipping_cost
+            FROM order_items
+            WHERE order_id = :id
+        ');
+        $stmt->execute(['id' => $result['order_id']]);
+        $items = $stmt->fetchAll();
+
+        self::assertCount(2, $items);
+
+        // Index the order items by their listing IDs.
+        $itemsByListing = array_column($items, null, 'listing_id');
+
+        // Verify shipping item persistence.
+        self::assertSame('shipping', $itemsByListing[$shippingListing]['fulfillment_type']);
+        self::assertSame('5.00', $itemsByListing[$shippingListing]['shipping_cost']);
+
+        // Verify meetup item persistence.
+        self::assertSame('meetup', $itemsByListing[$meetupListing]['fulfillment_type']);
+        self::assertSame('0.00', $itemsByListing[$meetupListing]['shipping_cost']);
+
+        // Verify the order totals and shipping address.
+        $stmt = $this->pdo->prepare('
+            SELECT subtotal, shipping_cost, total_amount, shipping_address_id
+            FROM orders
+            WHERE order_id = :id
+        ');
+        $stmt->execute(['id' => $result['order_id']]);
+        $order = $stmt->fetch();
+
+        self::assertSame('60.00', $order['subtotal']);
+        self::assertSame('5.00', $order['shipping_cost']);
+        self::assertSame('65.00', $order['total_amount']);
+        self::assertNotNull($order['shipping_address_id']);
+    }
+
     public function testCheckoutFailsWhenStockRanOutAfterAdding(): void
     {
         $listing = $this->createListing(['quantity' => 2]);
