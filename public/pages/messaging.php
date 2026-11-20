@@ -538,22 +538,11 @@ if ($isMessagingApi) {
 require_once __DIR__ . '/../components/require-login.php';
 $pageTitle = 'Messages | OmniBuy';
 $activeNav = 'messages';
+$pageStylesheet = '/assets/css/messaging.css';
+include __DIR__ . '/../components/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Messages | OmniBuy</title>
-    <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="/assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="/assets/css/messaging.css">
-    <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
-    <script src="/assets/js/messaging.js" defer></script>
-</head>
+<script src="/assets/js/messaging.js" defer></script>
 <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <?php include __DIR__ . '/../components/header.php'; ?>
     <main class="page-main messages-page" id="main-content" data-messaging-page="inbox">
         <div class="shell">
             <div class="messages-page__heading">

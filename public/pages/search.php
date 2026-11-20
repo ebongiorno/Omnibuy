@@ -805,29 +805,16 @@ $hasNoResults =
         ? empty($sellers)
         : empty($listings);
 
+
+$pageTitle = 'Search | OmniBuy';
+$extraStylesheets = [
+    '/assets/css/listing-card.css',
+    '/assets/css/seller-card.css',
+];
+$pageStylesheet = '/assets/css/search.css';
+include __DIR__ . '/../components/header.php';
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
-    <!-- Shared OmniBuy styles -->
-    <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="/assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="/assets/css/listing-card.css">
-    <link rel="stylesheet" href="/assets/css/seller-card.css">
-
-    <!-- Search page styles -->
-    <link rel="stylesheet" href="/assets/css/search.css">
-
-    <!-- MD-SEC-08 pagination controls -->
+    <!-- Preserve pagination styling without redefining the document head. -->
     <style>
         .search-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; margin: 2rem 0 1rem; }
         .search-pagination__link { display: inline-flex; min-width: 2.5rem; min-height: 2.5rem; align-items: center; justify-content: center; padding: .5rem .75rem; border: 1px solid currentColor; border-radius: .35rem; text-decoration: none; }
@@ -836,39 +823,8 @@ $hasNoResults =
         .search-results__range { margin-top: .25rem; }
     </style>
 
-    <!-- Font Awesome -->
-    <script
-        src="https://kit.fontawesome.com/9e304416f8.js"
-        crossorigin="anonymous"
-    ></script>
-
-    <title>Search | OmniBuy</title>
-</head>
-
-
-<body>
-
-    <!-- =========================================
-         ACCESSIBILITY
-         ========================================= -->
-
-    <a class="skip-link" href="#main-content">
-        Skip to main content
-    </a>
-
-    <?php
-        $header = __DIR__ . '/../components/header.php';
-        include $header;
-    ?>
-
-    <!-- =========================================
-         SEARCH RESULTS
-         ========================================= -->
-
-    <main
-        class="page-main search-page"
-        id="main-content"
-    >
+    <!-- Search results content inside the shared main element. -->
+    <div class="search-page">
 
         <div class="shell">
 
@@ -1802,6 +1758,7 @@ $hasNoResults =
 
         </div>
 
+    </div>
     </main>
 
 

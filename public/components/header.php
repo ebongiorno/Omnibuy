@@ -46,6 +46,9 @@ function navActive(string $key, string $activeNav): string
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle) ?></title>
+  <!-- Enables the use of Font Awesome's Icons -->
+  <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/box-open-solid-full.svg">
 
   <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
   <link rel="stylesheet" href="/assets/css/shared-navigation.css">
@@ -62,8 +65,7 @@ function navActive(string $key, string $activeNav): string
 
 
 
-  <!-- Enables the use of Font Awesome's Icons -->
-  <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
+
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
