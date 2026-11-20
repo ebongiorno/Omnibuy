@@ -135,41 +135,93 @@ These results confirm that meetup-only listings retain their seller-defined fulf
 **Related Jira Defect:** None
 
 
-### TC-07-03: Display Both Supported Delivery Methods
+### TC-07-03: Verify Mixed-Delivery Checkout
 
 **Use Case:** UC-07
 
 **Test Type:** Manual Functional / Automated Integration
 
 **Objective:**
-Verify that both Shipping and Meetup are available
-when a seller supports both methods for a listing.
+Verify that OmniBuy correctly handles a checkout containing multiple listings with different seller-defined delivery methods. Confirm that each listing displays its required fulfillment method, shipping charges are calculated correctly, and both delivery methods are preserved when the order is created.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- The application supports listings offering both methods.
-- A controlled listing offers both Shipping and Meetup.
+- A buyer account is available.
+- At least one active shipping-only listing exists.
+- At least one active meetup-only listing exists.
+- Cart and checkout functionality are operational.
+- The buyer can add multiple listings to the same cart.
 
 **Test Data:**
-- Listing supporting both delivery methods
-- Buyer account or supported buyer session
+
+Manual Test:
+- Shipping listing: Classic Blastoise Pokemon Card
+- Shipping listing price: $150.00
+- Shipping charge: $5.00
+- Meetup listing: Power Rangers Lightning Collection Green Ranger
+- Meetup listing price: $46.00
+- Meetup shipping charge: $0.00
+- Expected subtotal: $196.00
+- Expected shipping total: $5.00
+- Expected order total: $201.00
+
+Automated Test:
+- Test method: `testMixedDeliveryOrderSavesBothFulfillmentTypes()`
+- Shipping listing price: $20.00
+- Meetup listing price: $40.00
+- Shipping charge: $5.00
+- Expected subtotal: $60.00
+- Expected order total: $65.00
 
 **Test Steps:**
-1. Open a listing that supports both delivery methods.
-2. Begin the supported purchase process.
-3. Examine the delivery method selection interface.
-4. Verify that Shipping and Meetup are available.
-5. Select each method in separate test attempts.
+1. Log into OmniBuy as a buyer.
+2. Add a shipping-only listing to the shopping cart.
+3. Add a meetup-only listing to the same cart.
+4. Proceed to checkout.
+5. Verify that both listings appear in the order summary.
+6. Verify that Shipping appears beneath the shipping-only listing.
+7. Verify that Local Meetup appears beneath the meetup-only listing.
+8. Confirm that the shipping charge applies only to the shipping listing.
+9. Verify that the subtotal, shipping cost, and total are calculated correctly.
+10. Verify that the shipping address section is displayed because the cart contains a shipping item.
+11. Execute the automated integration test `testMixedDeliveryOrderSavesBothFulfillmentTypes()` using PHPUnit.
+12. Verify that both order items are associated with the same order.
+13. Verify that the shipping listing stores `shipping` in `order_items.fulfillment_type`.
+14. Verify that the meetup listing stores `meetup` in `order_items.fulfillment_type`.
+15. Verify that each order item retains its appropriate shipping charge.
+16. Verify that the completed order stores the correct subtotal, shipping cost, total amount, and shipping address reference.
 
 **Expected Result:**
-- Both supported delivery methods should be displayed.
-- The buyer should be able to select either supported method.
-- The chosen method should be accepted correctly.
+- Both shipping and meetup listings can be included in the same checkout.
+- Each listing displays its seller-defined fulfillment method.
+- The buyer cannot substitute an unsupported delivery method.
+- Shipping charges are applied only to shipping listings.
+- Meetup listings do not generate shipping charges.
+- The order summary correctly combines the prices and applicable shipping costs.
+- The shipping address section is displayed when at least one listing requires shipping.
+- Both purchased items are saved under the same order.
+- Each saved order item retains its correct fulfillment type.
+- The completed order contains a shipping address when shipping is required.
+- No PHP or database errors occur.
 
 **Actual Result:**
-Not yet recorded.
+Manual testing passed successfully. The Classic Blastoise Pokemon Card and Power Rangers Lightning Collection Green Ranger listings were added to the same shopping cart and displayed together during checkout.
 
-**Status:** Not Run - Requires confirmation of dual-method support
+The Blastoise card correctly displayed Shipping beneath its listing name, while the Green Ranger listing displayed Local Meetup. Both labels used the same styling and appeared beneath their corresponding listing names.
+
+The order summary correctly calculated a subtotal of $196.00, a shipping charge of $5.00, and a total of $201.00. The shipping address section was displayed because the Blastoise card required shipping.
+
+Automated integration testing also passed successfully. The new `testMixedDeliveryOrderSavesBothFulfillmentTypes()` test created temporary shipping and meetup listings, added both to the buyer's cart, and completed checkout within the isolated test transaction.
+
+The test verified that exactly two order items were created under the same order ID. The shipping listing retained `shipping` as its fulfillment type with a stored shipping charge of `5.00`. The meetup listing retained `meetup` with a stored shipping charge of `0.00`.
+
+Additional assertions confirmed that the completed order recorded a subtotal of `60.00`, a shipping charge of `5.00`, and a total amount of `65.00`. The order also contained a non-null shipping address reference.
+
+All assertions passed. The complete `CartCheckoutTest.php` test file also passed during subsequent regression testing.
+
+These results confirm that OmniBuy correctly supports mixed-delivery purchases while preserving each seller's required fulfillment method and applying shipping charges accurately.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
