@@ -67,7 +67,7 @@ include __DIR__ . '/../components/header.php';
   <?php if ($cart['items'] === []): ?>
     <div class="cart-empty">
       <p>Your cart is empty.</p>
-      <a class="button button--primary" href="/pages/search.php">Browse listings</a>
+      <a class="button button--primary" href="/index.php#browse-feed">Browse listings</a>
     </div>
   <?php else: ?>
     <div class="cart-layout">
