@@ -9,12 +9,12 @@ startSession();
 
 $pageTitle = 'Listing Details | OmniBuy';
 $activeNav = 'sell';
+
 $currentSellerId = filter_var(
     $_SESSION['user_id'] ?? null,
     FILTER_VALIDATE_INT,
     ['options' => ['min_range' => 1]]
 );
-
 if ($currentSellerId === false || $currentSellerId === null) {
     header('Location: /pages/login.php');
     exit;
@@ -25,6 +25,7 @@ $currentUser = [
     'avatar_url' => $_SESSION['avatar_url'] ?? '/assets/icons/default-avatar.png',
     'is_seller' => true,
 ];
+
 $cartCount = 0;
 $unreadCount = 0;
 $errors = [];
@@ -37,7 +38,6 @@ $isEditMode = is_array($editData)
         ['options' => ['min_range' => 1]]
     ) !== false;
 $editingListingId = $isEditMode ? (int) $editData['listing_id'] : null;
-
 if ($isEditMode && (int) ($editData['seller_user_id'] ?? 0) !== (int) $currentSellerId) {
     http_response_code(403);
     exit('Editing session is not authorized.');
@@ -51,13 +51,11 @@ $mainCategories = [];
 $subcategories = [];
 $categoryParents = [];
 $validCategoryIds = [];
-
 foreach ($categories as $option) {
     $id = (string) $option['category_id'];
     $parent = $option['parent_category_id'];
     $categoryParents[$id] = $parent === null ? null : (string) $parent;
     $validCategoryIds[] = $id;
-
     if ($parent === null) {
         $mainCategories[] = $option;
     } else {
@@ -68,6 +66,7 @@ foreach ($categories as $option) {
 $clothingCategoryId = null;
 foreach ($mainCategories as $option) {
     if (strcasecmp($option['category_name'], 'Clothing') === 0) {
+
         $clothingCategoryId = (string) $option['category_id'];
         break;
     }
@@ -77,11 +76,13 @@ $allowedConditions = [
     'new', 'open_box', 'like_new', 'excellent', 'good',
     'fair', 'poor', 'refurbished', 'for_parts',
 ];
+
 $category = (string) ($listing['category'] ?? '');
 $mainCategory = (string) ($listing['main_category'] ?? '');
 if ($mainCategory === '' && array_key_exists($category, $categoryParents)) {
     $mainCategory = $categoryParents[$category] ?? $category;
 }
+
 $condition = (string) ($listing['condition'] ?? '');
 $brand = (string) ($listing['brand'] ?? '');
 $size = (string) ($listing['size'] ?? '');
@@ -94,6 +95,7 @@ $allowedImageTypes = [
     'image/png' => 'png',
     'image/webp' => 'webp',
 ];
+
 $maxImageSize = 10 * 1024 * 1024;
 $escape = static fn($value) => htmlspecialchars(
     (string) $value,
@@ -116,17 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quantity = is_string($_POST['quantity'] ?? null) ? trim($_POST['quantity']) : '';
     $fulfillmentType = is_string($_POST['fulfillment_type'] ?? null)
         ? trim($_POST['fulfillment_type']) : '';
-
     $returnPolicyDays = trim((string) ($_POST['return_policy_days'] ?? '0'));
     $parsedReturnDays = parseReturnPolicyDays($returnPolicyDays);
-
     $errors = validateListingDetails([
         'category' => $category,
         'condition' => $condition,
         'quantity' => $quantity,
         'fulfillment_type' => $fulfillmentType,
     ], $validCategoryIds);
-
     if (!array_key_exists($mainCategory, $categoryParents)
         || $categoryParents[$mainCategory] !== null) {
         $errors['main_category'] = 'Please select a valid main category.';
@@ -152,13 +151,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim((string) ($listing['title'] ?? ''));
     $description = trim((string) ($listing['description'] ?? ''));
     $price = trim((string) ($listing['price'] ?? ''));
-
     if ($title === '' || mb_strlen($title) > 100) {
         $errors['title'] = 'A valid title is required. Return to Step 1.';
     }
+
     if ($description === '') {
         $errors['description'] = 'A description is required. Return to Step 1.';
     }
+
     if (!preg_match('/^\d+(?:\.\d{1,2})?$/', $price)
         || (float) $price <= 0 || (float) $price > 99999999.99) {
         $errors['price'] = 'A valid price is required. Return to Step 1.';
@@ -171,10 +171,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!is_array($removedPhotoIds)) {
         $removedPhotoIds = [];
     }
+
     if (!is_array($photos)) {
         $photos = [];
         $errors['photos'] = 'Invalid photo data. Return to Step 1.';
     }
+
     if (count($photos) > 10) {
         $errors['photos'] = 'Maximum 10 photos.';
     }
@@ -193,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         }
     }
+
     if (!$isEditMode && count($photos) === 0) {
         $errors['photos'] = 'At least one photo is required. Return to Step 1.';
     }
@@ -200,10 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($errors === []) {
         $uploadDirectory = __DIR__ . '/../uploads/listings';
         $movedFiles = [];
-
         try {
             $pdo->beginTransaction();
-
             if ($isEditMode) {
                 $check = $pdo->prepare(
                     "SELECT listing_id FROM listings
@@ -234,6 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         throw new RuntimeException('Invalid photo removal request.');
                     }
                 }
+
                 $retained = array_values(array_filter(
                     $storedImages,
                     static fn($image) => !in_array((int) $image['listing_image_id'], $removedPhotoIds, true)
@@ -266,7 +268,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'id' => $listingId,
                     'seller' => $currentSellerId,
                 ]);
-
                 // Rebuild ordered references, keeping selected old images and appending new ones.
                 // All changes happen in the same transaction as the listing update.
                 $pdo->prepare('DELETE FROM listing_images WHERE listing_id = :id')
@@ -282,6 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'position' => $position + 1,
                     ]);
                 }
+
                 $nextOrder = count($retained) + 1;
             } else {
                 ensureSellerProfile($pdo, $currentSellerId);
@@ -317,6 +319,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     && !is_dir($uploadDirectory)) {
                     throw new RuntimeException('Unable to create upload directory.');
                 }
+
                 $imageStmt = $pdo->prepare(
                     'INSERT INTO listing_images (listing_id, image_url, display_order)
                      VALUES (:id, :url, :position)'
@@ -328,6 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!rename($photo, $destination)) {
                         throw new RuntimeException('Unable to save listing photo.');
                     }
+
                     $movedFiles[] = $destination;
                     $imageStmt->execute([
                         'id' => $listingId,
@@ -371,14 +375,11 @@ include __DIR__ . '/../components/header.php';
     <p><?= $isEditMode
         ? 'Review the details and save your changes.'
         : 'Complete the details below to publish your listing.' ?></p>
-
     <?php foreach ($errors as $error): ?>
         <p role="alert"><?= $escape($error) ?></p>
     <?php endforeach; ?>
-
     <form class="listing-details__form" method="post">
         <input type="hidden" name="csrf_token" value="<?= $escape(csrfToken()) ?>">
-
         <div class="listing-details__field">
             <label for="main_category">Main Category</label>
             <select id="main_category" name="main_category" required>
@@ -391,9 +392,15 @@ include __DIR__ . '/../components/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
-
         <div class="listing-details__field" id="subcategory_field">
             <label for="category">Subcategory</label>
+            <input
+                    type="hidden"
+                    id="category_fallback"
+                    name="category"
+                    value=""
+                    disabled
+                >
             <select id="category" name="category" required>
                 <option value="">Select a subcategory</option>
                 <?php foreach ($subcategories as $parentId => $children): ?>
@@ -407,7 +414,6 @@ include __DIR__ . '/../components/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
-
         <div class="listing-details__field">
             <label for="condition">Condition</label>
             <select id="condition" name="condition" required>
@@ -420,24 +426,20 @@ include __DIR__ . '/../components/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
-
         <div class="listing-details__field">
             <label for="brand">Brand</label>
             <input type="text" id="brand" name="brand" value="<?= $escape($brand) ?>">
         </div>
-
         <div class="listing-details__field" id="size_field"
             <?= $mainCategory === $clothingCategoryId ? '' : 'hidden' ?>>
             <label for="size">Size</label>
             <input type="text" id="size" name="size" value="<?= $escape($size) ?>">
         </div>
-
         <div class="listing-details__field">
             <label for="quantity">Quantity</label>
             <input type="number" id="quantity" name="quantity" min="1" step="1"
                 value="<?= $escape($quantity) ?>" required>
         </div>
-
         <div class="listing-details__field">
             <label for="fulfillment_type">Delivery Method</label>
             <select id="fulfillment_type" name="fulfillment_type" required>
@@ -446,7 +448,6 @@ include __DIR__ . '/../components/header.php';
                 <option value="meetup" <?= $fulfillmentType === 'meetup' ? 'selected' : '' ?>>Meetup</option>
             </select>
         </div>
-
         <?php $sliderDays = parseReturnPolicyDays($returnPolicyDays) ?? 0; ?>
         <div class="listing-details__field">
             <label for="return_policy_days">Return Policy</label>
@@ -466,7 +467,6 @@ include __DIR__ . '/../components/header.php';
                 Buyers can cancel and return their purchase within this many days. Up to <?= LISTING_MAX_RETURN_DAYS ?> days; 0 means no returns.
             </p>
         </div>
-
         <div>
             <a href="create-listing.php">Back</a>
             <button class="listing-details__submit" type="submit">
@@ -477,32 +477,33 @@ include __DIR__ . '/../components/header.php';
 </section>
 
 <script>
+
 (() => {
     const main = document.getElementById('main_category');
     const sub = document.getElementById('category');
+    const categoryFallback = document.getElementById('category_fallback');
     const subField = document.getElementById('subcategory_field');
     const sizeField = document.getElementById('size_field');
     const sizeInput = document.getElementById('size');
     const clothingId = <?= json_encode($clothingCategoryId) ?>;
     const options = Array.from(sub.querySelectorAll('option[data-parent]'));
     const emptyOption = sub.querySelector('option[value=""]');
-
     function updateCategories(reset = false) {
         const parentId = main.value;
         const matching = options.filter(option => option.dataset.parent === parentId);
         const hasChildren = matching.length > 0;
         const oldValue = reset ? '' : sub.value;
-
         options.forEach(option => {
             option.hidden = option.dataset.parent !== parentId;
             option.disabled = option.dataset.parent !== parentId;
         });
-
         subField.hidden = !hasChildren;
         sub.required = hasChildren;
         sub.disabled = !hasChildren;
         emptyOption.textContent = 'Select a subcategory';
-
+        // Main categories without subcategories use their own ID.
+        categoryFallback.disabled = hasChildren || parentId === '';
+        categoryFallback.value = hasChildren ? '' : parentId;
         if (hasChildren) {
             sub.value = matching.some(option => option.value === oldValue) ? oldValue : '';
         } else {
@@ -523,16 +524,8 @@ include __DIR__ . '/../components/header.php';
         const days = Number(returnSlider.value);
         returnValue.textContent = days === 0 ? 'No returns' : (days === 1 ? '1-day returns' : `${days}-day returns`);
     });
-
     main.addEventListener('change', () => updateCategories(true));
     updateCategories();
-    document.querySelector('.listing-details__form').addEventListener('submit', () => {
-        if (sub.disabled) {
-            sub.disabled = false;
-            sub.value = main.value;
-        }
-    });
 })();
 </script>
-
 <?php include __DIR__ . '/../components/footer.php'; ?>

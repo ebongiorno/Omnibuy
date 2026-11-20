@@ -290,3 +290,37 @@
     letter-spacing: normal;
     text-transform: none;
 }
+
+/* =========================================
+   UC-13: DELETE LISTING BUTTON
+   ========================================= */
+
+.my-listings__delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    background-color: #dc2626;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: normal;
+    text-transform: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.my-listings__delete:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+    color: #ffffff;
+}
+
+.my-listings__delete:focus-visible {
+    outline: 3px solid #fca5a5;
+    outline-offset: 2px;
+}
