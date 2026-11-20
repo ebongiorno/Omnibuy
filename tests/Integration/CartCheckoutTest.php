@@ -469,4 +469,54 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertSame(['address_line_1' => '1 Shipping Way', 'city' => 'Irvine'], $stmt->fetch());
         self::assertSame('1 Shipping Way', loadDefaultAddress($this->pdo, $this->buyer, 'shipping')['address_line_1']);
     }
+
+        public function testCheckoutUsesCurrentSellerDeliveryMethod(): void
+    {
+        // Create a shipping listing and add it to the buyer's cart.
+        $listing = $this->createListing([
+            'fulfillment_type' => 'shipping',
+            'shipping_cost' => 5.00,
+        ]);
+
+        addToCart($this->pdo, $this->buyer, $listing, 1);
+
+        // Simulate the seller changing the listing to meetup.
+        $stmt = $this->pdo->prepare('
+            UPDATE listings
+            SET fulfillment_type = :method,
+                shipping_cost = NULL
+            WHERE listing_id = :id
+        ');
+
+        $stmt->execute([
+            'method' => 'meetup',
+            'id' => $listing,
+        ]);
+
+        // Reload the cart to verify it uses the current listing data.
+        $cart = loadCart($this->pdo, $this->buyer);
+
+        self::assertSame('meetup', $cart['items'][0]['fulfillment_type']);
+        self::assertFalse($cart['needs_shipping']);
+        self::assertSame(0.0, $cart['summary']['shipping']);
+
+        // Complete checkout.
+        $result = placeOrder($this->pdo, $this->buyer, self::ADDRESS, null);
+
+        self::assertSame([], $result['errors']);
+        self::assertNotNull($result['order_id']);
+
+        // Verify the order records the updated seller-defined method.
+        $stmt = $this->pdo->prepare('
+            SELECT fulfillment_type, shipping_cost
+            FROM order_items
+            WHERE order_id = :id
+        ');
+
+        $stmt->execute(['id' => $result['order_id']]);
+        $item = $stmt->fetch();
+
+        self::assertSame('meetup', $item['fulfillment_type']);
+        self::assertSame('0.00', $item['shipping_cost']);
+    }
 }
