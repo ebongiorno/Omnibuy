@@ -239,24 +239,15 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
         $cartState = 'buy';
     }
 }
+
+$extraStylesheets = [
+    '/assets/css/listing-detail.css',
+    '/assets/css/listing-wishlist.css',
+];
+include __DIR__ . '/../components/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= listingEscape($pageTitle) ?></title>
-
-    <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="/assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="/assets/css/listing-detail.css">
-    <link rel="stylesheet" href="/assets/css/listing-wishlist.css">
-</head>
-<body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <?php include __DIR__ . '/../components/header.php'; ?>
-
-    <main id="main-content" class="page-main listing-detail-page">
+    <!-- Listing content inside the shared main element. -->
+    <div class="listing-detail-page">
         <div class="shell">
             <?php if ($pageError !== null): ?>
                 <div class="listing-detail__not-found" role="status">
@@ -584,6 +575,7 @@ if ($listing !== null && $listing['sale_type'] === 'fixed_price' && (int) $listi
                 </article>
             <?php endif; ?>
         </div>
+    </div>
     </main>
 
     <script src="/assets/js/shared-navigation.js" defer></script>
