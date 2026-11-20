@@ -237,6 +237,8 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertCount(1, $items);
         self::assertSame(2, (int) $items[0]['quantity']);
         self::assertSame('20.00', $items[0]['unit_price']);
+        self::assertSame('shipping', $items[0]['fulfillment_type']);
+        self::assertSame('5.00', $items[0]['shipping_cost']);
 
         self::assertSame(['quantity' => 1, 'listing_status' => 'active'], array_map(
             static fn ($v) => is_numeric($v) ? (int) $v : $v,
@@ -271,6 +273,18 @@ final class CartCheckoutTest extends DatabaseTestCase
         $order = $stmt->fetch();
         self::assertNull($order['shipping_address_id']);
         self::assertSame('0.00', $order['shipping_cost']);
+        // Verify the order item retains the seller's meetup method.
+        $stmt = $this->pdo->prepare('
+            SELECT fulfillment_type, shipping_cost
+            FROM order_items
+            WHERE order_id = :id
+        ');
+        $stmt->execute(['id' => $result['order_id']]);
+        $items = $stmt->fetchAll();
+
+        self::assertCount(1, $items);
+        self::assertSame('meetup', $items[0]['fulfillment_type']);
+        self::assertSame('0.00', $items[0]['shipping_cost']);
     }
 
     public function testCheckoutFailsWhenStockRanOutAfterAdding(): void
