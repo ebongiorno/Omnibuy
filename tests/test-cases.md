@@ -226,43 +226,75 @@ These results confirm that OmniBuy correctly supports mixed-delivery purchases w
 **Related Jira Defect:** None
 
 
-### TC-07-04: Reject Unsupported Delivery Method
+### TC-07-04: Validate Shipping Address Requirements
 
 **Use Case:** UC-07
 
 **Test Type:** Automated Integration / Negative Testing
 
 **Objective:**
-Verify that buyers cannot select a delivery method
-the seller does not offer.
+Verify that OmniBuy correctly validates shipping address information for shipping-required purchases and prevents order creation when a separately provided shipping address contains invalid or missing required information. Confirm that failed checkout attempts preserve the buyer's cart and do not modify listing inventory.
 
 **Preconditions:**
-- An isolated test database is available.
-- A listing supports only Meetup.
+- OmniBuy is running in Docker.
+- The MySQL database is initialized and accessible.
+- PHPUnit integration testing is operational.
+- A buyer account is available in the isolated test environment.
+- An active shipping-only listing exists.
+- Cart and checkout functionality are operational.
 
 **Test Data:**
-- Meetup-only listing
-- Attempted delivery method: Shipping
+- Automated test: `testInvalidShippingAddressPreventsOrderCreation()`
+- Listing fulfillment type: `shipping`
+- Listing initial quantity: 3
+- Cart quantity: 1
+- Billing address: Valid address from `self::ADDRESS`
+- Separate shipping address:
+  - `address_line_1`: Empty string
+  - `zip_code`: `!!`
+  - Remaining fields: Valid values from `self::ADDRESS`
+- Expected order ID: `null`
+- Expected cart quantity after rejection: 1
+- Expected listing quantity after rejection: 3
 
 **Test Steps:**
-1. Open a listing that supports only Meetup.
-2. Begin the supported purchase process.
-3. Verify that Shipping is not offered as a valid option.
-4. Attempt to submit Shipping through the applicable request.
-5. Examine the application's response.
-6. Check whether an invalid selection was stored.
+1. Execute the automated integration test `testInvalidShippingAddressPreventsOrderCreation()` using PHPUnit.
+2. Create a temporary active listing with `shipping` as its fulfillment type.
+3. Add one unit of the listing to the buyer's shopping cart.
+4. Prepare a valid billing address using the existing test address data.
+5. Prepare a separate shipping address with an empty street address and invalid ZIP code.
+6. Submit the checkout request through `placeOrder()` using the valid billing address and invalid shipping address.
+7. Verify that the checkout does not return a valid order ID.
+8. Verify that the validation errors include `shipping_address_line_1`.
+9. Verify that the validation errors include `shipping_zip_code`.
+10. Verify that the buyer's shopping cart still contains the original item.
+11. Query the `orders` table and confirm that no order was created for the test buyer.
+12. Verify that the listing's inventory quantity remains unchanged.
 
 **Expected Result:**
-- Unsupported delivery methods should not be available
-  through the normal interface.
-- A manually submitted unsupported value should be rejected.
-- No invalid delivery selection should be stored.
-- The listing's supported delivery method should remain unchanged.
+- Checkout rejects the invalid shipping address.
+- No order ID is generated.
+- Validation errors identify the missing street address and invalid ZIP code.
+- The buyer's shopping cart remains intact.
+- No new order is stored in the database.
+- The listing's available quantity remains unchanged.
+- The invalid shipping information does not result in a completed purchase.
+- No unexpected PHP or database errors occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated integration testing passed successfully. The new `testInvalidShippingAddressPreventsOrderCreation()` test created a temporary shipping-only listing and added one unit to the buyer's cart.
 
-**Status:** Not Run
+The test submitted a checkout request using a valid billing address and a separate shipping address containing an empty street address and invalid ZIP code.
+
+The `placeOrder()` function correctly rejected the checkout request and returned a null order ID. The validation errors contained both `shipping_address_line_1` and `shipping_zip_code`, confirming that the invalid address fields were detected.
+
+Additional assertions confirmed that the buyer's shopping cart still contained one item, no order was created in the `orders` table for the test buyer, and the listing's original inventory quantity of three remained unchanged.
+
+All assertions passed. The individual test passed when executed through PHPUnit, and the complete `CartCheckoutTest.php` test file also passed during subsequent regression testing.
+
+These results confirm that OmniBuy prevents shipping-required purchases from proceeding with invalid separately provided shipping information while preserving cart contents and listing inventory.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
