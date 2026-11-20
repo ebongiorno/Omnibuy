@@ -210,6 +210,12 @@
   display: none;
 }
 
+.checkout-form__card-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
 .checkout-lines {
   margin: 0 0 var(--space-4);
   padding: 0 0 var(--space-4);

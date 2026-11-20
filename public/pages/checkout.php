@@ -1,8 +1,8 @@
 <?php
 
 // Checkout: collect the billing (and, if any item ships, shipping) address
-// and turn the cart into an order. No payment is taken: orders are created
-// with payment_status 'pending'.
+// and a card, and turn the cart into an order. The card payment is a demo:
+// nothing is charged or stored, and a valid card marks the order paid.
 
 declare(strict_types=1);
 
@@ -17,16 +17,21 @@ $errors = [];
 $billing = loadDefaultAddress($pdo, $userId, 'billing');
 $shipping = loadDefaultAddress($pdo, $userId, 'shipping');
 $shipToBilling = true;
+// Only the name and expiry are put back into the form after an error;
+// the card number and CVC are never echoed.
+$card = ['name' => '', 'expiry' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $billing = normalizeAddressInput($_POST, 'billing_');
     $shipping = normalizeAddressInput($_POST, 'shipping_');
     $shipToBilling = isset($_POST['ship_to_billing']);
+    $submittedCard = normalizeCardInput($_POST);
+    $card = ['name' => $submittedCard['name'], 'expiry' => $submittedCard['expiry']];
 
     if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
         $errors['form'] = 'Your session expired. Please submit the form again.';
     } else {
-        $result = placeOrder($pdo, $userId, $billing, $shipToBilling ? null : $shipping);
+        $result = placeOrder($pdo, $userId, $billing, $shipToBilling ? null : $shipping, $submittedCard);
         $errors = $result['errors'];
 
         if ($result['order_id'] !== null) {
@@ -124,7 +129,41 @@ include __DIR__ . '/../components/header.php';
         <p class="cart-summary__note">Every item is a local meetup, so no shipping address is needed. Arrange the meetup with each seller through Messages.</p>
       <?php endif; ?>
 
-      <p class="cart-summary__note">This is a demo checkout: no payment is taken. Your order is placed with payment pending.</p>
+      <fieldset class="auth-fieldset">
+        <legend>Payment</legend>
+        <p class="cart-summary__note">Demo payment: no card is charged and card details are not saved. Use test card 4242 4242 4242 4242 with any future date and any 3-digit code.</p>
+
+        <div class="auth-field">
+          <label for="card_name">Name on card</label>
+          <input type="text" id="card_name" name="card_name" maxlength="100" autocomplete="cc-name" required
+            value="<?= htmlspecialchars($card['name']) ?>"<?= invalidAttributes($errors, 'card_name') ?>>
+          <?= fieldError($errors, 'card_name') ?>
+        </div>
+
+        <div class="auth-field">
+          <label for="card_number">Card number</label>
+          <input type="text" id="card_number" name="card_number" maxlength="23" inputmode="numeric"
+            autocomplete="cc-number" placeholder="1234 5678 9012 3456" required<?= invalidAttributes($errors, 'card_number') ?>>
+          <?= fieldError($errors, 'card_number') ?>
+        </div>
+
+        <div class="checkout-form__card-row">
+          <div class="auth-field">
+            <label for="card_expiry">Expiration (MM/YY)</label>
+            <input type="text" id="card_expiry" name="card_expiry" maxlength="7" inputmode="numeric"
+              autocomplete="cc-exp" placeholder="MM/YY" required
+              value="<?= htmlspecialchars($card['expiry']) ?>"<?= invalidAttributes($errors, 'card_expiry') ?>>
+            <?= fieldError($errors, 'card_expiry') ?>
+          </div>
+
+          <div class="auth-field">
+            <label for="card_cvc">Security code</label>
+            <input type="text" id="card_cvc" name="card_cvc" maxlength="4" inputmode="numeric"
+              autocomplete="cc-csc" placeholder="CVC" required<?= invalidAttributes($errors, 'card_cvc') ?>>
+            <?= fieldError($errors, 'card_cvc') ?>
+          </div>
+        </div>
+      </fieldset>
 
       <button type="submit" class="button button--primary">Place order · <?= formatMoney($cart['summary']['total']) ?></button>
     </form>
