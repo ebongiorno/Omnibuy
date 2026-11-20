@@ -299,46 +299,86 @@ These results confirm that OmniBuy prevents shipping-required purchases from pro
 **Related Jira Defect:** None
 
 
-### TC-07-05: Preserve Selected Delivery Method During Purchase
+### TC-07-05: Preserve Seller-Defined Delivery Method During Purchase
 
 **Use Case:** UC-07
 
-**Test Type:** Manual Functional / Automated Integration
+**Test Type:** Automated Integration / Functional Regression
 
 **Objective:**
-Verify that the buyer's selected delivery method
-is preserved during the supported purchase process.
+Verify that OmniBuy retrieves and preserves the seller's current delivery method during checkout, including when a listing's fulfillment method changes after the buyer has added it to their shopping cart. Confirm that the completed order records the updated seller-defined method rather than outdated cart information.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- The purchase workflow supports delivery selection.
-- A listing with a supported delivery method exists.
+- The MySQL database is initialized and accessible.
+- PHPUnit integration testing is operational.
+- A buyer account is available in the isolated test environment.
+- An active listing supports a seller-defined delivery method.
+- Cart and checkout functionality are operational.
 
 **Test Data:**
-- Valid buyer session
-- Listing supporting Shipping or Meetup
-- Selected delivery method
+- Automated test: `testCheckoutUsesCurrentSellerDeliveryMethod()`
+- Initial listing fulfillment type: `shipping`
+- Initial shipping cost: $5.00
+- Updated listing fulfillment type: `meetup`
+- Updated shipping cost: `NULL`
+- Cart quantity: 1
+- Billing address: Valid address from `self::ADDRESS`
+- Expected updated cart fulfillment type: `meetup`
+- Expected shipping requirement: `false`
+- Expected cart shipping total: $0.00
+- Expected saved order item fulfillment type: `meetup`
+- Expected saved order item shipping cost: `0.00`
 
 **Test Steps:**
-1. Begin a purchase for an eligible listing.
-2. Select a supported delivery method.
-3. Continue through the applicable purchase steps.
-4. Examine the saved transaction information.
-5. Verify the stored delivery method.
+1. Execute the automated integration test `testCheckoutUsesCurrentSellerDeliveryMethod()` using PHPUnit.
+2. Create a temporary active listing with `shipping` as its fulfillment type and a $5.00 shipping charge.
+3. Add one unit of the listing to the buyer's shopping cart.
+4. Simulate the seller updating the listing's fulfillment type from `shipping` to `meetup`.
+5. Update the listing's shipping cost to `NULL`.
+6. Reload the buyer's shopping cart using `loadCart()`.
+7. Verify that the cart retrieves `meetup` as the listing's current fulfillment type.
+8. Verify that the cart no longer requires shipping.
+9. Verify that the calculated shipping total is $0.00.
+10. Complete checkout using `placeOrder()` with a valid billing address and no separate shipping address.
+11. Verify that checkout completes successfully without validation errors.
+12. Verify that a valid order ID is returned.
+13. Query the `order_items` table for the completed order.
+14. Verify that the saved order item contains `meetup` in `fulfillment_type`.
+15. Verify that the saved order item contains `0.00` as its shipping cost.
 
 **Expected Result:**
-- The selected delivery method should remain consistent
-  throughout the supported transaction workflow.
-- The saved selection should match the buyer's choice.
-- No unsupported delivery method should be stored.
-- No PHP or database errors should occur.
+- The shopping cart retrieves the listing's current seller-defined fulfillment method.
+- Changes to a listing's delivery method are reflected when the cart is reloaded.
+- The previously assigned shipping method is not incorrectly retained.
+- Meetup listings do not require shipping information.
+- No shipping charges are applied after the listing changes to meetup.
+- Checkout completes successfully with a valid billing address.
+- The completed order item stores `meetup` as its fulfillment type.
+- The completed order item stores a shipping cost of `0.00`.
+- The saved delivery method matches the seller's current listing configuration.
+- No PHP or database errors occur.
 
 **Actual Result:**
-Not yet recorded.
+Automated integration testing passed successfully. The new `testCheckoutUsesCurrentSellerDeliveryMethod()` test created a temporary shipping-only listing with a $5.00 shipping charge and added it to the buyer's shopping cart.
 
-**Status:** Not Run
+The test simulated the seller changing the listing's fulfillment type from `shipping` to `meetup` and removing its shipping charge by setting the stored value to `NULL`.
+
+After reloading the cart through `loadCart()`, the test confirmed that the listing's fulfillment type was updated to `meetup`. The cart correctly reported that shipping was no longer required, and its calculated shipping total was `0.0`.
+
+Checkout was then completed through `placeOrder()` using a valid billing address without a separate shipping address. The function returned no validation errors and generated a valid order ID.
+
+The test queried the `order_items` table and confirmed that the completed order item stored `meetup` as its fulfillment type and `0.00` as its shipping cost.
+
+All assertions passed. The complete `CartCheckoutTest.php` test file also passed during subsequent regression testing.
+
+These results confirm that OmniBuy uses the seller's current delivery method during checkout and correctly persists that method when the order is created. Previously loaded cart information does not override updated listing fulfillment settings.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
+
+
 ## UC-11: View Listing Analytics
 ### TC-11-01: View Analytics for a Seller-Owned Listing
 
