@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OmniBuy\Tests\Integration;
 
+use DateTimeImmutable;
 use OmniBuy\Tests\Support\DatabaseTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -518,5 +519,89 @@ final class CartCheckoutTest extends DatabaseTestCase
 
         self::assertSame('meetup', $item['fulfillment_type']);
         self::assertSame('0.00', $item['shipping_cost']);
+    }
+    // ---------- demo card payment ----------
+
+    private const CARD = [
+        'name' => 'Test Buyer',
+        'number' => '4242424242424242',
+        'expiry' => '12/99',
+        'cvc' => '123',
+    ];
+
+    public function testCheckoutWithAValidCardMarksTheOrderPaid(): void
+    {
+        $listing = $this->createListing();
+        addToCart($this->pdo, $this->buyer, $listing, 1);
+
+        $result = placeOrder($this->pdo, $this->buyer, self::ADDRESS, null, self::CARD);
+
+        self::assertSame([], $result['errors']);
+        $stmt = $this->pdo->prepare('SELECT payment_status FROM orders WHERE order_id = :id');
+        $stmt->execute(['id' => $result['order_id']]);
+        self::assertSame('paid', $stmt->fetchColumn());
+    }
+
+    public function testDeclinedCardCreatesNoOrderAndKeepsTheCart(): void
+    {
+        $listing = $this->createListing(['quantity' => 2]);
+        addToCart($this->pdo, $this->buyer, $listing, 1);
+
+        $result = placeOrder(
+            $this->pdo,
+            $this->buyer,
+            self::ADDRESS,
+            null,
+            ['number' => DEMO_DECLINED_CARD] + self::CARD
+        );
+
+        self::assertNull($result['order_id']);
+        self::assertSame('Your card was declined. Try a different card.', $result['errors']['card_number']);
+        self::assertSame(1, cartItemCount($this->pdo, $this->buyer));
+        self::assertSame(2, (int) $this->listingRow($listing)['quantity']);
+    }
+
+    public function testNormalizeCardInputStripsSpacesAndDashesFromTheNumber(): void
+    {
+        $card = normalizeCardInput([
+            'card_name' => '  Test Buyer ',
+            'card_number' => '4242 4242-4242 4242',
+            'card_expiry' => ' 12/99 ',
+            'card_cvc' => '123',
+        ]);
+
+        self::assertSame(self::CARD, $card);
+        self::assertSame([], validateCard($card));
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, string}>
+     */
+    public static function invalidCards(): array
+    {
+        return [
+            'missing name' => [['name' => ''], 'card_name'],
+            'bad checksum' => [['number' => '4242424242424241'], 'card_number'],
+            'too short' => [['number' => '4242'], 'card_number'],
+            'letters in number' => [['number' => '4242abcd42424242'], 'card_number'],
+            'bad expiry format' => [['expiry' => '13/30'], 'card_expiry'],
+            'expired last month' => [['expiry' => '05/26'], 'card_expiry'],
+            'short cvc' => [['cvc' => '12'], 'card_cvc'],
+        ];
+    }
+
+    #[DataProvider('invalidCards')]
+    public function testInvalidCardsAreRejected(array $override, string $field): void
+    {
+        $errors = validateCard($override + self::CARD, new DateTimeImmutable('2026-06-15'));
+
+        self::assertArrayHasKey($field, $errors);
+    }
+
+    public function testCardIsValidThroughTheEndOfItsExpiryMonth(): void
+    {
+        $errors = validateCard(['expiry' => '06/26'] + self::CARD, new DateTimeImmutable('2026-06-30'));
+
+        self::assertSame([], $errors);
     }
 }

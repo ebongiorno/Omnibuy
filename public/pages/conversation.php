@@ -28,22 +28,12 @@ $validId = static function (mixed $value): ?string {
 };
 $conversationId = $validId($conversationId);
 $listingId = $validId($listingId);
+
+$pageStylesheet = '/assets/css/messaging.css';
+include __DIR__ . '/../components/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Conversation | OmniBuy</title>
-    <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="/assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="/assets/css/messaging.css">
-    <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
-    <script src="/assets/js/messaging.js" defer></script>
-</head>
+<script src="/assets/js/messaging.js" defer></script>
 <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <?php include __DIR__ . '/../components/header.php'; ?>
     <main class="page-main conversation-page" id="main-content"
           data-messaging-page="thread"
           data-conversation-id="<?= htmlspecialchars($conversationId ?? '', ENT_QUOTES, 'UTF-8') ?>"

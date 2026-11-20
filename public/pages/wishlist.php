@@ -316,52 +316,33 @@ if ($pageUserId !== null) {
         error_log('OmniBuy wishlist count error: ' . $error->getMessage());
     }
 }
+$pageStylesheet = '/assets/css/wishlist.css';
+include __DIR__ . '/../components/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Wishlist | OmniBuy</title>
-    <link rel="stylesheet" href="/assets/css/omnibuy-design-tokens.css">
-    <link rel="stylesheet" href="/assets/css/shared-navigation.css">
-    <link rel="stylesheet" href="/assets/css/wishlist.css">
-    <script src="https://kit.fontawesome.com/9e304416f8.js" crossorigin="anonymous"></script>
-    <script src="/assets/js/wishlist.js" defer></script>
-</head>
+<script src="/assets/js/wishlist.js" defer></script>
 
-<body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-
-    <?php
-        $header = __DIR__ . '/../components/header.php';
-        include $header;
-    ?>
-
-    <main id="main-content" class="page-main wishlist-page">
-        <div class="shell">
-            <div class="wishlist-heading">
-                <h1>My Wishlist</h1>
-                <p>Saved listings you can return to later. <span id="wishlist-count"></span></p>
-            </div>
-
-            <p id="wishlist-message" class="wishlist-message" role="status" aria-live="polite"></p>
-
-            <section
-                id="wishlist-items"
-                class="wishlist-grid"
-                aria-label="Your saved listings"
-                aria-live="polite"
-                aria-busy="true"
-            >
-                <p>Loading wishlist...</p>
-            </section>
+<main id="main-content" class="page-main wishlist-page">
+    <div class="shell">
+        <div class="wishlist-heading">
+            <h1>My Wishlist</h1>
+            <p>Saved listings you can return to later. <span id="wishlist-count"></span></p>
         </div>
-    </main>
 
-    <?php
-        $footer = __DIR__ . '/../components/footer.php';
-        include $footer;
-    ?>
-</body>
-</html>
+        <p id="wishlist-message" class="wishlist-message" role="status" aria-live="polite"></p>
+
+        <section
+            id="wishlist-items"
+            class="wishlist-grid"
+            aria-label="Your saved listings"
+            aria-live="polite"
+            aria-busy="true"
+        >
+            <p>Loading wishlist...</p>
+        </section>
+    </div>
+</main>
+
+<?php
+    $footer = __DIR__ . '/../components/footer.php';
+    include $footer;
+?>
