@@ -32,7 +32,7 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
         $browseResponse = \httpGet('/');
 
         self::assertStringContainsString(
-            (string) $browseItem,
+            htmlspecialchars((string) $browseItem, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
             $browseResponse
         );
     }
@@ -84,7 +84,7 @@ final class MarketplaceBrowseTest extends DatabaseTestCase
         ]);
 
         self::assertStringContainsString(
-            (string) $sampleItem,
+            htmlspecialchars((string) $sampleItem, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
             $browseAllResponse
         );
     }
