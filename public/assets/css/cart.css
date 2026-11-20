@@ -225,6 +225,13 @@
   padding-block: var(--space-1);
 }
 
+.checkout-lines__delivery {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
 @media (max-width: 800px) {
   .cart-layout {
     grid-template-columns: 1fr;
