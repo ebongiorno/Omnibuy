@@ -362,22 +362,113 @@ function saveCheckoutAddress(PDO $pdo, int $userId, string $type, array $address
     return (int) $pdo->lastInsertId();
 }
 
+// =========================================
+// DEMO CARD PAYMENT
+// =========================================
+// Nothing is charged and no card data is stored. The card is only checked
+// for a plausible shape (Luhn checksum, future expiry, 3-4 digit CVC).
+// Test cards: 4242 4242 4242 4242 is approved, 4000 0000 0000 0002 is declined.
+
+const DEMO_DECLINED_CARD = '4000000000000002';
+
+/**
+ * Trims the submitted card fields; the number keeps only its digits.
+ *
+ * @return array{name: string, number: string, expiry: string, cvc: string}
+ */
+function normalizeCardInput(array $post): array
+{
+    $value = static fn (string $key): string => is_string($post[$key] ?? null) ? trim($post[$key]) : '';
+
+    return [
+        'name' => $value('card_name'),
+        'number' => preg_replace('/[\s-]+/', '', $value('card_number')),
+        'expiry' => $value('card_expiry'),
+        'cvc' => $value('card_cvc'),
+    ];
+}
+
+function passesLuhn(string $digits): bool
+{
+    $sum = 0;
+    $double = false;
+    for ($i = strlen($digits) - 1; $i >= 0; $i--) {
+        $digit = (int) $digits[$i];
+        if ($double) {
+            $digit *= 2;
+            if ($digit > 9) {
+                $digit -= 9;
+            }
+        }
+        $sum += $digit;
+        $double = !$double;
+    }
+
+    return $sum % 10 === 0;
+}
+
+/**
+ * @return array<string, string> "card_<field>" => error message
+ */
+function validateCard(array $card, ?DateTimeImmutable $now = null): array
+{
+    $errors = [];
+    $now ??= new DateTimeImmutable();
+
+    if ($card['name'] === '') {
+        $errors['card_name'] = 'Name on card is required.';
+    } elseif (mb_strlen($card['name']) > 100) {
+        $errors['card_name'] = 'Must be 100 characters or fewer.';
+    }
+
+    if ($card['number'] === '') {
+        $errors['card_number'] = 'Card number is required.';
+    } elseif (!preg_match('/^\d{13,19}$/', $card['number']) || !passesLuhn($card['number'])) {
+        $errors['card_number'] = 'Enter a valid card number.';
+    }
+
+    if ($card['expiry'] === '') {
+        $errors['card_expiry'] = 'Expiration date is required.';
+    } elseif (!preg_match('~^(0[1-9]|1[0-2])\s*/\s*(\d{2})$~', $card['expiry'], $m)) {
+        $errors['card_expiry'] = 'Use the format MM/YY.';
+    } elseif ((int) ('20' . $m[2]) * 12 + (int) $m[1] < (int) $now->format('Y') * 12 + (int) $now->format('n')) {
+        // A card is good through the last day of its expiry month.
+        $errors['card_expiry'] = 'This card has expired.';
+    }
+
+    if ($card['cvc'] === '') {
+        $errors['card_cvc'] = 'Security code is required.';
+    } elseif (!preg_match('/^\d{3,4}$/', $card['cvc'])) {
+        $errors['card_cvc'] = 'Enter the 3 or 4 digit security code.';
+    }
+
+    if ($errors === [] && $card['number'] === DEMO_DECLINED_CARD) {
+        $errors['card_number'] = 'Your card was declined. Try a different card.';
+    }
+
+    return $errors;
+}
+
 /**
  * Turns the user's cart into one order. Runs in a transaction with the
  * listings locked: stock and availability are re-checked, stock is
  * decremented (a listing that reaches 0 is marked sold), and the cart is
- * emptied. Payment is not processed: the order is created with
- * payment_status 'pending'.
+ * emptied. With a card (demo payment, see validateCard) the order is
+ * created as paid; without one, payment_status stays 'pending'.
  *
  * @param array $billing  normalized billing address
  * @param ?array $shipping normalized shipping address; null means "same as billing"
+ * @param ?array $card     normalized card (normalizeCardInput); null means no payment taken
  * @return array{order_id: ?int, errors: array<string, string>}
  */
-function placeOrder(PDO $pdo, int $userId, array $billing, ?array $shipping): array
+function placeOrder(PDO $pdo, int $userId, array $billing, ?array $shipping, ?array $card = null): array
 {
     $errors = validateAddress($billing, 'billing_');
     if ($shipping !== null) {
         $errors += validateAddress($shipping, 'shipping_');
+    }
+    if ($card !== null) {
+        $errors += validateCard($card);
     }
     if ($errors !== []) {
         return ['order_id' => null, 'errors' => $errors];
@@ -419,12 +510,14 @@ function placeOrder(PDO $pdo, int $userId, array $billing, ?array $shipping): ar
         $pdo->prepare('
             INSERT INTO orders (
                 buyer_user_id, shipping_address_id, billing_address_id,
-                subtotal, shipping_cost, tax_amount, total_amount
+                payment_status, subtotal, shipping_cost, tax_amount, total_amount
             ) VALUES (
-                :buyer_id, :shipping_id, :billing_id, :subtotal, :shipping, 0.00, :total
+                :buyer_id, :shipping_id, :billing_id,
+                :payment_status, :subtotal, :shipping, 0.00, :total
             )
         ')->execute([
             'buyer_id' => $userId,
+            'payment_status' => $card !== null ? 'paid' : 'pending',
             'shipping_id' => $shippingId,
             'billing_id' => $billingId,
             'subtotal' => $summary['subtotal'],
