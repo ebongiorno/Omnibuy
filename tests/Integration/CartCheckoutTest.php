@@ -396,6 +396,62 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertSame(1, cartItemCount($this->pdo, $this->buyer));
     }
 
+        public function testInvalidShippingAddressPreventsOrderCreation(): void
+    {
+        // Create a shipping-only listing.
+        $listing = $this->createListing([
+            'fulfillment_type' => 'shipping',
+        ]);
+
+        addToCart($this->pdo, $this->buyer, $listing, 1);
+
+        // Provide a valid billing address but invalid shipping address.
+        $invalidShipping = [
+            'address_line_1' => '',
+            'zip_code' => '!!',
+        ] + self::ADDRESS;
+
+        $result = placeOrder(
+            $this->pdo,
+            $this->buyer,
+            self::ADDRESS,
+            $invalidShipping
+        );
+
+        // Verify checkout rejects the invalid shipping address.
+        self::assertNull($result['order_id']);
+        self::assertArrayHasKey(
+            'shipping_address_line_1',
+            $result['errors']
+        );
+        self::assertArrayHasKey(
+            'shipping_zip_code',
+            $result['errors']
+        );
+
+        // Verify the buyer's cart remains intact.
+        self::assertSame(
+            1,
+            cartItemCount($this->pdo, $this->buyer)
+        );
+
+        // Verify no order was created.
+        $stmt = $this->pdo->prepare('
+            SELECT COUNT(*)
+            FROM orders
+            WHERE buyer_user_id = :id
+        ');
+        $stmt->execute(['id' => $this->buyer]);
+
+        self::assertSame(0, (int) $stmt->fetchColumn());
+
+        // Verify the listing's inventory was not modified.
+        self::assertSame(
+            3,
+            (int) $this->listingRow($listing)['quantity']
+        );
+    }
+
     public function testSeparateShippingAddressIsSavedAndBecomesTheDefault(): void
     {
         $listing = $this->createListing();
