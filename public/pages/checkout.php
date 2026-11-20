@@ -173,7 +173,15 @@ include __DIR__ . '/../components/header.php';
       <ul class="checkout-lines">
         <?php foreach ($cart['items'] as $item): ?>
           <li>
-            <span><?= htmlspecialchars($item['item_name']) ?> × <?= (int) $item['quantity'] ?></span>
+            <span>
+              <?= htmlspecialchars($item['item_name']) ?> × <?= (int) $item['quantity'] ?>
+              <span class="checkout-lines__delivery">
+                <?= $item['fulfillment_type'] === 'shipping'
+                  ? 'Shipping'
+                  : 'Local Meetup' ?>
+              </span>
+            </span>
+
             <span><?= formatMoney($item['line_total']) ?></span>
           </li>
         <?php endforeach; ?>

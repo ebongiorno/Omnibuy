@@ -238,6 +238,8 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertCount(1, $items);
         self::assertSame(2, (int) $items[0]['quantity']);
         self::assertSame('20.00', $items[0]['unit_price']);
+        self::assertSame('shipping', $items[0]['fulfillment_type']);
+        self::assertSame('5.00', $items[0]['shipping_cost']);
 
         self::assertSame(['quantity' => 1, 'listing_status' => 'active'], array_map(
             static fn ($v) => is_numeric($v) ? (int) $v : $v,
@@ -272,6 +274,82 @@ final class CartCheckoutTest extends DatabaseTestCase
         $order = $stmt->fetch();
         self::assertNull($order['shipping_address_id']);
         self::assertSame('0.00', $order['shipping_cost']);
+        // Verify the order item retains the seller's meetup method.
+        $stmt = $this->pdo->prepare('
+            SELECT fulfillment_type, shipping_cost
+            FROM order_items
+            WHERE order_id = :id
+        ');
+        $stmt->execute(['id' => $result['order_id']]);
+        $items = $stmt->fetchAll();
+
+        self::assertCount(1, $items);
+        self::assertSame('meetup', $items[0]['fulfillment_type']);
+        self::assertSame('0.00', $items[0]['shipping_cost']);
+    }
+
+        public function testMixedDeliveryOrderSavesBothFulfillmentTypes(): void
+    {
+        // Create one shipping listing and one meetup listing.
+        $shippingListing = $this->createListing([
+            'item_name' => 'Shipping Test Item',
+            'fulfillment_type' => 'shipping',
+            'shipping_cost' => 5.00,
+            'price' => 20.00,
+        ]);
+
+        $meetupListing = $this->createListing([
+            'item_name' => 'Meetup Test Item',
+            'fulfillment_type' => 'meetup',
+            'shipping_cost' => null,
+            'price' => 40.00,
+        ]);
+
+        // Add both listings to the buyer's cart.
+        addToCart($this->pdo, $this->buyer, $shippingListing, 1);
+        addToCart($this->pdo, $this->buyer, $meetupListing, 1);
+
+        // Place one order containing both delivery methods.
+        $result = placeOrder($this->pdo, $this->buyer, self::ADDRESS, null);
+
+        self::assertSame([], $result['errors']);
+        self::assertNotNull($result['order_id']);
+
+        // Retrieve both saved order items.
+        $stmt = $this->pdo->prepare('
+            SELECT listing_id, fulfillment_type, shipping_cost
+            FROM order_items
+            WHERE order_id = :id
+        ');
+        $stmt->execute(['id' => $result['order_id']]);
+        $items = $stmt->fetchAll();
+
+        self::assertCount(2, $items);
+
+        // Index the order items by their listing IDs.
+        $itemsByListing = array_column($items, null, 'listing_id');
+
+        // Verify shipping item persistence.
+        self::assertSame('shipping', $itemsByListing[$shippingListing]['fulfillment_type']);
+        self::assertSame('5.00', $itemsByListing[$shippingListing]['shipping_cost']);
+
+        // Verify meetup item persistence.
+        self::assertSame('meetup', $itemsByListing[$meetupListing]['fulfillment_type']);
+        self::assertSame('0.00', $itemsByListing[$meetupListing]['shipping_cost']);
+
+        // Verify the order totals and shipping address.
+        $stmt = $this->pdo->prepare('
+            SELECT subtotal, shipping_cost, total_amount, shipping_address_id
+            FROM orders
+            WHERE order_id = :id
+        ');
+        $stmt->execute(['id' => $result['order_id']]);
+        $order = $stmt->fetch();
+
+        self::assertSame('60.00', $order['subtotal']);
+        self::assertSame('5.00', $order['shipping_cost']);
+        self::assertSame('65.00', $order['total_amount']);
+        self::assertNotNull($order['shipping_address_id']);
     }
 
     public function testCheckoutFailsWhenStockRanOutAfterAdding(): void
@@ -319,6 +397,62 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertSame(1, cartItemCount($this->pdo, $this->buyer));
     }
 
+        public function testInvalidShippingAddressPreventsOrderCreation(): void
+    {
+        // Create a shipping-only listing.
+        $listing = $this->createListing([
+            'fulfillment_type' => 'shipping',
+        ]);
+
+        addToCart($this->pdo, $this->buyer, $listing, 1);
+
+        // Provide a valid billing address but invalid shipping address.
+        $invalidShipping = [
+            'address_line_1' => '',
+            'zip_code' => '!!',
+        ] + self::ADDRESS;
+
+        $result = placeOrder(
+            $this->pdo,
+            $this->buyer,
+            self::ADDRESS,
+            $invalidShipping
+        );
+
+        // Verify checkout rejects the invalid shipping address.
+        self::assertNull($result['order_id']);
+        self::assertArrayHasKey(
+            'shipping_address_line_1',
+            $result['errors']
+        );
+        self::assertArrayHasKey(
+            'shipping_zip_code',
+            $result['errors']
+        );
+
+        // Verify the buyer's cart remains intact.
+        self::assertSame(
+            1,
+            cartItemCount($this->pdo, $this->buyer)
+        );
+
+        // Verify no order was created.
+        $stmt = $this->pdo->prepare('
+            SELECT COUNT(*)
+            FROM orders
+            WHERE buyer_user_id = :id
+        ');
+        $stmt->execute(['id' => $this->buyer]);
+
+        self::assertSame(0, (int) $stmt->fetchColumn());
+
+        // Verify the listing's inventory was not modified.
+        self::assertSame(
+            3,
+            (int) $this->listingRow($listing)['quantity']
+        );
+    }
+
     public function testSeparateShippingAddressIsSavedAndBecomesTheDefault(): void
     {
         $listing = $this->createListing();
@@ -337,6 +471,55 @@ final class CartCheckoutTest extends DatabaseTestCase
         self::assertSame('1 Shipping Way', loadDefaultAddress($this->pdo, $this->buyer, 'shipping')['address_line_1']);
     }
 
+        public function testCheckoutUsesCurrentSellerDeliveryMethod(): void
+    {
+        // Create a shipping listing and add it to the buyer's cart.
+        $listing = $this->createListing([
+            'fulfillment_type' => 'shipping',
+            'shipping_cost' => 5.00,
+        ]);
+
+        addToCart($this->pdo, $this->buyer, $listing, 1);
+
+        // Simulate the seller changing the listing to meetup.
+        $stmt = $this->pdo->prepare('
+            UPDATE listings
+            SET fulfillment_type = :method,
+                shipping_cost = NULL
+            WHERE listing_id = :id
+        ');
+
+        $stmt->execute([
+            'method' => 'meetup',
+            'id' => $listing,
+        ]);
+
+        // Reload the cart to verify it uses the current listing data.
+        $cart = loadCart($this->pdo, $this->buyer);
+
+        self::assertSame('meetup', $cart['items'][0]['fulfillment_type']);
+        self::assertFalse($cart['needs_shipping']);
+        self::assertSame(0.0, $cart['summary']['shipping']);
+
+        // Complete checkout.
+        $result = placeOrder($this->pdo, $this->buyer, self::ADDRESS, null);
+
+        self::assertSame([], $result['errors']);
+        self::assertNotNull($result['order_id']);
+
+        // Verify the order records the updated seller-defined method.
+        $stmt = $this->pdo->prepare('
+            SELECT fulfillment_type, shipping_cost
+            FROM order_items
+            WHERE order_id = :id
+        ');
+
+        $stmt->execute(['id' => $result['order_id']]);
+        $item = $stmt->fetch();
+
+        self::assertSame('meetup', $item['fulfillment_type']);
+        self::assertSame('0.00', $item['shipping_cost']);
+    }
     // ---------- demo card payment ----------
 
     private const CARD = [
