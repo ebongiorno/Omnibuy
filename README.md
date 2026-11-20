@@ -1,8 +1,36 @@
 # OmniBuy
 
-OmniBuy is a web-based marketplace application developed for **CPSC 491 Senior Capstone Project in Computer Science** at California State University, Fullerton.
+OmniBuy is a web-based e-commerce marketplace developed for **CPSC 491 Senior Capstone Project in Computer Science** at California State University, Fullerton.
 
-The goal of OmniBuy is to combine useful features from modern online marketplaces into one platform. Users can buy and sell items, search and filter listings, communicate with sellers, save items, choose between shipping and local meetup options, and build trust through reviews and safety features.
+OmniBuy combines useful features from modern online marketplaces into one platform. Users can buy and sell items, search and filter listings, message sellers, save items, choose between shipping and local meetup, get personalized recommendations, and build trust through reviews and safety features.
+
+---
+
+## Table of Contents
+
+- [Team](#team)
+- [Project Goals](#project-goals)
+- [Core Features](#core-features)
+- [Technology Stack](#technology-stack)
+- [Architecture](#architecture)
+- [Development Environment](#development-environment)
+- [Getting Started](#getting-started)
+- [Docker Reference](#docker-reference)
+- [Troubleshooting](#troubleshooting)
+- [Project Structure](#project-structure)
+- [Database](#database)
+- [Sample Data](#sample-data)
+- [Testing](#testing)
+- [CI/CD](#cicd)
+- [Demonstration Preparation](#demonstration-preparation)
+- [Development Dependency Order](#development-dependency-order)
+- [Git Workflow](#git-workflow)
+- [Pull Request Requirements](#pull-request-requirements)
+- [Definition of Done](#definition-of-done)
+- [Security Considerations](#security-considerations)
+- [Documentation](#documentation)
+- [Project Status](#project-status)
+- [License](#license)
 
 ---
 
@@ -18,7 +46,7 @@ The goal of OmniBuy is to combine useful features from modern online marketplace
 
 ## Project Goals
 
-OmniBuy is designed to provide a marketplace that is:
+OmniBuy is designed to be:
 
 - Easy to use
 - Accessible to buyers and sellers
@@ -27,7 +55,7 @@ OmniBuy is designed to provide a marketplace that is:
 - Maintainable and scalable
 - Responsive across different devices
 
-The application is particularly intended to support students, local communities, casual sellers, and small businesses.
+It is particularly intended to support students, local communities, casual sellers, and small businesses.
 
 ---
 
@@ -38,17 +66,14 @@ The application is particularly intended to support students, local communities,
 - User registration
 - Login and logout
 - Password recovery
-- User profiles
-- Seller profiles
+- User and seller profiles
 - Profile editing
 - Privacy settings
 
 ### Listings
 
-- Create listings
+- Create, edit, and delete listings
 - Upload listing images
-- Edit listings
-- Delete listings
 - Hide or pause listings
 - Renew listings
 - Mark listings as sold
@@ -57,13 +82,11 @@ The application is particularly intended to support students, local communities,
 ### Search and Discovery
 
 - Homepage listing feed
+- Personalized recommendations based on search and listing-view activity
 - Keyword search
 - Seller search
-- Category browsing
-- Price filtering
-- Condition filtering
-- Delivery-method filtering
-- Meetup-radius filtering
+- Category browsing (parent categories and subcategories)
+- Filters: price, condition, delivery method, meetup radius
 - Result sorting
 
 ### Shopping
@@ -71,16 +94,14 @@ The application is particularly intended to support students, local communities,
 - Watchlist / favorites
 - Shopping cart
 - Checkout workflow
-- Order creation
-- Order history
+- Order creation and order history
 - Shipping or meetup fulfillment
 
 ### Messaging
 
 - Message sellers directly from listings
-- Create buyer/seller conversations
-- Inbox
-- Message threads
+- Buyer/seller conversations
+- Inbox and message threads
 - Read/unread status
 
 ### Trust and Safety
@@ -88,50 +109,35 @@ The application is particularly intended to support students, local communities,
 - Block users
 - Report users
 - Moderation workflow
-- Leave reviews after transactions
+- Reviews after transactions
 - Seller ratings and reputation
 
 ### Future / Advanced Features
 
-- Personalized listing recommendations
 - Seller analytics
 - Listing performance analytics
 - More advanced search and recommendation algorithms
 
 ---
 
-# Technology Stack
+## Technology Stack
 
-## Frontend
-
-- HTML5
-- CSS3
-- JavaScript
-
-## Backend
-
-- PHP
-
-## Database
-
-- MySQL / SQL
-
-## Development Tools
-
-- Git
-- GitHub
-- Docker
-- Docker Compose
-- VS Code
-- phpMyAdmin
-- Postman
-- Chrome DevTools
+| Layer | Technology |
+|---|---|
+| Frontend | HTML5, CSS3, JavaScript |
+| Backend | PHP 8.2 on Apache |
+| Database | MySQL 8 |
+| Database admin | phpMyAdmin |
+| Testing | PHPUnit (installed via Composer) |
+| CI/CD | GitHub Actions |
+| Environment | Docker, Docker Compose |
+| Tools | Git, GitHub, VS Code, Postman, Chrome DevTools |
 
 ---
 
-# Architecture
+## Architecture
 
-OmniBuy follows a layered architecture.
+OmniBuy follows a layered architecture that keeps the user interface, application logic, and database operations separated.
 
 ```text
 Presentation Layer
@@ -143,15 +149,13 @@ PHP
         |
         v
 Data Access Layer
-PHP / SQL
+PHP / SQL (PDO, prepared statements)
         |
         v
 MySQL Database
 ```
 
-The goal of this architecture is to keep the user interface, application logic, and database operations separated.
-
-For example:
+Example request flow:
 
 ```text
 Create Listing Form
@@ -174,35 +178,32 @@ Frontend Updated
 
 ---
 
-# Development Environment
+## Development Environment
 
-OmniBuy uses Docker to provide a consistent development environment for all team members.
-
-The development environment is intended to contain:
+Docker gives all five teammates the same PHP + MySQL environment regardless of host OS, so "it works on my machine" isn't a recurring problem. It doesn't replace application architecture decisions; it just runs PHP/Apache and MySQL consistently.
 
 ```text
 Docker Compose
     |
-    +-- PHP / Apache
+    +-- omnibuy-web         Apache + PHP 8.2   (serves the app, runs PHPUnit)
     |
-    +-- MySQL
+    +-- omnibuy-db          MySQL 8            (users, listings, orders, etc.)
     |
-    +-- phpMyAdmin (optional)
+    +-- omnibuy-phpmyadmin  phpMyAdmin         (browser-based DB inspection)
 ```
 
-Using Docker allows each developer to run the same PHP and database configuration regardless of their local operating system.
+PHP, MySQL, and Apache run inside containers and do **not** need to be installed locally.
 
 ---
 
-# Getting Started
+## Getting Started
 
-## Prerequisites
+### Prerequisites
 
-Install the following:
-
-- Git
-- Docker Desktop
-- VS Code or another code editor
+- **Docker Desktop** with Docker Compose support (on Windows, use the **WSL2 backend**)
+- **Git**
+- A modern browser (Chrome, Edge, or Firefox)
+- A code editor such as VS Code
 
 Verify Docker is installed:
 
@@ -211,217 +212,137 @@ docker --version
 docker compose version
 ```
 
----
-
-## 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone <repository-url>
 cd omnibuy
 ```
 
-Replace `<repository-url>` with the GitHub repository URL.
+Replace `<repository-url>` with the team's GitHub repository URL. Make sure the project contains the Docker configuration, application files, database scripts, and Composer configuration.
 
----
-
-## 2. Configure Environment Variables
-
-If the repository contains an `.env.example` file:
+### 2. Configure environment variables
 
 ```bash
 cp .env.example .env
 ```
 
-Configure the local database credentials as needed.
-
-Example:
+Edit `.env` and set local values. Docker uses the `MYSQL_*` variables to create the database; the PHP application connects using the `DB_*` variables.
 
 ```env
+# Used by the MySQL container
+MYSQL_DATABASE=omnibuy
+MYSQL_USER=omnibuy_user
+MYSQL_PASSWORD=change_me
+MYSQL_ROOT_PASSWORD=change_me_too
+
+# Used by the PHP application (PDO)
 DB_HOST=db
 DB_NAME=omnibuy
 DB_USER=omnibuy_user
 DB_PASSWORD=change_me
 ```
 
-Do not commit real passwords or private credentials to GitHub.
+> **Never commit `.env`.** Real passwords, credentials, API keys, and other secrets must be obtained through the team's approved private configuration process and must not be committed to GitHub. Any new environment variable must be added to `.env.example` (with a placeholder value).
 
----
-
-## 3. Start Docker
-
-Run:
+### 3. Build and start Docker
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-This starts the services required by OmniBuy.
+This builds the images and starts all services. On later runs, `docker compose up -d` is enough unless the Dockerfile changed.
 
-Check that the containers are running:
+### 4. Check running containers
 
 ```bash
 docker compose ps
 ```
 
----
+You should see `omnibuy-web`, `omnibuy-db`, and `omnibuy-phpmyadmin` all `Up`. The database may briefly show `starting` while its healthcheck runs.
 
-## 4. Initialize the Database
+### 5. Database initialization
 
-The database schema should be stored in the repository under the database directory.
+Any `.sql` files in `./database/init` are executed automatically by MySQL **the first time** the `mysql_data` volume is created. This loads the schema (tables, relationships, constraints) and the seed data.
 
-Example:
+- Existing volumes keep their data and are **not** re-initialized on startup.
+- If initialization didn't run, import the schema and seed scripts manually (e.g., through phpMyAdmin).
+- Adjust the `./database/init` path in `docker-compose.yml` if init scripts are moved.
 
-```text
-database/
-├── schema.sql
-├── seed.sql
-└── migrations/
-```
+### 6. Open OmniBuy
 
-If initialization is not automatic, import `schema.sql` into the OmniBuy database.
+| Service | URL |
+|---|---|
+| Application | http://localhost:8080 |
+| phpMyAdmin | http://localhost:8081 |
 
----
+Log in to phpMyAdmin with `MYSQL_USER` / `MYSQL_PASSWORD` (or `root` / `MYSQL_ROOT_PASSWORD`) from your `.env`.
 
-## 5. Open OmniBuy
+> If the app's entry point changes (for example, it moves into a subfolder), update this URL.
 
-Once the containers are running, open the local application address configured in `docker-compose.yml`.
-
-Example:
-
-```text
-http://localhost
-```
-
-The actual port may differ depending on the Docker configuration.
-
----
-
-## 6. Stop the Environment
-
-```bash
-docker compose down
-```
-
-To restart:
-
-```bash
-docker compose up -d
-```
-
----
-
-# Docker / Local Development
-
-## Purpose
-
-Docker gives all five teammates the same PHP + MySQL environment regardless of host OS, so "it works on my machine" isn't a recurring problem. It does not replace application architecture decisions — it just runs PHP/Apache and MySQL consistently.
-
-## Prerequisites
-
-- Docker Desktop installed and running
-- Git
-
-Verify:
-
-```bash
-docker --version
-docker compose version
-```
-
-## 1. Create your local `.env`
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and set real local values for `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_ROOT_PASSWORD`. Never commit `.env`.
-
-## 2. Start Docker
-
-```bash
-docker compose up -d
-```
-
-## 3. Check running containers
-
-```bash
-docker compose ps
-```
-
-You should see `omnibuy-web`, `omnibuy-db`, and `omnibuy-phpmyadmin` all `Up` (the db may briefly show `starting` while its healthcheck runs).
-
-## 4. Application URLs
-
-Application:
-```text
-http://localhost:8080
-```
-> If the actual entry point differs (e.g. the app lives in a subfolder once the repo structure is finalized), substitute the real path here.
-
-phpMyAdmin:
-```text
-http://localhost:8081
-```
-Log in with the `MYSQL_USER` / `MYSQL_PASSWORD` (or `root` / `MYSQL_ROOT_PASSWORD`) from your `.env`.
-
-## 5. Stop Docker
-
-```bash
-docker compose down
-```
-
-## 6. Useful Docker commands
-
-```bash
-docker compose logs -f web       # tail PHP/Apache logs
-docker compose logs -f db        # tail MySQL logs
-docker compose exec web bash     # shell into the PHP container
-docker compose exec db mysql -u root -p   # shell into MySQL
-docker compose build             # rebuild the web image after Dockerfile changes
-docker compose restart web       # restart just the PHP container
-```
-
-## 7. Database initialization
-
-Any `.sql` files placed in `./database/init` are automatically executed by MySQL **the first time** the `mysql_data` volume is created (empty database only — it will not re-run on existing data). Adjust the `./database/init` path in `docker-compose.yml` if the database team places init scripts somewhere else.
-
-## 8. Warning
-
-```bash
-docker compose down -v
-```
-
-The `-v` flag deletes the named volume (`mysql_data`), which **permanently deletes all local database data**. Only use it when you intentionally want a fresh database.
-
-## 9. Troubleshooting
-
-**Port already in use (8080 / 8081 / 3306)**
-Another process on your machine is using that port. Either stop it, or change the host-side port mapping in `docker-compose.yml` (e.g. `"8082:80"`).
-
-**`web` keeps restarting / never becomes healthy**
-Check logs: `docker compose logs web`. Common cause: PHP syntax error, or the app is trying to connect to MySQL before it's ready (should not happen here since `web` waits on `db`'s healthcheck).
-
-**PHP can't connect to MySQL / "Connection refused"**
-- Confirm the app connects to host `db`, not `localhost` or `127.0.0.1` — inside Docker, `localhost` refers to the PHP container itself, not the database container.
-- Confirm `.env` values match what the app's PDO connection expects (`DB_HOST=db`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`).
-
-**Changes to code aren't showing up**
-Confirm the repo root is bind-mounted into the container (`./:/var/www/html` in `docker-compose.yml`) and that you're editing files in the repo, not inside the container.
-
-**"no configuration file provided" or similar compose errors**
-Run `docker compose` commands from the repository root, where `docker-compose.yml` lives.
-
-## 10. How to verify your setup works
+### 7. Verify your setup
 
 1. `docker compose up -d` starts all three containers with no errors.
 2. `docker compose ps` shows all three as `Up`.
-3. `http://localhost:8080` loads without a connection error.
-4. `http://localhost:8081` loads phpMyAdmin and you can log in and see the `omnibuy` database.
-5. A PHP-to-MySQL connectivity test (e.g. a script running `SELECT NOW()` through PDO) returns a timestamp instead of an error.
+3. http://localhost:8080 loads the homepage with marketplace navigation, categories, and active seeded listings.
+4. http://localhost:8081 loads phpMyAdmin and shows the `omnibuy` database.
+5. A PHP-to-MySQL connectivity test (e.g., `SELECT NOW()` through PDO) returns a timestamp.
+6. Login and primary navigation work, and no unexpected PHP or database errors appear.
+7. The PHPUnit suite passes (see [Testing](#testing)).
+
+### 8. Stop the environment
+
+```bash
+docker compose down
+```
 
 ---
 
-# Suggested Project Structure
+## Docker Reference
+
+```bash
+docker compose up -d                      # start services
+docker compose up -d --build              # rebuild images and start
+docker compose down                       # stop services (data is kept)
+docker compose ps                         # list container status
+docker compose logs -f web                # tail PHP/Apache logs
+docker compose logs -f db                 # tail MySQL logs
+docker compose exec web bash              # shell into the PHP container
+docker compose exec db mysql -u root -p   # MySQL shell
+docker compose build                      # rebuild the web image after Dockerfile changes
+docker compose restart web                # restart only the PHP container
+```
+
+> ⚠️ **Warning:** `docker compose down -v`
+>
+> The `-v` flag deletes the `mysql_data` volume, which **permanently deletes all local database data**. Use it only when you intentionally want a fresh database (this is also how you re-run the init scripts).
+
+---
+
+## Troubleshooting
+
+**Port already in use (8080 / 8081 / 3306)**
+Another process is using that port. Stop it, or change the host-side mapping in `docker-compose.yml` (e.g., `"8082:80"`).
+
+**`web` keeps restarting or never becomes healthy**
+Run `docker compose logs web`. A common cause is a PHP syntax error. (`web` waits on the `db` healthcheck, so connecting before MySQL is ready should not happen.)
+
+**PHP can't connect to MySQL / "Connection refused"**
+- The app must connect to host `db`, not `localhost` or `127.0.0.1`. Inside Docker, `localhost` refers to the PHP container itself.
+- Confirm `.env` values match what the PDO connection expects (`DB_HOST=db`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`).
+
+**Code changes aren't showing up**
+Confirm the repo root is bind-mounted into the container (`./:/var/www/html` in `docker-compose.yml`) and that you're editing files in the repo, not inside the container.
+
+**"no configuration file provided" or similar Compose errors**
+Run `docker compose` commands from the repository root, where `docker-compose.yml` lives.
+
+**Seed data or schema changes are missing**
+Init scripts run only on a brand-new volume. Run `docker compose down -v` (this deletes local data), then `docker compose up -d --build`.
+
+---
+
+## Project Structure
 
 ```text
 omnibuy/
@@ -442,16 +363,18 @@ omnibuy/
 │   └── config/
 │
 ├── database/
+│   ├── init/            # auto-run on first DB volume creation
 │   ├── schema.sql
-│   ├── seed.sql
+│   ├── seed_data.sql
 │   └── migrations/
 │
-├── tests/
-│
+├── tests/               # PHPUnit tests
 ├── docs/
+├── .github/workflows/   # GitHub Actions
 │
 ├── Dockerfile
 ├── docker-compose.yml
+├── composer.json
 ├── .env.example
 ├── .gitignore
 └── README.md
@@ -461,9 +384,9 @@ The exact structure may change as development continues.
 
 ---
 
-# Core Database Entities
+## Database
 
-The planned database includes entities such as:
+### Core entities
 
 ```text
 users
@@ -480,9 +403,7 @@ reports
 blocked_users
 ```
 
-Relationships between these tables allow the system to associate buyers, sellers, listings, messages, transactions, and reviews.
-
-Example:
+Relationships between these tables associate buyers, sellers, listings, messages, transactions, and reviews. User search and listing-view activity is also recorded to drive personalized recommendations.
 
 ```text
 User
@@ -496,13 +417,121 @@ User
  +------ Orders
  |
  +------ Reviews
+ |
+ +------ Search / View Activity  (recommendations)
+```
+
+Database changes must be documented (see `docs/database.md`).
+
+---
+
+## Sample Data
+
+`seed_data.sql` provides sample records for development, automated testing, and demonstrations, including:
+
+- User accounts and seller profiles
+- Parent categories and subcategories
+- Listings with varied prices, conditions, quantities, and statuses
+- Listings supporting both shipping and local meetup
+- Listing images and associated marketplace information
+- Supporting data required for application features and tests
+
+The dataset intentionally includes both **active and inactive** listings to verify marketplace visibility rules.
+
+---
+
+## Testing
+
+Testing happens throughout development, not only at the end of the semester.
+
+### Running the test suite
+
+```bash
+docker compose exec -T web vendor/bin/phpunit --testdox
+```
+
+The PHPUnit suite includes unit, integration, functional, and security tests covering marketplace discovery and other features.
+
+### Testing areas
+
+- Unit testing
+- Integration testing
+- User-interface testing
+- Authentication testing
+- Database testing
+- Validation / error testing
+- End-to-end workflow testing
+- Regression testing
+
+### Key end-to-end workflow
+
+```text
+Register
+→ Login
+→ Create Profile
+→ Create Listing
+→ Browse/Search Listing
+→ Message Seller
+→ Add to Cart
+→ Checkout
+→ Complete Transaction
+→ Leave Review
 ```
 
 ---
 
-# Development Dependency Order
+## CI/CD
 
-Features should be implemented according to their dependencies.
+GitHub Actions runs automatically as part of the pull request workflow and validates:
+
+- PHP syntax checks
+- Docker image builds
+- Database initialization
+- The automated PHPUnit test suite
+
+Code changes must be peer reviewed **and** pass the required CI checks before merging into the shared repository.
+
+---
+
+## Demonstration Preparation
+
+### Demonstration test account
+
+The final demonstration uses one shared account so every team member's feature is shown with a consistent experience.
+
+- **Username:** `omnibuy_tester`
+- The account is already created and verified.
+- Credentials are shared with authorized team members through an approved private method and are **never** included in project documentation.
+- The same authenticated account stays in use throughout the demo with no repeated logins or account switching.
+
+It is used to demonstrate searching, listing details, personalized recommendations, wishlisting, messaging, and other authenticated features.
+
+### Personalized recommendation demo
+
+The account must start with **no recorded item-search or listing-view activity**, so the demo begins with the general marketplace feed and then shows recorded interactions shaping a category-based personalized feed.
+
+Required eligible listings:
+
+- At least **two** distinct **Electronics** listings matching `keyboard`
+- At least **three** distinct **Home & Furniture** listings matching `chair`
+
+### Pre-demo checklist
+
+- [ ] Docker containers are running and the app connects to MySQL
+- [ ] Homepage and marketplace search load without errors
+- [ ] Active seeded listings appear in the marketplace
+- [ ] `omnibuy_tester` is active and can log in
+- [ ] `omnibuy_tester` activity history is cleared or confirmed empty
+- [ ] Required keyboard and chair listings are active, available, and owned by **other** accounts
+- [ ] Seed data supports the planned demos for all team features
+- [ ] Database is in a consistent state with no leftover test activity
+- [ ] The latest integrated code passes the full PHPUnit suite and CI
+
+---
+
+## Development Dependency Order
+
+Features are implemented according to their dependencies.
 
 ```text
 Development Environment
@@ -542,23 +571,19 @@ Filters / Sorting
              Reviews
 ```
 
-Authentication and user identity are established early because most later features require a valid user.
-
-Listings are another major dependency because search, filters, favorites, messaging, checkout, and reviews all depend on marketplace listings existing.
+Authentication and user identity come early because most later features require a valid user. Listings are another major dependency, since search, filters, favorites, messaging, checkout, reviews, and recommendations all depend on listings existing.
 
 ---
 
-# Git Workflow
+## Git Workflow
 
-Development should not be performed directly on the production branch.
-
-The project uses a workflow similar to:
+Development is never done directly on `main`.
 
 ```text
 feature branch
       |
       v
-Pull Request
+Pull Request  →  CI checks (GitHub Actions)
       |
       v
 Peer Review
@@ -573,7 +598,7 @@ Integration Testing
 main
 ```
 
-Example branches:
+Example branch names:
 
 ```text
 feature/user-registration
@@ -584,20 +609,11 @@ feature/messaging
 fix/session-authentication
 ```
 
----
-
-## Creating a Feature Branch
-
-Update your local development branch:
+### Creating a feature branch
 
 ```bash
 git checkout develop
 git pull
-```
-
-Create a new feature branch:
-
-```bash
 git checkout -b feature/feature-name
 ```
 
@@ -609,77 +625,83 @@ git commit -m "Implement feature description"
 git push -u origin feature/feature-name
 ```
 
-Then create a Pull Request on GitHub.
+Then open a Pull Request into `develop` on GitHub.
 
 ---
 
-# Pull Request Requirements
+## Pull Request Requirements
 
-Before merging a Pull Request:
+Before merging:
 
-- Code should run locally
-- Relevant functionality should be tested
-- No credentials should be committed
-- Code should follow project conventions
-- Database changes should be documented
-- New environment variables should be added to `.env.example`
-- Another team member should review the change
-- Integration issues should be resolved
+- Code runs locally
+- Relevant functionality is tested and the PHPUnit suite passes
+- GitHub Actions CI checks pass
+- No credentials are committed
+- Code follows project conventions
+- Database changes are documented
+- New environment variables are added to `.env.example`
+- Another team member has reviewed the change
+- Integration issues are resolved
 
 ---
 
-# Definition of Done
+## Definition of Done
 
-A feature is considered complete when:
+A feature is complete when:
 
-- The required functionality has been implemented
+- The required functionality is implemented
 - Frontend and backend communicate successfully
 - Database changes work correctly
 - Input validation exists
 - Expected error conditions are handled
-- The feature has been tested
+- The feature has automated and/or manual tests
 - The code is committed through a feature branch
-- A Pull Request has been created
-- Another team member has reviewed the Pull Request
-- The feature works after being integrated with the rest of OmniBuy
+- A Pull Request has been created, passes CI, and has been reviewed
+- The feature works after integration with the rest of OmniBuy
 
 ---
 
-# Testing
+## Security Considerations
 
-Testing will occur throughout development rather than only at the end of the semester.
+OmniBuy handles user accounts and marketplace interactions, so security is considered throughout development:
 
-Testing areas include:
+- Password hashing
+- Server-side input validation
+- Prepared SQL statements
+- Authentication and authorization checks
+- Secure session handling
+- Protection against duplicate or unauthorized actions
+- Validating uploaded files
+- Restricting actions involving blocked users
+- Keeping credentials and secrets out of source control and documentation
 
-- Unit testing
-- Integration testing
-- User-interface testing
-- Authentication testing
-- Database testing
-- Validation/error testing
-- End-to-end workflow testing
-- Regression testing
+Security-focused PHPUnit tests are part of the automated suite.
 
-Important workflows include:
+---
+
+## Documentation
+
+Project documentation is maintained throughout development:
 
 ```text
-Register
-→ Login
-→ Create Profile
-→ Create Listing
-→ Browse/Search Listing
-→ Message Seller
-→ Add to Cart
-→ Checkout
-→ Complete Transaction
-→ Leave Review
+docs/
+├── api.md
+├── database.md
+├── setup.md
+└── testing.md
 ```
+
+This README remains the primary entry point for developers joining or reviewing the project.
 
 ---
 
-# Current Development Priorities
+## Project Status
 
-The initial project foundation focuses on:
+**Status:** In Development
+
+OmniBuy is being developed throughout the Fall 2026 CPSC 491 semester. The team is working toward a functional marketplace implementation, followed by integration testing, stabilization, deployment, documentation, and the final demonstration.
+
+### Initial priorities
 
 1. Repository and Git workflow
 2. Docker development environment
@@ -690,61 +712,12 @@ The initial project foundation focuses on:
 7. Listing creation
 8. First complete buyer/seller workflow
 
-The first major technical milestone is:
+**First major milestone:**
 
 > A user can register, log in, create a listing, store that listing in the database, and view the listing through OmniBuy.
 
 ---
 
-# Security Considerations
+## License
 
-OmniBuy handles user accounts and marketplace interactions, so security should be considered throughout development.
-
-Important practices include:
-
-- Password hashing
-- Server-side input validation
-- Prepared SQL statements
-- Authentication checks
-- Authorization checks
-- Secure session handling
-- Protection against duplicate or unauthorized actions
-- Avoiding credentials in source control
-- Validating uploaded files
-- Restricting actions involving blocked users
-
----
-
-# Documentation
-
-Project documentation should be maintained throughout development.
-
-Documentation may include:
-
-```text
-docs/
-├── api.md
-├── database.md
-├── setup.md
-└── testing.md
-```
-
-The README should remain the primary entry point for developers joining or reviewing the project.
-
----
-
-# Project Status
-
-**Status:** In Development
-
-OmniBuy is being developed throughout the Fall 2026 CPSC 491 semester.
-
-The team is currently working toward a functional marketplace implementation followed by integration testing, stabilization, deployment, documentation, and final demonstration.
-
----
-
-# License
-
-This repository is an academic senior capstone project developed for CPSC 491 at California State University, Fullerton.
-
-Unless otherwise specified, the project is intended for educational use.
+This repository is an academic senior capstone project developed for CPSC 491 at California State University, Fullerton. Unless otherwise specified, the project is intended for educational use.
