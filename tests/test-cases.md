@@ -8,42 +8,62 @@ Testing Framework: PHPUnit
 Testing Environment: Docker, PHP, MySQL
 
 ## UC-07: Choose Delivery Method
-### TC-07-01: Select Shipping as the Delivery Method
+### TC-07-01: Verify Seller-Defined Shipping Method at Checkout
 
 **Use Case:** UC-07
 
 **Test Type:** Manual Functional / Automated Integration
 
 **Objective:**
-Verify that a buyer can select Shipping when
-the seller offers shipping for a listing.
+Verify that checkout correctly identifies a shipping-only listing, displays the seller-defined shipping method, calculates shipping charges, and preserves the fulfillment method when the order is created.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- A listing supports shipping.
-- The buyer can access the supported purchase workflow.
+- A buyer account is available.
+- An active listing supports Shipping.
+- Cart and checkout functionality are operational.
 
 **Test Data:**
-- Listing supporting Shipping
-- Buyer account or supported buyer session
+- Manual test listing: Classic Blastoise Pokemon Card
+- Listing price: $150.00
+- Shipping cost: $5.00
+- Expected checkout total: $155.00
+- Automated test: `testCheckoutCreatesTheOrderDecrementsStockAndEmptiesTheCart()`
+- Automated test listing price: $20.00
+- Automated test shipping cost: $5.00
 
 **Test Steps:**
-1. Open a listing that supports shipping.
-2. Begin the supported purchase process.
-3. Examine the available delivery methods.
-4. Select Shipping.
-5. Continue to the next applicable purchase step.
+1. Log into OmniBuy as a buyer.
+2. Add a shipping-only listing to the shopping cart.
+3. Proceed to checkout.
+4. Verify that Shipping appears beneath the listing name in the order summary.
+5. Verify that the appropriate shipping charge is included in the order total.
+6. Verify that the checkout displays the shipping address section.
+7. Execute the automated checkout integration test using PHPUnit.
+8. Verify that the completed test order stores `shipping` in `order_items.fulfillment_type`.
+9. Verify that the correct shipping cost is stored with the order item.
 
 **Expected Result:**
-- Shipping should be available for selection.
-- The buyer should be able to select Shipping.
-- The selected delivery method should be accepted.
-- No unsupported delivery method should be substituted.
+- Checkout displays Shipping as the listing's required fulfillment method.
+- The buyer is not offered an unsupported alternative delivery method.
+- The correct shipping charge is included in the checkout total.
+- Shipping address information is required for the order.
+- The completed order item stores `shipping` as its fulfillment type.
+- The correct shipping cost is preserved.
+- No PHP or database errors occur.
 
 **Actual Result:**
-Not yet recorded.
+Manual testing passed successfully. The Classic Blastoise Pokemon Card appeared in the checkout order summary with Shipping displayed beneath the listing name. The subtotal was $150.00, the shipping charge was $5.00, and the total was correctly calculated as $155.00.
 
-**Status:** Not Run
+The checkout displayed the billing and shipping address sections as expected.
+
+Automated integration testing also passed successfully. The existing `testCheckoutCreatesTheOrderDecrementsStockAndEmptiesTheCart()` test was extended with assertions verifying that the saved order item contained `shipping` as its fulfillment type and `5.00` as its shipping cost.
+
+Both new assertions passed. The complete `CartCheckoutTest.php` test file also passed during subsequent regression testing.
+
+These results confirm that shipping-only listings retain their seller-defined fulfillment method during checkout and order creation.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
