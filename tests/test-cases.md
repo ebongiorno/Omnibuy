@@ -68,42 +68,69 @@ These results confirm that shipping-only listings retain their seller-defined fu
 **Related Jira Defect:** None
 
 
-### TC-07-02: Select Meetup as the Delivery Method
+### TC-07-02: Verify Seller-Defined Local Meetup Method at Checkout
 
 **Use Case:** UC-07
 
 **Test Type:** Manual Functional / Automated Integration
 
 **Objective:**
-Verify that a buyer can select Meetup when
-the seller offers meetup for a listing.
+Verify that checkout correctly identifies a meetup-only listing, displays the seller-defined Local Meetup method, excludes shipping charges, and preserves the meetup fulfillment method when the order is created.
 
 **Preconditions:**
 - OmniBuy is running in Docker.
-- A listing supports meetup.
-- The buyer can access the supported purchase workflow.
+- A buyer account is available.
+- An active listing supports Local Meetup.
+- Cart and checkout functionality are operational.
 
 **Test Data:**
-- Listing supporting Meetup
-- Buyer account or supported buyer session
+- Manual test listing: Power Rangers Lightning Collection Green Ranger
+- Listing price: $46.00
+- Shipping cost: $0.00
+- Expected checkout total: $46.00
+- Automated test: `testMeetupOnlyOrderHasNoShippingAddress()`
+- Automated test fulfillment type: `meetup`
+- Automated test shipping cost: `0.00`
 
 **Test Steps:**
-1. Open a listing that supports meetup.
-2. Begin the supported purchase process.
-3. Examine the available delivery methods.
-4. Select Meetup.
-5. Continue to the next applicable purchase step.
+1. Log into OmniBuy as a buyer.
+2. Add a meetup-only listing to the shopping cart.
+3. Proceed to checkout.
+4. Verify that Local Meetup appears beneath the listing name in the order summary.
+5. Verify that no shipping charge is included in the order total.
+6. Verify that the checkout does not require a shipping address.
+7. Verify that meetup instructions are displayed to the buyer.
+8. Execute the automated meetup checkout integration test using PHPUnit.
+9. Verify that the completed test order does not contain a shipping address.
+10. Verify that the saved order item contains `meetup` in `order_items.fulfillment_type`.
+11. Verify that the saved order item contains `0.00` as its shipping cost.
 
 **Expected Result:**
-- Meetup should be available for selection.
-- The buyer should be able to select Meetup.
-- The selected delivery method should be accepted.
-- No unsupported delivery method should be substituted.
+- Checkout displays Local Meetup as the listing's required fulfillment method.
+- The buyer is not offered an unsupported alternative delivery method.
+- No shipping charges are applied.
+- The shipping address section is not required or displayed for a meetup-only order.
+- Billing information remains available as required by checkout.
+- Meetup instructions explain how buyers should coordinate with sellers.
+- The completed order item stores `meetup` as its fulfillment type.
+- The order and order item store a shipping cost of `0.00`.
+- No shipping address is associated with the completed order.
+- No PHP or database errors occur.
 
 **Actual Result:**
-Not yet recorded.
+Manual testing passed successfully. The Power Rangers Lightning Collection Green Ranger listing appeared in the checkout order summary with Local Meetup displayed beneath the listing name. The subtotal was $46.00, the shipping charge was $0.00, and the total was correctly calculated as $46.00.
 
-**Status:** Not Run
+The checkout displayed the billing address section but did not display the shipping address section. The page also provided instructions explaining that meetup-only purchases do not require shipping addresses and that buyers should coordinate pickup arrangements with sellers through Messages.
+
+Automated integration testing also passed successfully. The existing `testMeetupOnlyOrderHasNoShippingAddress()` test verified that the completed order did not contain a shipping address and that the order's shipping cost was `0.00`.
+
+The test was extended with additional assertions verifying that exactly one order item was created, its fulfillment type was `meetup`, and its shipping cost was `0.00`.
+
+All three new assertions passed. The complete `CartCheckoutTest.php` test file also passed during subsequent regression testing.
+
+These results confirm that meetup-only listings retain their seller-defined fulfillment method during checkout and order creation without requiring shipping information or applying shipping charges.
+
+**Status:** Pass
 
 **Related Jira Defect:** None
 
