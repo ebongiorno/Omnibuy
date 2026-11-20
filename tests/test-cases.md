@@ -1324,7 +1324,7 @@ Marketplace Browse: `Browse all displays active seeded listing` passed; Browse A
 
 **Use Case:** UC-16
 
-**Test Type:** Automated Functional / Negative Testing
+**Test Type:** Manual Functional / Negative Testing (automated coverage not established)
 
 **Objective:**
 Verify that the browse page handles a state where no
@@ -1350,9 +1350,9 @@ eligible active listings are available.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not yet recorded.
+Manual testing was completed on the OmniBuy website for a homepage feed with no eligible listings. The empty-feed behavior was observed to work as expected, and the test passed. This is a user-reported manual result; the supplied PHPUnit suite does not establish a dedicated empty-homepage test.
 
-**Status:** Not Run
+**Status:** Pass (manual; dedicated automated test not confirmed)
 
 **Related Jira Defect:** None
 
@@ -2821,7 +2821,7 @@ The `testMatchingKeywordWithinCategoryFindsTheListing` PHPUnit test located a kn
 
 **Use Case:** UC-19
 
-**Test Type:** Automated Functional / Manual Negative Testing
+**Test Type:** Manual Functional / Negative Testing (automated direct-parameter coverage not established)
 
 **Objective:**
 Verify that invalid or nonexistent category identifiers
@@ -2831,28 +2831,24 @@ are handled safely.
 - OmniBuy is running in Docker.
 
 **Test Data:**
-- Non-numeric category parameter
-- Nonexistent numeric category ID
+- Nonexistent numeric category ID supplied directly in the search-page URL.
+- Non-numeric or array-valued category parameters remain additional cases for separate verification.
 
 **Test Steps:**
-1. Open the search page with a non-numeric category value.
-2. Examine the returned page.
-3. Repeat with a numeric category ID that does not exist.
-4. Examine the results and selected category state.
+1. Open the marketplace search page using a URL with a nonexistent category ID.
+2. Examine the result list and any error state.
+3. Confirm that no unexpected listings are displayed and the page does not crash.
+4. Optionally repeat with malformed/non-numeric or array-valued parameters for additional negative-test coverage.
 
 **Expected Result:**
-- Invalid category values should not cause SQL or PHP errors.
-- Nonexistent categories should not be applied as valid filters.
-- The application should fall back safely to an unselected
-  category state.
-- No unsafe SQL behavior should occur.
+- A nonexistent category ID should not produce a PHP or SQL error.
+- The search page should safely show no matching results rather than silently selecting a different category.
+- Invalid category IDs must not expose unrelated marketplace listings or internal diagnostics.
 
 **Actual Result:**
-Not covered by `CategoryFilterTest.php`: the dropdown does not allow arbitrary values. Direct-request invalid-parameter regression testing is deferred.
+Manual testing confirmed that replacing the category ID in the search-page URL with a nonexistent category ID returned no results. The page handled the request safely. This is a manual observation; the non-numeric and array-valued parameter cases have not been separately confirmed, and `CategoryFilterTest.php` does not directly test arbitrary URL parameter values.
 
-Execution result not yet recorded.
-
-**Status:** Not Run
+**Status:** Pass (manual for nonexistent category ID; other malformed types unverified)
 
 **Related Jira Defect:** None
 
@@ -3130,6 +3126,41 @@ The `testChangingCategoryUpdatesTheDisplayedListings` PHPUnit test verified incl
 
 **Related Jira Defect:** None
 
+### TC-19-14: Handle a Nonexistent Category Page
+
+**Use Case:** UC-19
+
+**Test Type:** Manual Functional / Negative Testing
+
+**Objective:**
+Verify that navigating directly to a category page with a nonexistent category identifier produces a clear not-found state and a working route back to the marketplace homepage.
+
+**Preconditions:**
+- OmniBuy is running in Docker.
+- Category pages are accessible through the marketplace navigation.
+
+**Test Data:**
+- A nonexistent category identifier entered directly in a category-page URL.
+
+**Test Steps:**
+1. Open a category-page URL and replace its category identifier with a nonexistent value.
+2. Load the modified category-page URL.
+3. Observe the error message and available navigation.
+4. Use the return-to-homepage button.
+
+**Expected Result:**
+- The page displays `Category Not Found` instead of presenting a nonexistent category as valid.
+- A button is provided to return to the homepage.
+- Following the button navigates to the homepage.
+- The request is handled without a visible application crash.
+
+**Actual Result:**
+Manual testing confirmed that a category-page URL containing a nonexistent category identifier displayed `Category Not Found` and provided a button redirecting the user to the homepage. No dedicated automated category-page not-found test has been identified.
+
+**Status:** Pass (manual)
+
+**Related Jira Defect:** None
+
 ## UC-20: Filter Listings by Price Range
 **Automated PHPUnit source:** `tests/Functional/PriceRangeFilterTest.php`  
 **Execution evidence:** User-confirmed successful targeted PHPUnit tests and complete PHPUnit suite. Automated verification covers 16 test methods; UI-only or deferred scenarios are identified separately below.
@@ -3368,11 +3399,9 @@ filtering and keyword search.
 - No PHP or database errors should occur.
 
 **Actual Result:**
-Not covered by `PriceRangeFilterTest.php`: this multi-filter combination remains deferred until combined Marketplace Discovery testing.
+Manual testing of the combined item-keyword, category, and price-range filters was completed successfully on the OmniBuy website. The combined filtering behavior was confirmed to work as expected. This result is based on user-reported manual testing; `PriceRangeFilterTest.php` does not contain a dedicated automated assertion for all three filters in one request.
 
-Execution result not yet recorded.
-
-**Status:** Not Run
+**Status:** Pass (manual; dedicated combined-filter automated test not confirmed)
 
 **Related Jira Defect:** None
 
